@@ -66,6 +66,10 @@ On the sign-in page enter the address of your Nextcloud and choose **Sign in wit
 devel-su pkcon install-local harbour-sailfeed-*.rpm
 ```
 
+## Development and AI assistance
+
+Developed with AI assistance; all technical and design changes are fully specified, reviewed and tested on a Jolla Phone (2026) by the developer. 
+
 ## Permissions
 
 Sailfeed runs sandboxed (Sailjail) and only asks for:
@@ -108,7 +112,6 @@ Notes:
 
 ## Project documents
 
-- [`TEST-PROTOCOL.md`](TEST-PROTOCOL.md) – manual test protocol on a real device
 - [`PRIVACY.md`](PRIVACY.md) – privacy policy
 - [`3rdparty/README.md`](3rdparty/README.md) – bundled libraries and the local libfuoten patch
 - [`design/`](design/) – icon source and rendering script
@@ -118,9 +121,6 @@ Notes:
 
 Languages: English and German (follows the system language). Source strings are English; translation files are in `translations/` (Qt Linguist `.ts`). The build updates them with `lupdate`, new strings then show up as unfinished entries to translate. Messages from libfuoten (sync and server errors) come with libfuoten's own translations.
 
-## Development and AI assistance
-
-Sailfeed is developed with the assistance of an AI model (Claude by Anthropic). The author specifies all features, makes all design and technical decisions, tests every change on a Jolla Phone (2026) and uses the app every day. Design decisions and their reasons are documented in `DESIGN.md`.
 
 ## Credits
 
