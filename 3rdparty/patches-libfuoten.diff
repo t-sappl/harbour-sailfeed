@@ -1,0 +1,505 @@
+diff -ruN -x .github -x .git a/Fuoten/API/getitems.cpp b/Fuoten/API/getitems.cpp
+--- a/Fuoten/API/getitems.cpp	2026-10-10 13:38:20.343327978 +0200
++++ b/Fuoten/API/getitems.cpp	2026-10-10 13:38:20.355375857 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "getitems_p.h"
+@@ -83,6 +86,9 @@
+     }
+ 
+     uq.addQueryItem(QStringLiteral("type"), QString::number((int)type()));
++    // sailfeed patch: the feed/folder ID was never sent, so requests for one
++    // feed or folder returned items of all feeds (News API parameter "id").
++    uq.addQueryItem(QStringLiteral("id"), QString::number(parentId() > 0 ? parentId() : 0));
+ 
+     QString gr = getRead() ? QStringLiteral("true") : QStringLiteral("false");
+     uq.addQueryItem(QStringLiteral("getRead"), gr);
+diff -ruN -x .github -x .git a/Fuoten/API/loginflowv2.cpp b/Fuoten/API/loginflowv2.cpp
+--- a/Fuoten/API/loginflowv2.cpp	2026-10-10 13:38:20.343564035 +0200
++++ b/Fuoten/API/loginflowv2.cpp	2026-10-10 13:38:20.355642154 +0200
+@@ -1,9 +1,13 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "loginflowv2_p.h"
++#include "../Helpers/abstractconfiguration.h"
+ #include "../error.h"
+ #include <QJsonObject>
+ 
+@@ -231,6 +235,10 @@
+     pollingRequestTimeoutTimer->start(pollingRequestTimeout * 1000);
+ 
+     pollingReply = networkAccessManager->post(pollingRequest, pollingData);
++    // sailfeed patch: the polling requests ignored the "ignore SSL errors"
++    // setting, so sign-in in the browser failed with self-signed certificates.
++    if (q->configuration() && q->configuration()->getIgnoreSSLErrors())
++        pollingReply->ignoreSslErrors();
+     QObject::connect(pollingReply, &QNetworkReply::finished, q, [this](){ pollingRequestFinished(); });
+ }
+ 
+diff -ruN -x .github -x .git a/Fuoten/Models/abstractarticlemodel.cpp b/Fuoten/Models/abstractarticlemodel.cpp
+--- a/Fuoten/Models/abstractarticlemodel.cpp	2026-10-10 13:38:20.344611878 +0200
++++ b/Fuoten/Models/abstractarticlemodel.cpp	2026-10-10 13:38:20.354683989 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "abstractarticlemodel_p.h"
+@@ -131,7 +134,12 @@
+     AbstractStorage *s = storage();
+ 
+     if (s) {
+-        connect(s, &AbstractStorage::gotArticlesAsync, this, &AbstractArticleModel::gotArticlesAsync);
++        // sailfeed patch: only accept results of our own queries
++        connect(s, &AbstractStorage::gotArticlesAsyncForRequest, this, [this] (qulonglong requestId, const ArticleList &articles) {
++            if (requestId == reinterpret_cast<quintptr>(this) && inOperation()) {
++                gotArticlesAsync(articles);
++            }
++        });
+         connect(s, &AbstractStorage::requestedItems, this, &AbstractArticleModel::itemsRequested);
+         connect(s, &AbstractStorage::markedReadFolder, this, &AbstractArticleModel::folderMarkedRead);
+         connect(s, &AbstractStorage::markedReadFolderInQueue, this, &AbstractArticleModel::folderMarkedReadInQueue);
+@@ -166,6 +174,7 @@
+     qa.parentId = parentId();
+     qa.parentIdType = parentIdType();
+     qa.bodyLimit = bodyLimit();
++    qa.requestId = reinterpret_cast<quintptr>(this);
+ 
+     if ((parentId() < 0) && (parentIdType() == FuotenEnums::Starred)) {
+         qa.starredOnly = true;
+diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.cpp b/Fuoten/Storage/abstractstorage.cpp
+--- a/Fuoten/Storage/abstractstorage.cpp	2026-10-10 13:38:20.345069571 +0200
++++ b/Fuoten/Storage/abstractstorage.cpp	2026-10-10 13:38:20.353995956 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "abstractstorage_p.h"
+@@ -129,7 +132,10 @@
+ {
+     const auto articles = getArticles(args);
+ 
+-    Q_EMIT gotArticlesAsync(articles);
++    Q_EMIT gotArticlesAsyncForRequest(args.requestId, articles);
++    if (args.requestId == 0) {
++        Q_EMIT gotArticlesAsync(articles);
++    }
+ }
+ 
+ 
+diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.h b/Fuoten/Storage/abstractstorage.h
+--- a/Fuoten/Storage/abstractstorage.h	2026-10-10 13:38:20.345080998 +0200
++++ b/Fuoten/Storage/abstractstorage.h	2026-10-10 13:38:20.354132242 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef FUOTENABSTRACTSTORAGE_H
+@@ -32,6 +35,7 @@
+     int limit = 0;                                          /**< Limits the result to the specified number of objects. Defaults to \c 0 to return all objects. */
+     int bodyLimit = -1;                                     /**< Only valid for article queries. Limits the size of the body text in number of characters. Values lower than \c 0 will return no body text, \c 0 will return the full body text, any other positive value will return a body stripped from HTML tags and limited to the amount of characters. */
+     bool queuedOnly = false;                                /**< Only valid for article queries. Will only return items/articles that are queued. */
++    qulonglong requestId = 0;                               /**< Only valid for async article queries. Identifies the requester, will be returned by AbstractStorage::gotArticlesAsyncForRequest(). \c 0 means no specific requester. (sailfeed patch) */
+ };
+ 
+ class Folder;
+@@ -893,6 +897,16 @@
+     void gotArticlesAsync(const Fuoten::ArticleList &articles);
+ 
+     /*!
++     * \brief Emitted together with gotArticlesAsync() after getArticlesAsync() finished.
++     *
++     * \a requestId is the QueryArgs::requestId of the query. Only the requester
++     * should take ownership of \a articles. gotArticlesAsync() is only emitted
++     * for queries without requestId. (sailfeed patch: fixes a double free when
++     * several article models share one storage)
++     */
++    void gotArticlesAsyncForRequest(qulonglong requestId, const Fuoten::ArticleList &articles);
++
++    /*!
+      * \brief This is emitted if the value of the \link AbstractStorage::inOperation inOperation \endlink property changes.
+      * \sa AbstractStorage::inOperation(), AbstractStorage::setInOperation()
+      */
+diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage/sqlitestorage.cpp
+--- a/Fuoten/Storage/sqlitestorage.cpp	2026-10-10 13:38:20.345140702 +0200
++++ b/Fuoten/Storage/sqlitestorage.cpp	2026-10-10 13:38:20.354066716 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "sqlitestorage_p.h"
+@@ -26,12 +29,9 @@
+ SQLiteStorageManager::SQLiteStorageManager(const QString &dbpath, QObject *parent) :
+     QThread(parent), m_currentDbVersion(0)
+ {
+-    if (!QSqlDatabase::connectionNames().contains(QStringLiteral("fuotendb"))) {
+-        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("fuotendb"));
+-        m_db.setDatabaseName(dbpath);
+-    } else {
+-        m_db = QSqlDatabase::database(QStringLiteral("fuotendb"));
+-    }
++    // sailfeed patch: the connection is opened in run(), in the worker's own
++    // thread (it used to share the main thread's "fuotendb" connection).
++    m_dbpath = dbpath;
+ }
+ 
+ 
+@@ -53,6 +53,8 @@
+ 
+ void SQLiteStorageManager::run()
+ {
++    WorkerDbConnection dbConnection(m_db, m_dbpath, this);
++
+     bool result = m_db.open();
+     Q_ASSERT_X(result, "init database", "failed to open database");
+ 
+@@ -1823,12 +1825,9 @@
+ GetArticlesAsyncWorker::GetArticlesAsyncWorker(const QString &dbpath, const QueryArgs &args, QObject *parent) :
+     QThread(parent), m_args(args)
+ {
+-    if (!QSqlDatabase::connectionNames().contains(QStringLiteral("fuotendb"))) {
+-        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("fuotendb"));
+-        m_db.setDatabaseName(dbpath);
+-    } else {
+-        m_db = QSqlDatabase::database(QStringLiteral("fuotendb"));
+-    }
++    // sailfeed patch: the connection is opened in run(), in the worker's own
++    // thread (it used to share the main thread's "fuotendb" connection).
++    m_dbpath = dbpath;
+ }
+ 
+ 
+@@ -1840,6 +1839,8 @@
+ 
+ void GetArticlesAsyncWorker::run()
+ {
++    WorkerDbConnection dbConnection(m_db, m_dbpath, this);
++
+     QList<Article*> articles;
+ 
+     QSqlQuery q(m_db);
+@@ -1995,14 +1996,23 @@
+ {
+     if (!ready()) {
+         qWarning("SQLite database not ready. Can not query articles from database.");
+-        Q_EMIT gotArticlesAsync(QList<Article*>());
++        Q_EMIT gotArticlesAsyncForRequest(args.requestId, QList<Article*>());
++        if (args.requestId == 0) {
++            Q_EMIT gotArticlesAsync(QList<Article*>());
++        }
+         return;
+     }
+ 
+     Q_D(SQLiteStorage);
+ 
++    const qulonglong requestId = args.requestId;
+     GetArticlesAsyncWorker *worker = new GetArticlesAsyncWorker(d->db.databaseName(), args, this);
+-    connect(worker, &GetArticlesAsyncWorker::gotArticles, this, &AbstractStorage::gotArticlesAsync);
++    connect(worker, &GetArticlesAsyncWorker::gotArticles, this, [this, requestId] (const ArticleList &articles) {
++        Q_EMIT gotArticlesAsyncForRequest(requestId, articles);
++        if (requestId == 0) {
++            Q_EMIT gotArticlesAsync(articles);
++        }
++    });
+     connect(worker, &GetArticlesAsyncWorker::failed, this, [=] (Error *e) {setError(e);});
+     connect(worker, &QThread::finished, worker, &QObject::deleteLater);
+     worker->start();
+@@ -2014,12 +2024,9 @@
+ ItemsRequestedWorker::ItemsRequestedWorker(const QString &dbpath, const QJsonDocument &json, AbstractConfiguration *config, AbstractNotificator *notificator, QObject *parent) :
+     QThread(parent), m_json(json), m_config(config), m_notificator(notificator)
+ {
+-    if (!QSqlDatabase::connectionNames().contains(QStringLiteral("fuotendb"))) {
+-        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("fuotendb"));
+-        m_db.setDatabaseName(dbpath);
+-    } else {
+-        m_db = QSqlDatabase::database(QStringLiteral("fuotendb"));
+-    }
++    // sailfeed patch: the connection is opened in run(), in the worker's own
++    // thread (it used to share the main thread's "fuotendb" connection).
++    m_dbpath = dbpath;
+ }
+ 
+ 
+@@ -2031,6 +2038,8 @@
+ 
+ void ItemsRequestedWorker::run()
+ {
++    WorkerDbConnection dbConnection(m_db, m_dbpath, this);
++
+     QSqlQuery q(m_db);
+ 
+     bool qresult = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+@@ -2797,12 +2806,9 @@
+ EnqueueMarkReadWorker::EnqueueMarkReadWorker(const QString &dbpath, qint64 id, FuotenEnums::Type idType, qint64 newestItemId, QObject *parent) :
+     QThread(parent), m_id(id), m_newestItemId(newestItemId), m_idType(idType)
+ {
+-    if (!QSqlDatabase::connectionNames().contains(QStringLiteral("fuotendb"))) {
+-        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("fuotendb"));
+-        m_db.setDatabaseName(dbpath);
+-    } else {
+-        m_db = QSqlDatabase::database(QStringLiteral("fuotendb"));
+-    }
++    // sailfeed patch: the connection is opened in run(), in the worker's own
++    // thread (it used to share the main thread's "fuotendb" connection).
++    m_dbpath = dbpath;
+ }
+ 
+ 
+@@ -2814,6 +2820,8 @@
+ 
+ void EnqueueMarkReadWorker::run()
+ {
++    WorkerDbConnection dbConnection(m_db, m_dbpath, this);
++
+     QSqlQuery q(m_db);
+     q.setForwardOnly(true);
+ 
+@@ -3077,12 +3085,9 @@
+ ClearQueueWorker::ClearQueueWorker(const QString &dbpath, QObject *parent) :
+     QThread(parent)
+ {
+-    if (!QSqlDatabase::connectionNames().contains(QStringLiteral("fuotendb"))) {
+-        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("fuotendb"));
+-        m_db.setDatabaseName(dbpath);
+-    } else {
+-        m_db = QSqlDatabase::database(QStringLiteral("fuotendb"));
+-    }
++    // sailfeed patch: the connection is opened in run(), in the worker's own
++    // thread (it used to share the main thread's "fuotendb" connection).
++    m_dbpath = dbpath;
+ }
+ 
+ 
+@@ -3094,6 +3099,8 @@
+ 
+ void ClearQueueWorker::run()
+ {
++    WorkerDbConnection dbConnection(m_db, m_dbpath, this);
++
+     QSqlQuery q(m_db);
+ 
+     bool qresult = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+@@ -3149,6 +3156,9 @@
+ 
+     qDebug("%s", "Start clearing local storage.");
+ 
++    // sailfeed patch: not ready while the tables are dropped and recreated
++    // (queries in between failed with an assertion).
++    setReady(false);
+     setInOperation(true);
+ 
+     Q_D(SQLiteStorage);
+@@ -3217,6 +3227,12 @@
+     setInOperation(false);
+ 
+     Q_EMIT storageCleared();
++
++    // sailfeed patch: recreate the empty tables (they stayed dropped, so the
++    // next sign-in or sync crashed); ready() turns true again when done.
++    setTotalUnread(0);
++    setStarred(0);
++    init();
+ }
+ 
+ #include "moc_sqlitestorage.cpp"
+diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage/sqlitestorage_p.h
+--- a/Fuoten/Storage/sqlitestorage_p.h	2026-10-10 13:38:20.345312052 +0200
++++ b/Fuoten/Storage/sqlitestorage_p.h	2026-10-10 13:38:20.354119615 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef SQLITESTORAGE_P
+@@ -20,6 +23,32 @@
+ 
+ namespace Fuoten {
+ 
++// sailfeed patch: one database connection per worker thread. QSqlDatabase
++// connections must only be used in the thread that created them; all
++// workers used to share the main thread's "fuotendb" connection, which
++// crashed when a worker and the main thread queried at the same time.
++class WorkerDbConnection
++{
++public:
++    WorkerDbConnection(QSqlDatabase &db, const QString &path, const void *owner)
++        : m_db(db)
++        , m_name(QStringLiteral("fuotendb_worker_%1").arg(reinterpret_cast<quintptr>(owner)))
++    {
++        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_name);
++        m_db.setDatabaseName(path);
++        m_db.open();
++    }
++    ~WorkerDbConnection()
++    {
++        m_db.close();
++        m_db = QSqlDatabase();
++        QSqlDatabase::removeDatabase(m_name);
++    }
++private:
++    QSqlDatabase &m_db;
++    QString m_name;
++};
++
+ class SQLiteStorageManager : public QThread {
+     Q_OBJECT
+ public:
+@@ -28,6 +57,7 @@
+ 
+ private:
+     QSqlDatabase m_db;
++    QString m_dbpath;
+     quint16 m_currentDbVersion;
+     void setFailed(const QSqlError &sqlError, const QString &text);
+ 
+@@ -72,6 +102,7 @@
+ 
+ private:
+     QSqlDatabase m_db;
++    QString m_dbpath;
+     QJsonDocument m_json;
+     AbstractConfiguration *m_config;
+     AbstractNotificator *m_notificator;
+@@ -94,6 +125,7 @@
+ 
+ private:
+     QSqlDatabase m_db;
++    QString m_dbpath;
+     QueryArgs m_args;
+ };
+ 
+@@ -119,6 +151,7 @@
+     qint64 m_id;
+     qint64 m_newestItemId;
+     QSqlDatabase m_db;
++    QString m_dbpath;
+     FuotenEnums::Type m_idType;
+ };
+ 
+@@ -140,6 +173,7 @@
+ 
+ private:
+     QSqlDatabase m_db;
++    QString m_dbpath;
+ };
+ 
+ 
+diff -ruN -x .github -x .git a/Fuoten/error.cpp b/Fuoten/error.cpp
+--- a/Fuoten/error.cpp	2026-10-10 13:38:20.345453674 +0200
++++ b/Fuoten/error.cpp	2026-10-10 13:38:20.356468268 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "error_p.h"
+@@ -43,6 +46,8 @@
+         d->severity = Critical;
+ 
+         const quint16 httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).value<quint16>();
++        d->httpStatus = httpStatus;
++        d->networkError = static_cast<int>(reply->error());
+ 
+         if ((httpStatus >= 400) && (httpStatus < 600)) {
+ 
+@@ -412,6 +417,10 @@
+ 
+ QString Error::data() const { Q_D(const Error); return d->data; }
+ 
++int Error::httpStatus() const { Q_D(const Error); return d->httpStatus; }
++
++int Error::networkError() const { Q_D(const Error); return d->networkError; }
++
+ void Error::setData(const QString &nData)
+ {
+     Q_D(Error);
+diff -ruN -x .github -x .git a/Fuoten/error.h b/Fuoten/error.h
+--- a/Fuoten/error.h	2026-10-10 13:38:20.345468895 +0200
++++ b/Fuoten/error.h	2026-10-10 13:38:20.354836424 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef FUOTENERROR_H
+@@ -139,6 +142,14 @@
+      * \sa data
+      */
+     QString data() const;
++
++    /*!
++     * \brief HTTP status and QNetworkReply::NetworkError of a network error
++     * (0 otherwise). Added by sailfeed to explain errors independent of the
++     * translated text.
++     */
++    int httpStatus() const;
++    int networkError() const;
+     /*!
+      * \brief Returns the error severity.
+      * \sa severity
+diff -ruN -x .github -x .git a/Fuoten/error_p.h b/Fuoten/error_p.h
+--- a/Fuoten/error_p.h	2026-10-10 13:38:20.345479307 +0200
++++ b/Fuoten/error_p.h	2026-10-10 13:38:20.356545844 +0200
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef FUOTENERROR_P_H
+@@ -19,6 +22,8 @@
+     QString data;
+     Error::Type type = Error::NoError;
+     Error::Severity severity = Error::Nothing;
++    int httpStatus = 0;     // sailfeed patch
++    int networkError = 0;   // sailfeed patch: QNetworkReply::NetworkError
+ 
+     void printOut()
+     {

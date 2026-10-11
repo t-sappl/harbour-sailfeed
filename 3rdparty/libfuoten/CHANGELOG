@@ -1,0 +1,114 @@
+<!--
+SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+SPDX-License-Identifier: LGPL-3.0-or-later
+-->
+
+libfuoten 0.8.2 - 2020-11-26
+* fixed: handling changes in News App API data types (#65)
+
+libfuoten 0.8.1 - 2020-10-17
+* fixed: building on Qt 5.15+ (#64)
+
+libfuoten 0.8.0 - 2020-10-17
+* new: support upgrade to app password (#62)
+* new: support deleting app password (#61)
+* new: support remote wipe (#60)
+* new: add classes to support login flow (#54)
+* improved: add new item properties (#55)
+* changed: do not derive AbstractConfiguration from QSettings (#58)
+* fixed: inserting items with empty fields (#63)
+
+libfuoten 0.7.5 - 2019-05-06
+* fixed: article list model not updated (#53)
+
+libfuoten 0.7.4 - 2019-04-30
+* changed: hide future articles (#52)
+* changed: remove unneeded decompression implementation (#51)
+
+libfuoten 0.7.3 - 2018-12-04
+* fixed: forgot to bump the version
+
+libfuoten 0.7.2 - 2018-12-04
+* fixed: missing translations for en_US and en_GB
+
+libfuoten 0.7.1 - 2018-11-26
+* fixed: missing link_pkgconfig in qmake CONFIG var
+
+libfuoten 0.7.0 - 2018-11-26
+* new: support for compressed server responses (gzip and deflate),
+  this requries zlib headers to be available (#49)
+* new: French translation by Antoine Vacher
+* changed: set default request timeout to 300 seconds
+* fixed: mark all items as read
+
+libfuoten 0.6.1 - 2017-10-27
+* fixed: initial sync does not save feeds and articles (#48)
+
+libfuoten 0.6.0 - 2017-10-26
+* new: AbstractNotificator class to implement notifications (#35)
+* new: global default values for configuration and storage
+* changed: use network access manager factory instead of setting network
+  access manager via property
+* changed: SQLiteStorage: do not use triggers to update unread counts as triggers
+  in SQLite are activated on each row change, it is more efficient ot calculate
+  the number of unread and starred items after each operation
+* changed: remove support for Qt older than 5.6.0
+* improved: small fixes all over the code
+
+libfuoten 0.5.2 - 2017-03-19
+* new: Dutch translation by Nathan Follens
+
+libfuoten 0.5.1 - 2017-01-29
+* improved: translation updates
+
+libfuoten 0.5.0 - 2016-11-22
+* new: per feed item deletion (#33)
+* new: queue marking all items read (#34)
+* new: progress data for synchronizer (#36)
+* improved: protect mandatory properties (#40)
+* improved: enqueue marking feeds, folders all as read in separate thread (#38)
+* improved: inOperation property for storage classes (#39)
+* changed: do not fall back to API request on queue error (#41)
+* changed: make Component::extractError() a normal virtual function (43)
+* fixed: synchronizer crashes on error (#42)
+* fixed: synchronizer still reports inOperation true on error (#45)
+
+libfuoten 0.4.1 - 2016-11-10
+* fixed: build on Qt 5.5+
+
+libfuoten 0.4.0 - 2016-11-10
+* new: local queue for article/item actions (#31)
+* new: process local queue on sync (#32)
+
+libfuoten 0.3.0 - 2016-11-07
+* new: Article object (#25)
+* new: abstract article model (#21)
+* new: article storage in AbstractStorage and SQLiteStorage (#30)
+* new: request/update articles (#26, #27)
+* new: article marking (read/unread) (#28)
+* new: article starring (star/unstar) (#29)
+* new: article list model (#22)
+* new: article list filter model (#23)
+
+libfuoten 0.2.0 - 2016-11-02
+* new: Feed object (#24)
+* new: abstract feed model (#12)
+* new: feed storing in AbstractStorage and SQLiteStorage (#15)
+* new: feed list model (#13)
+* new: feed list filter model (#14)
+* new: mark feed as read (#20)
+* new: move feed (#18)
+* new: create feed (#16)
+* new: delete feed (#17)
+* new: rename feed (#19)
+
+libfuoten 0.1.2 - 2016-10-28
+* fix build on Qt 5.5 by changing wrong version compare
+
+libfuoten 0.1.1 - 2016-10-28
+* fix wrong Qt module name that linked unnecessary stuff into the lib
+
+libfuoten 0.1.0 - 2016-10-27
+* implementation of configuration
+* implementation of account validation
+* implementation of folder management

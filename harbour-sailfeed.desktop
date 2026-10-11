@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=harbour-sailfeed
+Exec=harbour-sailfeed
+Name=Sailfeed
+Name[de]=Sailfeed
+Comment=Nextcloud News client
+Comment[de]=Nextcloud-News-Client
+# App grid folders are named after common categories
+Categories=Network;News;
+
+[X-Sailjail]
+# Do not change: data, settings and the Secrets collection live under
+# org.sappl/harbour-sailfeed
+OrganizationName=org.sappl
+ApplicationName=harbour-sailfeed
+Permissions=Internet;Secrets

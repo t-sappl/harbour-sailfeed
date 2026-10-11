@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/js">
+    <file alias="Readability.js">3rdparty/readability/Readability.js</file>
+</qresource>
+</RCC>

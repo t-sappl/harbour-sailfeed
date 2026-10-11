@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/include/fuoten-qt@QT_VERSION_MAJOR@
+
+Name: libfuoten Qt@QT_VERSION_MAJOR@
+Description: Qt@QT_VERSION_MAJOR@ based library to provide access to the ownCloud / Nextcloud News app
+Version: @PROJECT_VERSION@
+Requires: Qt@QT_VERSION_MAJOR@Core Qt@QT_VERSION_MAJOR@Network Qt@QT_VERSION_MAJOR@Sql
+Libs: -L${libdir} -lFuotenQt@QT_VERSION_MAJOR@
+Cflags: -I${includedir}

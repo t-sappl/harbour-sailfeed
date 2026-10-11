@@ -1,0 +1,28 @@
+* Sat Oct 10 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.0.0-1
+- First public release (GitHub, OpenRepos).
+- Article list with thumbnails and excerpts, grouped by day, page-wise
+  scrolling, read articles greyed out, unread dot; optionally unread only,
+  with read and older articles on request.
+- Feed list with bookmarks, folders (also empty ones), favicons and unread
+  counts; sort by unread, name or activity; favorite feeds; feeds without
+  folder selectable as "Other feeds".
+- Feed management: add feeds and folders, rename, move, delete.
+- Automatic mark as read (when scrolling on or at once), push-up button to
+  mark all as read, context menus (read/unread, bookmark, above/below, feed,
+  folder), all with undo.
+- Reader mode (Mozilla Readability) with preloading, consent wall handling
+  with the in-app browser's cookies, font, text size (also per feed), line
+  spacing, margins, colors (light/dark/sepia), images, sites that always
+  open in the original.
+- Full article in reader mode, as the original website or in the browser;
+  the preview can be skipped.
+- Bar in preview and reader mode: previous/next, text size, bookmark,
+  open in browser; swipe gestures between list, preview and reader.
+- Portrait and landscape.
+- Sign-in with the browser (Nextcloud Login Flow v2) or an app password,
+  self-signed certificates, understandable error hints and an error banner.
+- Settings backup in your own Nextcloud files: automatic after changes,
+  earlier states kept, restore (replace or add missing only) with undo,
+  offered after signing in on a new device.
+- Privacy settings for the in-app browser's cookies and website data.
+- English and German.
