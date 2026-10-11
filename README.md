@@ -108,9 +108,6 @@ Notes:
 
 ## Project documents
 
-- [`HANDOFF.md`](HANDOFF.md) – starting point for development: state, agreements, pitfalls, tools
-- [`TODO.md`](TODO.md) – what is done and what might come
-- [`DESIGN.md`](DESIGN.md) – architecture, conventions and design decisions, including Harbour compliance
 - [`TEST-PROTOCOL.md`](TEST-PROTOCOL.md) – manual test protocol on a real device
 - [`PRIVACY.md`](PRIVACY.md) – privacy policy
 - [`3rdparty/README.md`](3rdparty/README.md) – bundled libraries and the local libfuoten patch
