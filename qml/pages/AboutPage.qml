@@ -34,6 +34,16 @@ Page {
                 sourceSize.width: width
                 sourceSize.height: height
                 visible: status === Image.Ready
+
+                // Hidden: press and hold shows all first-run tips again, like
+                // Sailwave (15 Oct: replaces "Show tips again" in the settings)
+                MouseArea {
+                    anchors.fill: parent
+                    onPressAndHold: {
+                        app.resetHints()
+                        app.showMessage(qsTr("The tips appear again where they belong"))
+                    }
+                }
             }
 
             Label {
@@ -64,7 +74,7 @@ Page {
                 horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.primaryColor
-                text: qsTr("Nextcloud News client for Sailfish OS, with a reader mode without ads and cookie banners.")
+                text: qsTr("Feed reader for Nextcloud News on Sailfish OS, with a clean reader mode.")
             }
 
             Label {
@@ -124,6 +134,7 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.secondaryHighlightColor
+                // Same wording in README and on the OpenRepos page (author, 15 Oct)
                 text: qsTr("Developed with the assistance of an AI model (Claude by Anthropic). "
                            + "The developer specifies all features, makes all design and technical decisions, tests every change on a Jolla Phone (2026) and uses the app every day.")
             }

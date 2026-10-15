@@ -32,6 +32,7 @@ const Spec kGeneral[] = {
     { "feedSortMode",        Type::Int,  0, 4 },
     { "openMode",            Type::Int,  0, 2 },
     { "skipPreview",         Type::Bool, 0, 1 },
+    { "linksInApp",          Type::Bool, 0, 1 },
     { "unreadOnly",          Type::Bool, 0, 1 },
     { "readerSerif",         Type::Bool, 0, 1 },
     { "readerLineSpacing",   Type::Int,  0, 2 },

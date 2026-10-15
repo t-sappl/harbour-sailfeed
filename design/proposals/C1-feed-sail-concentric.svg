@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172" width="172" height="172">
+  <!-- Proposal C1 "feed sail": arcs exactly concentric with the round part of the drop (centre 86/86), so they run parallel to the rim, orange. -->
+  <defs>
+    <path id="drop" d="M 86 0.6 A 85.4 85.4 0 0 1 171.4 86 A 85.4 85.4 0 0 1 86 171.4 L 10.6 171.4 A 10 10 0 0 1 0.6 161.4 L 0.6 86 A 85.4 85.4 0 0 1 86 0.6 Z"/>
+    <linearGradient id="rim" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffa53c"/><stop offset="1" stop-color="#d0610f"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0.8" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#f99327"/><stop offset="1" stop-color="#dd6e14"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0.62" cy="0.22" r="0.7">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.12"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.6" stdDeviation="1.4" flood-color="#5c2600" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <use href="#drop" fill="url(#rim)"/>
+  <g transform="translate(90 82) scale(0.94) translate(-90 -82)">
+    <use href="#drop" fill="url(#face)"/>
+    <use href="#drop" fill="url(#shine)"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="70" y="24" width="5" height="84" rx="1.5" fill="#ffffff"/>
+    <circle cx="94" cy="78" r="9" fill="#ffffff"/>
+    <path d="M 86 56 A 30 30 0 0 1 116 86" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+    <path d="M 86 30 A 56 56 0 0 1 142 86" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+    <path d="M 48 106 L 138 106 L 126 122 L 60 122 Z" fill="#ffffff"/>
+  </g>
+</svg>

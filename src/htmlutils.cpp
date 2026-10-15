@@ -214,14 +214,28 @@ QString cleanBody(const QString &html)
     static const QRegularExpression singleRe(
         QStringLiteral("<(img|source|picture|/picture|input|button|/button|link|meta)\\b[^>]*>"),
         QRegularExpression::CaseInsensitiveOption);
-    static const QRegularExpression emptyPRe(
-        QStringLiteral("<p[^>]*>\\s*(?:&nbsp;)?\\s*</p>"),
+    // Wrappers left empty once the images are gone (e.g. The Next Web:
+    // <p><a href=…><img …></a></p>): RichText still draws their paragraph
+    // margins, a large gap below the lead image's place (device test 15 Oct).
+    // Removed from the inside out until nothing changes.
+    static const QRegularExpression emptyWrapRe(
+        QStringLiteral("<(p|div|figure|figcaption|span|a|center|strong|em|b|i)\\b[^>]*>"
+                       "(?:\\s|&nbsp;|&#160;|<br\\s*/?>)*</\\1\\s*>"),
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression leadingBreakRe(
+        QStringLiteral("^(?:\\s|&nbsp;|&#160;|<br\\s*/?>)+"),
         QRegularExpression::CaseInsensitiveOption);
 
     QString out = html;
     out.remove(blockRe);
     out.remove(singleRe);
-    out.remove(emptyPRe);
+    for (int i = 0; i < 8; ++i) {
+        const int before = out.size();
+        out.remove(emptyWrapRe);
+        if (out.size() == before)
+            break;
+    }
+    out.remove(leadingBreakRe);
     return out.trimmed();
 }
 
@@ -264,6 +278,47 @@ bool isListedSite(const QString &url, const QStringList &sites)
             return true;
     }
     return false;
+}
+
+// Links in the reader page: a tap or a long press is reported to QML
+// (WebPage.qml) as "sailfeed:tap:<id>:<url>" or "sailfeed:long:<id>:<url>"
+// (id = random document key + counter, so every message is unique). Two
+// channels, QML drops duplicates by id:
+//   - the document title (restored after 0.4 s): immediate
+//   - the attribute data-sf-links of <html> (one message per line), which
+//     WebPage polls and clears while the page is shown – the title alone was
+//     not reliable (device test 13 Oct evening: links in Vermaden articles
+//     did nothing, those of the Linux Mobile weekly updates worked).
+// QML opens the link in the app or in the browser (setting; long press the
+// other way round). The web view's own long-press menu is suppressed for
+// links. Same-page anchors ("#…") keep their normal behaviour. Links with
+// target="_blank" did nothing before (device test 13 Oct morning), they are
+// handled the same way now.
+static QString readerLinkScript()
+{
+    return QStringLiteral(
+        "<script>(function(){"
+        "var n=0,doc=Math.random().toString(36).slice(2,10)||'x',timer=null,sx=0,sy=0,longAt=0,"
+        "title=document.title,restore=null;"
+        "function send(kind,href){n++;var msg='sailfeed:'+kind+':'+doc+'-'+n+':'+href;"
+        "var root=document.documentElement,q=root.getAttribute('data-sf-links');"
+        "root.setAttribute('data-sf-links',q?q+'\\n'+msg:msg);"
+        "document.title=msg;clearTimeout(restore);restore=setTimeout(function(){document.title=title;},400);}"
+        "function linkOf(el){while(el&&!(el.tagName&&el.tagName.toUpperCase()==='A'))el=el.parentNode;"
+        "if(!el||!el.href)return null;var h=el.getAttribute('href')||'';return h.charAt(0)==='#'?null:el;}"
+        "function stop(){if(timer){clearTimeout(timer);timer=null;}}"
+        "document.addEventListener('click',function(e){var a=linkOf(e.target);if(!a)return;"
+        "e.preventDefault();e.stopPropagation();if(Date.now()-longAt<1000)return;send('tap',a.href);},true);"
+        "document.addEventListener('touchstart',function(e){stop();var a=linkOf(e.target);"
+        "if(!a||!e.touches.length)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;"
+        "timer=setTimeout(function(){timer=null;longAt=Date.now();send('long',a.href);},600);},{passive:true});"
+        "document.addEventListener('touchmove',function(e){if(!timer||!e.touches.length)return;"
+        "if(Math.abs(e.touches[0].clientX-sx)>12||Math.abs(e.touches[0].clientY-sy)>12)stop();},{passive:true});"
+        "document.addEventListener('touchend',stop,{passive:true});"
+        "document.addEventListener('touchcancel',stop,{passive:true});"
+        "document.addEventListener('contextmenu',function(e){var a=linkOf(e.target);if(!a)return;"
+        "e.preventDefault();e.stopPropagation();stop();if(Date.now()-longAt>=1000){longAt=Date.now();send('long',a.href);}},true);"
+        "})();</script>");
 }
 
 QString readerHtml(const QString &articleJson, const ReaderStyle &style)
@@ -320,6 +375,7 @@ QString readerHtml(const QString &articleJson, const ReaderStyle &style)
     html += QStringLiteral("<!DOCTYPE html><html lang=\"") + escapeHtml(lang)
          + QStringLiteral("\" dir=\"") + dir + QStringLiteral("\"><head><meta charset=\"utf-8\">"
            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+           "<meta name=\"sailfeed-reader\" content=\"1\">"
            "<title>") + escapeHtml(title) + QStringLiteral("</title><style>") + css
          + QStringLiteral("</style></head><body><main>");
     if (!site.isEmpty())
@@ -328,7 +384,8 @@ QString readerHtml(const QString &articleJson, const ReaderStyle &style)
         html += QStringLiteral("<h1>") + escapeHtml(title) + QStringLiteral("</h1>");
     if (!byline.isEmpty())
         html += QStringLiteral("<div class=\"byline\">") + escapeHtml(byline) + QStringLiteral("</div>");
-    html += QStringLiteral("<article>") + content + QStringLiteral("</article></main></body></html>");
+    html += QStringLiteral("<article>") + content + QStringLiteral("</article></main>")
+         + readerLinkScript() + QStringLiteral("</body></html>");
     return html;
 }
 

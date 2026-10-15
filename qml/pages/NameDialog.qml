@@ -30,6 +30,10 @@ Dialog {
             focus: true
             label: dialog.label
             text: dialog.initialValue
+            // Without word prediction every letter is in "text" at once: with
+            // it the word being typed only arrives when the field loses focus,
+            // so "Add" and the swipe stayed blocked (device test 14 Oct)
+            inputMethodHints: Qt.ImhNoPredictiveText
             EnterKey.iconSource: "image://theme/icon-m-enter-accept"
             EnterKey.enabled: dialog.canAccept
             EnterKey.onClicked: dialog.accept()

@@ -234,6 +234,63 @@ void FeedModel::setFavorite(int feedId, bool favorite)
     applyFavorites(next);
 }
 
+QVariantList FeedModel::feedsMatching(const QString &text) const
+{
+    QStringList words;
+    for (const QString &w : text.toCaseFolded().split(QLatin1Char(' ')))
+        if (!w.trimmed().isEmpty())
+            words << w.trimmed();
+    QVariantList out;
+    if (words.isEmpty())
+        return out;
+    for (int row = 0; row < rowCount(); ++row) {
+        Fuoten::Feed *f = feedAt(row);
+        if (!f)
+            continue;
+        const QString title = f->title().toCaseFolded();
+        bool all = true;
+        for (const QString &w : words)
+            all = all && title.contains(w);
+        if (!all)
+            continue;
+        QVariantMap m;
+        m.insert(QStringLiteral("id"), f->id());
+        m.insert(QStringLiteral("title"), f->title());
+        m.insert(QStringLiteral("unread"), f->unreadCount());
+        m.insert(QStringLiteral("favicon"), f->faviconLink().toString());
+        m.insert(QStringLiteral("folderName"), f->folderName());
+        out << m;
+    }
+    return out;
+}
+
+QStringList FeedModel::feedUrls() const
+{
+    QStringList out;
+    for (int row = 0; row < rowCount(); ++row) {
+        Fuoten::Feed *f = feedAt(row);
+        if (f)
+            out << f->url().toString();
+    }
+    return out;
+}
+
+QVariantList FeedModel::subscribedFeeds() const
+{
+    QVariantList out;
+    for (int row = 0; row < rowCount(); ++row) {
+        Fuoten::Feed *f = feedAt(row);
+        if (!f)
+            continue;
+        QVariantMap m;
+        m.insert(QStringLiteral("url"), f->url().toString());
+        m.insert(QStringLiteral("link"), f->link().toString());
+        m.insert(QStringLiteral("title"), f->title());
+        out << m;
+    }
+    return out;
+}
+
 QVariantList FeedModel::favoriteFeeds() const
 {
     QList<qint64> ids = m_favorites.values();

@@ -35,6 +35,7 @@
 #include "nextcloudfiles.h"
 #include "settingsbackup.h"
 #include "cloudbackup.h"
+#include "feedfinder.h"
 
 static int failures = 0;
 #define CHECK(cond) do { if (!(cond)) { ++failures; std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } else { std::printf("ok   %s\n", #cond); } } while (0)
@@ -76,6 +77,12 @@ static void testHtml()
         CHECK(r.contains(QStringLiteral("<article><p>Text</p></article>")));
         CHECK(r.contains(QStringLiteral("lang=\"de\"")));
         CHECK(r.contains(QStringLiteral("font-size:20px")));
+        // Marker (WebPage uncovers only its own reader page) and the link script
+        CHECK(r.contains(QStringLiteral("<meta name=\"sailfeed-reader\" content=\"1\">")));
+        CHECK(r.contains(QStringLiteral("'sailfeed:'+kind")));
+        CHECK(r.contains(QStringLiteral("data-sf-links")));                 // second channel (polled)
+        CHECK(r.indexOf(QStringLiteral("</article>")) < r.indexOf(QStringLiteral("<script>")));
+        CHECK(r.endsWith(QStringLiteral("</script></body></html>")));
         ReaderStyle big; big.fontPx = 26;
         CHECK(readerHtml(QStringLiteral("{\"content\":\"<p>x</p>\"}"), big).contains(QStringLiteral("font-size:26px")));
     }
@@ -116,6 +123,192 @@ static void testHtml()
     }
     CHECK_EQ(cleanBody(QStringLiteral("<p>a<img src=x></p><iframe src=y></iframe><script>1</script><p> </p><a href=\"u\">l</a>")),
              QStringLiteral("<p>a</p><a href=\"u\">l</a>"));
+    // Wrappers left empty by the removed images (The Next Web), nested, with
+    // breaks; a link with text and a paragraph with content stay
+    CHECK_EQ(cleanBody(QStringLiteral("<p><a href=\"https://t/x.avif\"><img src=\"https://t/x.avif\"/></a></p>\n"
+                                      "<figure class=\"f\"><img src=x><figcaption> </figcaption></figure><br/>"
+                                      "<p>Text <a href=\"u\">link</a></p><div><span>&nbsp;</span></div>")),
+             QStringLiteral("<p>Text <a href=\"u\">link</a></p>"));
+    CHECK_EQ(cleanBody(QStringLiteral("<br><br />Start<p><b>bold</b></p>")),
+             QStringLiteral("Start<p><b>bold</b></p>"));
+}
+
+// "Subscribe to website": feed parsing, discovery helpers and the search
+// against the mock's test sites
+static QVariantList runFinder(FeedFinder &f, const QString &address)
+{
+    bool done = false;
+    auto c = QObject::connect(&f, &FeedFinder::finished, [&] { done = true; });
+    f.find(address);
+    CHECK(waitFor([&] { return done; }, 30000));
+    QObject::disconnect(c);
+    return f.feeds();
+}
+
+static QStringList titlesOf(const QVariantList &feeds)
+{
+    QStringList t;
+    for (const QVariant &v : feeds)
+        t << v.toMap().value(QStringLiteral("title")).toString();
+    return t;
+}
+
+static void testFeedFinder(const QString &port)
+{
+    // parseFeed
+    {
+        const QVariantMap r = FeedFinder::parseFeed(QByteArrayLiteral(
+            "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>T &amp; Co</title><description>&lt;p&gt;Desc&lt;/p&gt;</description>"
+            "<image><title>Logo</title></image>"
+            "<item><title>A</title><pubDate>Mon, 12 Oct 2026 10:00:00 GMT</pubDate></item>"
+            "<item><title>B</title><pubDate>Tue, 13 Oct 2026 10:00:00 +0200</pubDate></item>"
+            "<item><title>C</title></item><item><title>D</title></item></channel></rss>"));
+        CHECK(r.value(QStringLiteral("ok")).toBool());
+        CHECK_EQ(r.value(QStringLiteral("format")).toString(), QStringLiteral("RSS"));
+        CHECK_EQ(r.value(QStringLiteral("title")).toString(), QStringLiteral("T & Co"));
+        CHECK_EQ(r.value(QStringLiteral("description")).toString(), QStringLiteral("Desc"));
+        CHECK_EQ(r.value(QStringLiteral("itemCount")).toInt(), 4);
+        CHECK_EQ(r.value(QStringLiteral("recent")).toStringList(), (QStringList{ QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C") }));
+        CHECK_EQ(r.value(QStringLiteral("latest")).toDateTime().toUTC(), QDateTime(QDate(2026, 10, 13), QTime(8, 0), Qt::UTC));
+        CHECK(!r.value(QStringLiteral("podcast")).toBool());
+    }
+    {
+        const QVariantMap r = FeedFinder::parseFeed(QByteArrayLiteral(
+            "<feed xmlns=\"http://www.w3.org/2005/Atom\"><title>Atom</title><subtitle>S</subtitle>"
+            "<entry><title type=\"html\">E1</title><published>2026-10-01T10:00:00Z</published>"
+            "<link rel=\"enclosure\" type=\"audio/mpeg\" href=\"x.mp3\"/></entry></feed>"));
+        CHECK(r.value(QStringLiteral("ok")).toBool());
+        CHECK_EQ(r.value(QStringLiteral("format")).toString(), QStringLiteral("Atom"));
+        CHECK_EQ(r.value(QStringLiteral("description")).toString(), QStringLiteral("S"));
+        CHECK(r.value(QStringLiteral("podcast")).toBool());
+    }
+    CHECK_EQ(FeedFinder::parseFeed(QByteArrayLiteral("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"><channel><title>R</title></channel><item><title>x</title></item></rdf:RDF>")).value(QStringLiteral("format")).toString(), QStringLiteral("RDF"));
+    CHECK(!FeedFinder::parseFeed(QByteArrayLiteral("<html><head></head><body>x</body></html>")).value(QStringLiteral("ok")).toBool());
+    CHECK(!FeedFinder::parseFeed(QByteArrayLiteral("not xml at all")).value(QStringLiteral("ok")).toBool());
+
+    // discoverLinks
+    {
+        const QList<QUrl> l = FeedFinder::discoverLinks(QByteArrayLiteral(
+            "<head><base href=\"https://ex.org/blog/\"><link rel='alternate' type='application/atom+xml' href='atom.xml'>"
+            "<link rel=\"alternate\" hreflang=\"de\" href=\"/de/\"><link rel=\"stylesheet\" href=\"s.css\"></head>"
+            "<body><a href=\"/feedback\">Feedback</a><a href=\"/rss?cat=1&amp;x=2\"><img alt=\"RSS\" src=\"i.png\"></a>"
+            "<a href=\"/about\">About</a><a href=\"feed://ex.org/feed/\">Subscribe</a><a href=\"/a\">RSS</a><a href=\"/atom.xml\">x</a></body>"),
+            QUrl(QStringLiteral("https://ex.org/blog/post")));
+        QStringList s;
+        for (const QUrl &u : l) s << u.toString();
+        CHECK_EQ(s, (QStringList{ QStringLiteral("https://ex.org/blog/atom.xml"), QStringLiteral("https://ex.org/rss?cat=1&x=2"),
+                                  QStringLiteral("https://ex.org/feed/"), QStringLiteral("https://ex.org/a"),
+                                  QStringLiteral("https://ex.org/atom.xml") }));
+    }
+    {
+        QStringList s;
+        for (const QUrl &u : FeedFinder::parentPages(QUrl(QStringLiteral("https://ex.org/a/b/c.html?x=1")))) s << u.toString();
+        CHECK_EQ(s, (QStringList{ QStringLiteral("https://ex.org/a/b/"), QStringLiteral("https://ex.org/a/"), QStringLiteral("https://ex.org/") }));
+        CHECK(FeedFinder::parentPages(QUrl(QStringLiteral("https://ex.org/"))).isEmpty());
+    }
+    {
+        const QList<QUrl> w = FeedFinder::wellKnownCandidates(QUrl(QStringLiteral("https://ex.org/blog/2026/x")), { QStringLiteral("index.xml"), QStringLiteral("news.rss") });
+        QStringList s;
+        for (const QUrl &u : w) s << u.toString();
+        CHECK(s.contains(QStringLiteral("https://ex.org/feed")));
+        CHECK(s.contains(QStringLiteral("https://ex.org/?feed=rss2")));
+        CHECK(s.contains(QStringLiteral("https://ex.org/feeds/posts/default")));
+        CHECK(s.contains(QStringLiteral("https://ex.org/news.rss")));
+        CHECK(s.contains(QStringLiteral("https://ex.org/blog/feed/")));
+        CHECK_EQ(s.count(QStringLiteral("https://ex.org/index.xml")), 1);
+    }
+    CHECK_EQ(FeedFinder::fileNamesOf({ QStringLiteral("https://a.org/index.xml"), QStringLiteral("https://b.org/index.xml"),
+                                       QStringLiteral("https://c.org/feed/"), QStringLiteral("https://d.org/news") }),
+             (QStringList{ QStringLiteral("index.xml"), QStringLiteral("feed/") }));
+    CHECK_EQ(FeedFinder::compareKey(QStringLiteral("https://www.Ex.org/feed/")), FeedFinder::compareKey(QStringLiteral("http://ex.org/feed")));
+    // tracking parameters and fragments do not count, other parameters do
+    CHECK_EQ(FeedFinder::compareKey(QStringLiteral("https://www.heise.de/rss/heise.rdf?wt_mc=rss.red.ho.ho.rdf.beitrag.beitrag")),
+             FeedFinder::compareKey(QStringLiteral("https://heise.de/rss/heise.rdf")));
+    CHECK_EQ(FeedFinder::compareKey(QStringLiteral("https://ex.org/feed/?utm_source=x&utm_medium=y#top")), QStringLiteral("ex.org/feed"));
+    CHECK_EQ(FeedFinder::compareKey(QStringLiteral("https://ex.org/?feed=rss2&utm_source=x")), QStringLiteral("ex.org?feed=rss2"));
+    CHECK(FeedFinder::compareKey(QStringLiteral("https://ex.org/?feed=rss2")) != FeedFinder::compareKey(QStringLiteral("https://ex.org/?feed=atom")));
+    CHECK_EQ(FeedFinder::titleSiteKey(QStringLiteral(" The  Next Web "), QStringLiteral("https://www.thenextweb.com/news")),
+             QStringLiteral("the next web|thenextweb.com"));
+    CHECK(FeedFinder::titleSiteKey(QString(), QStringLiteral("https://ex.org")).isEmpty());
+    {
+        const QVariantMap r = FeedFinder::parseFeed(QByteArrayLiteral(
+            "<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\"><channel><title>T</title><link>https://site.org/</link>"
+            "<atom:link rel=\"self\" href=\"https://site.org/feed/\"/><image><link>https://img.org/</link></image>"
+            "<item><title>A</title><link>https://site.org/a</link></item></channel></rss>"));
+        CHECK_EQ(r.value(QStringLiteral("selfUrl")).toString(), QStringLiteral("https://site.org/feed/"));
+        CHECK_EQ(r.value(QStringLiteral("siteLink")).toString(), QStringLiteral("https://site.org/"));
+    }
+    CHECK(FeedFinder::looksLikeComments(QStringLiteral("https://ex.org/comments/feed/"), QString()));
+    CHECK(FeedFinder::looksLikeComments(QString(), QStringLiteral("Kommentare zu X")));
+
+    // Search against the mock
+    const QString base = QStringLiteral("http://127.0.0.1:%1").arg(port);
+    FeedFinder f;
+    f.setKnownUrls({ base + QStringLiteral("/site/comments/feed/") });
+    // a page announcing feeds: news, comments (already subscribed), podcast (linked)
+    QVariantList r = runFinder(f, base + QStringLiteral("/site/"));
+    CHECK_EQ(titlesOf(r), (QStringList{ QStringLiteral("Site News"), QStringLiteral("Comments for Site"), QStringLiteral("Site Podcast") }));
+    if (r.size() == 3) {
+        const QVariantMap news = r.at(0).toMap(), com = r.at(1).toMap(), pod = r.at(2).toMap();
+        CHECK_EQ(news.value(QStringLiteral("itemCount")).toInt(), 4);
+        CHECK_EQ(news.value(QStringLiteral("recent")).toStringList().value(0), QStringLiteral("First & best"));
+        CHECK(!news.value(QStringLiteral("subscribed")).toBool());
+        CHECK(com.value(QStringLiteral("comments")).toBool());
+        CHECK(com.value(QStringLiteral("subscribed")).toBool());
+        CHECK(pod.value(QStringLiteral("podcast")).toBool());
+    }
+    CHECK(f.error().isEmpty());
+    // an article page without feed links: found via its parent pages
+    r = runFinder(f, base + QStringLiteral("/site/2026/10/post.html"));
+    CHECK_EQ(r.size(), 3);
+    // the address is a feed itself (and a redirect to one)
+    r = runFinder(f, base + QStringLiteral("/direct.atom"));
+    CHECK_EQ(titlesOf(r), QStringList{ QStringLiteral("Direct Atom") });
+    r = runFinder(f, base + QStringLiteral("/redir"));
+    CHECK_EQ(titlesOf(r), QStringList{ QStringLiteral("Site News") });
+    // nothing announced or above: well-known paths of the sub-folder blog
+    r = runFinder(f, base + QStringLiteral("/blog/2026/hello"));
+    CHECK_EQ(titlesOf(r), QStringList{ QStringLiteral("Sub-folder blog") });
+    // errors
+    r = runFinder(f, QStringLiteral("not a url with spaces"));
+    CHECK(r.isEmpty() && !f.error().isEmpty());
+    r = runFinder(f, base + QStringLiteral("/site/missing"));
+    CHECK(r.isEmpty() && f.error().contains(QStringLiteral("404")));
+
+    // Already subscribed (device test 15 Oct): by an address on the way
+    // (the subscribed address redirects to the feed found) …
+    f.setKnownUrls({ base + QStringLiteral("/redir") });
+    r = runFinder(f, base + QStringLiteral("/redir"));
+    CHECK(r.size() == 1 && r.at(0).toMap().value(QStringLiteral("subscribed")).toBool());
+    // … by the feed's self link, with tracking parameters in the announced address …
+    f.setKnownUrls({ base + QStringLiteral("/canonical/feed") });
+    r = runFinder(f, base + QStringLiteral("/self/"));
+    CHECK_EQ(titlesOf(r), QStringList{ QStringLiteral("Self News") });
+    CHECK(r.size() == 1 && r.at(0).toMap().value(QStringLiteral("subscribed")).toBool());
+    // … and without it only the tracking-free address
+    f.setKnownUrls({ base + QStringLiteral("/self/feed.rss") });
+    r = runFinder(f, base + QStringLiteral("/self/"));
+    CHECK(r.size() == 1 && r.at(0).toMap().value(QStringLiteral("subscribed")).toBool());
+    // same title and website, other address: "likely", the button stays
+    f.setKnownUrls({});
+    QVariantMap known;
+    known.insert(QStringLiteral("url"), QStringLiteral("https://feeds.example.net/likely"));
+    known.insert(QStringLiteral("link"), QStringLiteral("https://www.likely.example.org/home"));
+    known.insert(QStringLiteral("title"), QStringLiteral("Likely News"));
+    f.setKnownFeeds({ known });
+    r = runFinder(f, base + QStringLiteral("/likely.xml"));
+    CHECK(r.size() == 1);
+    if (r.size() == 1) {
+        CHECK(!r.at(0).toMap().value(QStringLiteral("subscribed")).toBool());
+        CHECK_EQ(r.at(0).toMap().value(QStringLiteral("likelySubscribedAs")).toString(), QStringLiteral("Likely News"));
+    }
+    // its self link is the subscribed address: subscribed, no "likely"
+    known.insert(QStringLiteral("url"), QStringLiteral("https://likely.example.org/atom"));
+    f.setKnownFeeds({ known });
+    CHECK(f.feeds().size() == 1 && f.feeds().at(0).toMap().value(QStringLiteral("subscribed")).toBool());
+    CHECK(f.feeds().size() == 1 && f.feeds().at(0).toMap().value(QStringLiteral("likelySubscribedAs")).toString().isEmpty());
+    f.setKnownFeeds({});
+    CHECK(!f.busy());
 }
 
 static void testAges()
@@ -260,6 +453,7 @@ static void testSettingsBackup()
 {
     SettingsBackup b;
     CHECK(b.generalKeys().contains(QStringLiteral("readerColors")));
+    CHECK(b.generalKeys().contains(QStringLiteral("linksInApp")));
     CHECK(b.textSizeKeys().contains(QStringLiteral("readerFontPerFeed")));
     CHECK(!b.generalKeys().contains(QStringLiteral("readerFontPx")));      // a text size
     CHECK(!b.deviceName().isEmpty());
@@ -655,6 +849,7 @@ int main(int argc, char **argv)
     testHtml();
     testAges();
     testSettingsBackup();
+    testFeedFinder(port);
 
     // Legacy 0.1.0 settings with a base64 password must be migrated
     {
@@ -846,6 +1041,36 @@ int main(int argc, char **argv)
     CHECK_EQ(frole(0, FeedModel::TitleRole).toString(), QStringLiteral("Golem.de"));
     model.setUnreadById(101, false);                                                      // back to all read
     CHECK(waitFor([&] { return feeds.folderUnread(QStringLiteral("high-tech")) == 0; }));
+
+    // Search (1.1): every word, title and text, case-insensitive, read articles included
+    CHECK_EQ(ArticleModel::searchWords(QStringLiteral("  Foo   BAR ")), (QStringList{ QStringLiteral("foo"), QStringLiteral("bar") }));
+    CHECK(ArticleModel::matchesSearch({ QStringLiteral("a"), QStringLiteral("c") }, QStringLiteral("abc")));
+    CHECK(!ArticleModel::matchesSearch({ QStringLiteral("x") }, QStringLiteral("abc")));
+    model.setSearchText(QStringLiteral("ring"));
+    CHECK_EQ(model.count(), 1);
+    model.setSearchText(QStringLiteral("sortiment"));                // only in the text
+    CHECK_EQ(model.count(), 1);
+    model.setSearchFullText(false);
+    CHECK_EQ(model.count(), 0);
+    model.setSearchFullText(true);
+    model.setSearchText(QStringLiteral("android BETA"));
+    CHECK_EQ(model.count(), 1);
+    model.setSearchText(QStringLiteral("FÜNF kameras"));
+    CHECK_EQ(model.count(), 1);
+    model.setSearchText(QStringLiteral("android golem"));            // all words must match
+    CHECK_EQ(model.count(), 0);
+    model.setSearchText(QString());
+    CHECK_EQ(model.count(), 4);
+    model.setSearchOnly(true);                                        // search page: nothing without words
+    CHECK_EQ(model.count(), 0);
+    model.setSearchText(QStringLiteral("pixel"));
+    CHECK_EQ(model.count(), 1);
+    model.setSearchText(QString());
+    model.setSearchOnly(false);
+    CHECK_EQ(model.count(), 4);
+    CHECK_EQ(feeds.feedsMatching(QStringLiteral("GOLEM")).size(), 1);
+    CHECK_EQ(feeds.feedsMatching(QStringLiteral("android police")).value(0).toMap().value(QStringLiteral("id")).toInt(), 11);
+    CHECK(feeds.feedsMatching(QStringLiteral("  ")).isEmpty());
 
     // Feed list context menu: mark feed / folder / all read without touching the selection
     model.setUnreadById(101, true);

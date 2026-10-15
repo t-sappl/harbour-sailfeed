@@ -1,50 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172" width="172" height="172">
-  <!-- Sailfeed app icon: a sail above three lines (water, or the lines of
-       a feed) in the Sailfish OS "drop" (three rounded corners, bottom left
-       pointed), like the Sailwave icon. Not flat: an outer rim with a subtle
-       diagonal gradient and a slightly smaller, lighter inner drop (the rim
-       a little wider towards the pointed corner). The motif is centered on
-       the round part of the drop (86/86). PNGs in icons/ are rendered from
-       this file with render-icons.py. -->
+  <!-- Sailfeed app icon (since 13 Oct 2026): a boat whose sail is the feed
+       symbol (dot and two arcs), in the Sailfish OS "drop" (three rounded
+       corners, bottom left pointed), orange. The arcs run around 82/90, 4 px
+       off the centre of the drop's round part (86/86), so they look parallel
+       to the rim while the motif stays balanced. Depth as before: rim with a
+       diagonal gradient, a slightly smaller, lighter inner face, a faint
+       shine, a fine shadow under the motif. The earlier icon (sail above
+       three lines, teal) was too close to Sailwave's. PNGs in icons/ are
+       rendered from this file with render-icons.py. -->
   <defs>
     <path id="drop" d="M 86 0.6 A 85.4 85.4 0 0 1 171.4 86 A 85.4 85.4 0 0 1 86 171.4 L 10.6 171.4 A 10 10 0 0 1 0.6 161.4 L 0.6 86 A 85.4 85.4 0 0 1 86 0.6 Z"/>
-    <!-- rim: light top right -> dark bottom left -->
     <linearGradient id="rim" x1="1" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2f97b0"/>
-      <stop offset="1" stop-color="#155c72"/>
+      <stop offset="0" stop-color="#ffa53c"/><stop offset="1" stop-color="#d0610f"/>
     </linearGradient>
-    <!-- inner face: a little lighter at the top -->
     <linearGradient id="face" x1="0.8" y1="0" x2="0.2" y2="1">
-      <stop offset="0" stop-color="#2a8aa4"/>
-      <stop offset="1" stop-color="#1b6b83"/>
+      <stop offset="0" stop-color="#f99327"/><stop offset="1" stop-color="#dd6e14"/>
     </linearGradient>
-    <!-- soft shine on the upper half of the face -->
     <radialGradient id="shine" cx="0.62" cy="0.22" r="0.7">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.12"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <!-- subtle shadow under the white motif -->
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="1.6" stdDeviation="1.4" flood-color="#06303d" flood-opacity="0.3"/>
+      <feDropShadow dx="0" dy="1.6" stdDeviation="1.4" flood-color="#5c2600" flood-opacity="0.35"/>
     </filter>
   </defs>
-
   <use href="#drop" fill="url(#rim)"/>
   <g transform="translate(90 82) scale(0.94) translate(-90 -82)">
     <use href="#drop" fill="url(#face)"/>
     <use href="#drop" fill="url(#shine)"/>
   </g>
-
   <g filter="url(#shadow)">
-    <!-- Mainsail, mast, jib -->
-    <path d="M 82.5 33 L 82.5 104 L 46 104 Z" fill="#dcedf2"/>
-    <rect x="83.5" y="27" width="5" height="83" rx="1.5" fill="#ffffff"/>
-    <path d="M 89.5 43 L 89.5 104 L 120 104 Z" fill="#ffffff"/>
-    <!-- Three lines centered under the mast -->
-    <g stroke="#ffffff" stroke-width="6" stroke-linecap="round">
-      <line x1="44" y1="119" x2="128" y2="119"/>
-      <line x1="56" y1="131" x2="116" y2="131"/>
-      <line x1="68" y1="143" x2="104" y2="143"/>
-    </g>
+    <rect x="62" y="26" width="5.5" height="90" rx="1.5" fill="#ffffff"/>
+    <circle cx="91" cy="81" r="10" fill="#ffffff"/>
+    <path d="M 82 58 A 32 32 0 0 1 114 90" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round"/>
+    <path d="M 82 30 A 60 60 0 0 1 142 90" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round"/>
+    <path d="M 34 114 L 142 114 L 128 132 L 48 132 Z" fill="#ffffff"/>
   </g>
 </svg>

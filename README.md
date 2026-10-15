@@ -4,48 +4,56 @@
 
 # Sailfeed
 
-**Nextcloud News client for Sailfish OS.** Sailfeed is a native Nextcloud News client for Sailfish OS
+**Feed reader for Nextcloud News on Sailfish OS, with a clean reader mode.**
+Reads the feeds of your own Nextcloud server in a native Silica interface.
 
 ![Sailfish OS](https://img.shields.io/badge/Sailfish%20OS-5.x-blue) ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green) ![Qt](https://img.shields.io/badge/Qt-5.6-41cd52) ![Status](https://img.shields.io/badge/status-personal%20project-lightgrey)
 
 > **Why it exists.** I moved partly from Android to Sailfish OS and wanted my RSS feeds in the same
 > state on both platforms. For that I now use
 > [Nextcloud News](https://apps.nextcloud.com/apps/news) on my own Nextcloud, and for Sailfish OS I
-> built this reader for myself, on basis of [libfuoten](https://github.com/Huessenbergnetz/libfuoten).
+> built this reader for myself, on the basis of [libfuoten](https://github.com/Huessenbergnetz/libfuoten).
+> After using it every day for a while, I want to share it with everyone and added a few comfort
+> features for that.
 >
-> I built Sailfeed for my own use on my Jolla Phone, around the features I need most in my daily reading
-> – one-handed operation, quick/auto "mark as read", a reader mode (based on Readability.js) without ads and cookie banners. 
+> **A personal project.** I built Sailfeed for my own use on my Jolla Phone, around the features
+> I need most in my daily reading – one-handed operation, quick/auto "mark as read", a reader mode (based on Readability.js)
+> without ads and cookie banners. 
 >
-> After using it every day for a while, I want to share it with everyone here and on [OpenRepos](https://openrepos.net/users/tsappl)
->It follows the Harbour rules (sandbox, allowed libraries and APIs), so it installs and runs like a store app. 
+> I share it on [OpenRepos](https://openrepos.net/) and here for anyone who finds it useful:
+> install it, build it yourself, fork it, adapt it. It follows the Harbour rules (sandbox, allowed
+> libraries and APIs), so it installs and runs like a store app. Bug reports are welcome, but I
+> can't promise support or feature requests.
 
 <p align="center">
-  <img src="screenshots/article-list.png" width="19%" alt="Article list">
-  <img src="screenshots/feeds.png" width="19%" alt="Feed list">
-  <img src="screenshots/preview.png" width="19%" alt="Article preview">
-  <img src="screenshots/reader.png" width="19%" alt="Reader mode">
-  <img src="screenshots/settings.png" width="19%" alt="Settings">
+  <img src="screenshots/article-list.png" width="24%" alt="Article list">
+  <img src="screenshots/feeds.png" width="24%" alt="Feed list">
+  <img src="screenshots/search.png" width="24%" alt="Search">
+  <img src="screenshots/preview.png" width="24%" alt="Article preview">
+</p>
+<p align="center">
+  <img src="screenshots/reader.png" width="24%" alt="Reader mode">
+  <img src="screenshots/reader2.png" width="24%" alt="Reader mode, light colors">
+  <img src="screenshots/settings.png" width="24%" alt="Settings">
 </p>
 
 ## Features
 
 - **Article list** – title, source and age, excerpt and thumbnail, grouped by "Today", "Yesterday" and date; page-wise scrolling that stops at the start of an article (free scrolling on fast flicks); read articles greyed out; optionally unread articles only
-- **Reader mode** – using Mozilla's Readability.js: the article's website without ads, cookie banners and overlays; text size, font, line spacing, margins, justified text, colors (ambience, light, dark, sepia) and images adjustable; sites that should always open in the original; pages are preloaded while the preview is displayed, so it opens quickly; consent walls (e.g. "with ads or subscription") are shown once for your choice, which is then remembered
+- **Reader mode** – using Mozilla's Readability.js: the article's website without ads, cookie banners and overlays; text size, font, line spacing, margins, justified text, colors (ambience, light, dark, sepia) and images adjustable; sites that should always open in the original; pages are preloaded while the preview is displayed, so it opens quickly; consent walls (e.g. "with ads or subscription") are shown once for your choice, which is then remembered; links in an article open in reader mode in the app or in the browser (setting; a long press opens them the other way)
 - **Article Preview** - a preview of each article with the option to swipe left to read the article in Reader mode or Full article mode - can be switched off in the Settings
 - **Full article** – in reader mode, as the original website in the app (Sailfish WebView) or in the external browser
 - **Feed list** – swipe right from the article list: all articles, bookmarks, folders (also empty ones) and feeds with favicons and unread counts, "Other feeds" for feeds without a folder; sorted by unread, name or activity, favorite feeds first in the activity orders
-- **Feed management** – add feeds (address from the clipboard) and folders, rename, move and delete them
+- **Subscribe to website** – enter or paste the address of a website, an article or a feed: Sailfeed finds the site's feeds (announced in the page, linked, in parent pages, at the usual addresses of blog systems), checks them and shows each with its newest articles to subscribe; also from the pulley of the web view, e.g. for a blog linked in an article. Comment feeds and podcasts are marked
+- **Search** – "Search" in the pulley of the article list and the feed list: searches the articles on the device (titles, or titles and text; all feeds or the current selection; read ones too) and the feed titles
+- **Feed management** – folders, rename, move and delete feeds and folders
 - **Mark as read** – automatically for articles you have seen for a few seconds (greyed out when you scroll on, or at once); one-handed with a push-up button at the bottom right (like Nextcloud News app on Android); long press for mark as read/unread, bookmark, mark all above or below as read; mark a whole feed or folder from the feed list – all with undo
 - **Navigation** – swipe left from the preview into reader mode and right straight back to the list; a one-handed bar in preview and reader mode (previous/next article, text size, bookmark, open in browser); the preview can be skipped; the list keeps its position
+- **Portrait and Landscape** - Landscape mode will be refined in future versions (e.g. 2 columns / Article List and Article side-by-side)
 - **Settings backup** – settings, favorite feeds and sites in the original (optionally the text sizes) saved in Nextcloud files, automatically after changes, earlier states kept; restore them on another device or after a new installation (offered after signing in), replacing or only adding what is missing, with undo
 - **Languages** – English, German
 - **Offline-mode** – read and bookmark changes are queued and sent in one go with the next sync, also when the app goes to the background
 - **Sailfish native** – Silica components, pulley menus, remorse timers, cover with unread count and refresh action, Sailjail sandbox, app password in Sailfish Secrets
-
-## Planned Features:
-- **Landscape mode** - Landscape Mode is already working, but will be refined in future versions (e.g. 2 columns / Article List and Article side-by-side)
-- **OPML Import/Export** 
-- **Reader / Original mode** - Refinement of the current implementation
 
 ## Sign-in
 
@@ -60,15 +68,11 @@ On the sign-in page enter the address of your Nextcloud and choose **Sign in wit
 ## Installation
 
 - **OpenRepos** – with [Storeman](https://openrepos.net/content/osetr/storeman-installer): search for "Sailfeed", or add the repository of the author (t-sappl) and install it from there.
-- **GitHub releases** – download the RPM for your device (`aarch64` for current devices, `armv7hl` for older ones) from the [releases](https://github.com/t-sappl/harbour-sailfeed/releases) and install it ("Allow untrusted software" must be enabled in the settings):
+- **GitHub releases** – download the RPM for your device (`aarch64` for current devices, `armv7hl` for older 32-bit ones, `i486` for the emulator and Intel tablets) from the [releases](https://github.com/t-sappl/harbour-sailfeed/releases) and install it ("Allow untrusted software" must be enabled in the settings):
 
 ```
 devel-su pkcon install-local harbour-sailfeed-*.rpm
 ```
-
-## Development and AI assistance
-
-Developed with AI assistance; all technical and design changes are fully specified, reviewed and tested on a Jolla Phone (2026) by the developer. 
 
 ## Permissions
 
@@ -93,7 +97,7 @@ Articles, the image cache and the in-app browser's data stay on the device. Deta
 Requirements: [Sailfish SDK](https://docs.sailfishos.org/Tools/Sailfish_SDK/) with Qt Creator (Sailfish IDE).
 
 1. Open `harbour-sailfeed.pro` in Qt Creator.
-2. Choose a Sailfish OS build target (e.g. `SailfishOS-5.x-aarch64` or `…-armv7hl`).
+2. Choose a Sailfish OS build target (`SailfishOS-5.x-aarch64`, `…-armv7hl` or `…-i486`).
 3. Build and deploy as RPM to a device or the emulator.
 
 Command line alternative:
@@ -112,6 +116,10 @@ Notes:
 
 ## Project documents
 
+- [`HANDOFF.md`](HANDOFF.md) – starting point for development: state, agreements, pitfalls, tools
+- [`TODO.md`](TODO.md) – what is done and what might come
+- [`DESIGN.md`](DESIGN.md) – architecture, conventions and design decisions, including Harbour compliance
+- [`TEST-PROTOCOL.md`](TEST-PROTOCOL.md) – manual test protocol on a real device
 - [`PRIVACY.md`](PRIVACY.md) – privacy policy
 - [`3rdparty/README.md`](3rdparty/README.md) – bundled libraries and the local libfuoten patch
 - [`design/`](design/) – icon source and rendering script
@@ -121,6 +129,9 @@ Notes:
 
 Languages: English and German (follows the system language). Source strings are English; translation files are in `translations/` (Qt Linguist `.ts`). The build updates them with `lupdate`, new strings then show up as unfinished entries to translate. Messages from libfuoten (sync and server errors) come with libfuoten's own translations.
 
+## Development and AI assistance
+
+Developed with the assistance of an AI model (Claude by Anthropic). The developer specifies all features, makes all design and technical decisions, tests every change on a Jolla Phone (2026) and uses the app every day. Design decisions and their reasons are documented in `DESIGN.md`.
 
 ## Credits
 

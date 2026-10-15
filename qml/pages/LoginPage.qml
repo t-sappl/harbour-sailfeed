@@ -43,6 +43,18 @@ Page {
 
             PageHeader { title: qsTr("Nextcloud account") }
 
+            // First start: what Sailfeed needs (15 Oct; the details and links
+            // to Nextcloud News are at the end of the page)
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                wrapMode: Text.Wrap
+                color: Theme.highlightColor
+                font.pixelSize: Theme.fontSizeSmall
+                text: qsTr("Sailfeed shows the feeds of the News app on your Nextcloud. Enter your server's address and sign in.")
+            }
+            Item { width: 1; height: Theme.paddingLarge }
+
             TextField {
                 id: server
                 width: parent.width
@@ -196,6 +208,34 @@ Page {
                 size: BusyIndicatorSize.Medium
                 running: account.busy && !account.browserLoginActive
                 visible: running
+            }
+
+            // --- No Nextcloud News yet (same facts as the store text) -------
+            SectionHeader {
+                visible: !account.browserLoginActive
+                text: qsTr("No Nextcloud News yet?")
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                visible: !account.browserLoginActive
+                wrapMode: Text.Wrap
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                text: qsTr("Sailfeed is only the reader and fetches no feeds itself. As an admin, enable the app \"News\" in your Nextcloud under Apps (section Multimedia); on a hosted Nextcloud the same, if the provider allows apps. News needs Nextcloud's background jobs via cron to update the feeds.")
+            }
+            Item { width: 1; height: Theme.paddingMedium; visible: !account.browserLoginActive }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                visible: !account.browserLoginActive
+                wrapMode: Text.Wrap
+                textFormat: Text.StyledText
+                linkColor: Theme.highlightColor
+                font.pixelSize: Theme.fontSizeSmall
+                text: "<a href=\"https://apps.nextcloud.com/apps/news\">" + qsTr("News in the Nextcloud app store") + "</a><br><br>"
+                      + "<a href=\"https://nextcloud.github.io/news/install/\">" + qsTr("Installation guide (English)") + "</a>"
+                onLinkActivated: Qt.openUrlExternally(link)
             }
         }
         VerticalScrollDecorator { }

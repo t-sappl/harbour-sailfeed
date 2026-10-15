@@ -30,6 +30,11 @@ Page {
             if (articlesPage && articlesPage.flushSeen)
                 articlesPage.flushSeen()
             app.feeds.resort()
+            // Safety net while the page slides in (not visible as a jump):
+            // header only partly visible → back to the very top. The cause –
+            // the header's height compensation acting while rows were built
+            // – is limited to open menus now (device test 15 Oct).
+            fixTop()
         }
         if (status !== PageStatus.Active)
             return
@@ -38,8 +43,32 @@ Page {
         if (firstActivation) {
             firstActivation = false
             startTimer.start()      // let the page stack settle first
+        } else if (app.noFeeds) {
+            subscribeTipTimer.restart()
         }
     }
+
+    // First-run tip while there are no feeds yet: subscribing is in the pulley
+    FirstRunHint {
+        id: subscribeTip
+        key: "subscribe"
+        ignorePause: true
+        direction: TouchInteraction.Down
+        interactionMode: TouchInteraction.Pull
+        text: qsTr("Pull down and choose \"Subscribe to website\"")
+    }
+    Timer {
+        id: subscribeTipTimer
+        interval: 1000
+        onTriggered: if (page.status === PageStatus.Active && app.noFeeds) subscribeTip.show()
+    }
+
+    function fixTop() {
+        if (list.headerItem && list.contentY - list.originY < list.headerItem.height)
+            list.contentY = list.originY
+    }
+
+
 
     Timer {
         id: startTimer
@@ -50,7 +79,7 @@ Page {
     // --- Feed management ---------------------------------------------------
     // folderId: preselected folder (0: none; default: the current folder)
     function addFeed(folderId) {
-        pageStack.push(Qt.resolvedUrl("AddFeedDialog.qml"),
+        pageStack.push(Qt.resolvedUrl("SubscribePage.qml"),
                        { preselectedFolderId: folderId !== undefined ? Math.max(0, folderId)
                                                                      : Math.max(0, app.currentFolderId) })
     }
@@ -111,11 +140,13 @@ Page {
         // see ListHeaderColumn.
         header: ListHeaderColumn {
             flickable: list
+            limitToMenus: true
+            menuOpen: (sortBox.menu !== null && sortBox.menu.active) || allItem.menuOpen
             PageHeader { title: qsTr("Feeds") }
             // Sort order: a plain combo box like Sailwave's "Sort" (the tinted
             // band with a line looked heavy, above all in light ambiences –
             // device test 11 Oct); a gap separates it from the list.
-            FeedSortComboBox { }
+            FeedSortComboBox { id: sortBox }
             Item { width: 1; height: Theme.paddingMedium }
             FolderItem {
                 id: allItem
@@ -197,7 +228,7 @@ Page {
                         }
                     }
                     MenuItem {
-                        text: qsTr("Add feed")
+                        text: qsTr("Subscribe to website")
                         enabled: !FeedManager.busy
                         onClicked: page.addFeed(row.rowFolderId)
                     }
@@ -231,7 +262,7 @@ Page {
                         }
                     }
                     MenuItem {
-                        text: qsTr("Add feed")
+                        text: qsTr("Subscribe to website")
                         enabled: !FeedManager.busy
                         onClicked: page.addFeed(0)
                     }
@@ -286,10 +317,16 @@ Page {
                 onClicked: page.addFolder()
             }
             MenuItem {
-                text: qsTr("Add feed")
+                text: qsTr("Subscribe to website")
                 visible: config.isAccountValid
                 enabled: !FeedManager.busy
                 onClicked: page.addFeed()
+            }
+            // Right above "Refresh", as in the article list; searches all feeds
+            MenuItem {
+                text: qsTr("Search")
+                visible: config.isAccountValid
+                onClicked: pageStack.push(Qt.resolvedUrl("SearchPage.qml"), { feedsPage: page })
             }
             MenuItem {
                 text: qsTr("Refresh")
@@ -300,8 +337,9 @@ Page {
 
         ViewPlaceholder {
             enabled: list.count === 0
-            text: qsTr("No feeds")
-            hintText: config.isAccountValid ? qsTr("Pull down to add a feed") : qsTr("Sign in first")
+            text: config.isAccountValid ? qsTr("No feeds yet") : qsTr("No feeds")
+            hintText: config.isAccountValid ? qsTr("Pull down and choose \"Subscribe to website\": Sailfeed finds the feeds of a website for you.")
+                                            : qsTr("Sign in first")
         }
 
         VerticalScrollDecorator { }

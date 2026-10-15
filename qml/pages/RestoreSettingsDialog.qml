@@ -39,7 +39,7 @@ Dialog {
     function changeLines() {
         var lines = []
         if (plan.settingsChanged > 0)
-            lines.push(qsTr("%n setting(s) will change", "", plan.settingsChanged))
+            lines.push((plan.settingsChanged === 1 ? qsTr("1 setting will change") : qsTr("%1 settings will change").arg(plan.settingsChanged)))
         if (plan.textSizesChanged)
             lines.push(qsTr("Text sizes will change"))
         if (plan.favoritesAdded.length > 0)

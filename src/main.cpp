@@ -28,6 +28,7 @@
 #include "articlemodel.h"
 #include "cloudbackup.h"
 #include "feedmanager.h"
+#include "feedfinder.h"
 #include "feedmodel.h"
 #include "feedrowsmodel.h"
 #include "configuration.h"
@@ -138,6 +139,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<ArticleModel>(uri, 1, 0, "ArticleModel");
     qmlRegisterType<FeedModel>(uri, 1, 0, "FeedModel");
     qmlRegisterType<FeedRowsModel>(uri, 1, 0, "FeedRowsModel");
+    qmlRegisterType<FeedFinder>(uri, 1, 0, "FeedFinder");
     qmlRegisterSingletonType<Prefetcher>(uri, 1, 0, "Prefetch",
         [](QQmlEngine *, QJSEngine *) -> QObject * { return new Prefetcher; });
     qmlRegisterSingletonType<FeedManager>(uri, 1, 0, "FeedManager",

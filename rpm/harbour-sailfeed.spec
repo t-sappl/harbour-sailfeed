@@ -4,8 +4,8 @@
 # Store) - but kept within the Harbour rules (allowed Requires, libraries and
 # QML imports; see DESIGN.md).
 Name:       harbour-sailfeed
-Summary:    Nextcloud News client for Sailfish OS
-Version:    1.0.0
+Summary:    Feed reader for Nextcloud News on Sailfish OS
+Version:    1.1.0
 Release:    1
 # App GPL-3.0-or-later; bundled libfuoten LGPL-3.0-or-later (compiled in),
 # Readability.js Apache-2.0 (Qt resource)
@@ -17,6 +17,9 @@ Requires:   sailfishsilica-qt5
 # thumbnails and article images
 Requires:   qt5-plugin-imageformat-jpeg
 Requires:   qt5-plugin-imageformat-gif
+# No WebP plugin here: Harbour does not allow qt5-qtimageformats-plugin-webp
+# ("Dependency not allowed", sfdk check 15 Oct); it is installed on the
+# Jolla Phone anyway
 # in-app website view (Sailfish.WebView, Gecko)
 Requires:   sailfish-components-webview-qt5
 BuildRequires: pkgconfig(sailfishapp) >= 1.0.2

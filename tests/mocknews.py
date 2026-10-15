@@ -54,6 +54,53 @@ for _i in range(50, 55):
     _it["unread"] = False
     OLD_ITEMS.append(_it)
 
+# --- Feed finder test sites ---------------------------------------------------
+def _rss(title, items, media=False, desc="About things"):
+    out = [f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>{title}</title>'
+           f'<description>{desc}</description><link>http://x/</link>']
+    for i, (t, date) in enumerate(items):
+        enc = '<enclosure url="http://x/a.mp3" type="audio/mpeg" length="1"/>' if media else ""
+        out.append(f"<item><title>{t}</title><pubDate>{date}</pubDate>{enc}</item>")
+    out.append("</channel></rss>")
+    return "".join(out)
+
+_DATES = ["Mon, 12 Oct 2026 10:00:00 GMT", "Sun, 11 Oct 2026 09:00:00 +0200", "Fri, 09 Oct 2026 08:00:00 GMT",
+          "Thu, 08 Oct 2026 08:00:00 GMT"]
+FINDER_PAGES = {
+    "/site/": (200, "text/html; charset=utf-8",
+               '<html><head><title>Site</title>'
+               '<link rel="alternate" type="application/rss+xml" title="News" href="/site/feed.xml">'
+               '<link rel="alternate" type="application/rss+xml" title="Comments" href="comments/feed/">'
+               '<link rel="alternate" hreflang="de" href="/de/">'
+               '</head><body><a href="/site/feedback">Feedback</a> <a href="/site/podcast.rss">Podcast RSS</a></body></html>'),
+    "/site/feed.xml": (200, "application/rss+xml", _rss("Site News", [("First &amp; best", _DATES[0]), ("Second", _DATES[1]),
+                                                                       ("Third", _DATES[2]), ("Fourth", _DATES[3])])),
+    "/site/comments/feed/": (200, "application/rss+xml", _rss("Comments for Site", [("Re: First", _DATES[0])])),
+    "/site/podcast.rss": (200, "application/rss+xml", _rss("Site Podcast", [("Episode 1", _DATES[1]), ("Episode 2", _DATES[2])], media=True)),
+    "/site/2026/10/post.html": (200, "text/html", "<html><head><title>Post</title></head><body><p>No feed links.</p></body></html>"),
+    "/direct.atom": (200, "application/atom+xml",
+                     '<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title type="text">Direct Atom</title>'
+                     '<subtitle>Sub</subtitle><entry><title>Entry A</title><updated>2026-10-13T08:00:00Z</updated></entry>'
+                     '<entry><title>Entry B</title><updated>2026-10-10T08:00:00+02:00</updated></entry></feed>'),
+    "/redir": (301, "text/plain", "/site/feed.xml"),
+    "/blog/2026/hello": (200, "text/html", "<html><body>Plain blog post, no links.</body></html>"),
+    "/blog/feed/": (200, "application/rss+xml", _rss("Sub-folder blog", [("Hello", _DATES[0])])),
+    # "Already subscribed": announced with a tracking parameter, the feed
+    # names its canonical address in <atom:link rel="self">
+    "/self/": (200, "text/html", '<html><head><link rel="alternate" type="application/rss+xml" '
+                                 'href="/self/feed.rss?utm_source=page&amp;wt_mc=rss.x"></head><body></body></html>'),
+    "/self/feed.rss": (200, "application/rss+xml",
+                       '<?xml version="1.0"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>'
+                       '<title>Self News</title><link>https://self.example.org/</link>'
+                       '<atom:link rel="self" type="application/rss+xml" href="/canonical/feed/"/>'
+                       '<item><title>S1</title></item></channel></rss>'),
+    # same title and website as a subscribed feed, other address
+    "/likely.xml": (200, "application/atom+xml",
+                    '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Likely  News</title>'
+                    '<link rel="alternate" href="https://likely.example.org/"/><link rel="self" href="https://likely.example.org/atom"/>'
+                    '<entry><title>L1</title></entry></feed>'),
+}
+
 USER_ID = "tsappl"
 DAV_ROOT = f"/remote.php/dav/files/{USER_ID}/"
 DAV_FILES = {}          # path below DAV_ROOT -> (bytes, mtime, etag)
@@ -96,6 +143,27 @@ class H(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length).decode() if length else ""
         print(json.dumps({"method": method, "path": u.path, "query": u.query, "body": body}), flush=True)
+        # --- Websites for the feed finder ("Subscribe to website") ---
+        site = FINDER_PAGES.get(u.path + (("?" + u.query) if u.query else ""))
+        if site is None and u.path in FINDER_PAGES and (not u.query or u.path.startswith("/self/")):
+            site = FINDER_PAGES[u.path]
+        if site is not None:
+            status, ctype, data = site
+            self.send_response(status)
+            if status in (301, 302):
+                self.send_header("Location", data)
+                data = ""
+            self.send_header("Content-Type", ctype)
+            raw = data.encode()
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+            return
+        if u.path.startswith("/site/") or u.path.startswith("/blog/"):
+            self.send_response(404)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if u.path == "/public/article.html":
             data = "<html><head><title>Testartikel</title></head><body><p>Grüße aus Kärnten</p></body></html>".encode("iso-8859-1")
             self.send_response(200)

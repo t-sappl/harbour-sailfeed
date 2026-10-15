@@ -5,7 +5,7 @@
 # Open this file in the Sailfish IDE (Qt Creator of the Sailfish SDK).
 
 TARGET = harbour-sailfeed
-VERSION = 1.0.0
+VERSION = 1.1.0
 
 CONFIG += sailfishapp c++14
 QT += network sql qml quick
@@ -32,6 +32,7 @@ SOURCES += \
     src/cloudbackup.cpp \
     src/configuration.cpp \
     src/feedmanager.cpp \
+    src/feedfinder.cpp \
     src/feedmodel.cpp \
     src/feedrowsmodel.cpp \
     src/geckocookiejar.cpp \
@@ -49,6 +50,7 @@ HEADERS += \
     src/cloudbackup.h \
     src/configuration.h \
     src/feedmanager.h \
+    src/feedfinder.h \
     src/feedmodel.h \
     src/feedrowsmodel.h \
     src/geckocookiejar.h \

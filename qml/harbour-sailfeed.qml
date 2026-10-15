@@ -22,6 +22,47 @@ ApplicationWindow {
     // Tap in the article list opens the full article (reader mode, original
     // or external browser) without the preview
     property alias skipPreview: settings.skipPreview
+    // Links in an article (preview and reader mode): true opens them in the
+    // app (reader mode), false in the external browser; a long press on a
+    // link does the other.
+    property alias linksInApp: settings.linksInApp
+
+    // Opens a link from an article's text. invert: long press, the other way
+    // than the setting. Anything but http(s) (mail, phone …) goes to the system.
+    function openLink(url, invert) {
+        var s = String(url)
+        if (!/^https?:/i.test(s) || settings.linksInApp === !!invert) {
+            console.log("Sailfeed link: opened in the browser", s)
+            Qt.openUrlExternally(s)
+            return
+        }
+        // Pushed from a timer, not here: the call can come from a web view
+        // callback (runJavaScript), where errors are swallowed silently – the
+        // link page never appeared (device log 13 Oct evening)
+        linkTimer.url = s
+        linkTimer.tries = 0
+        linkTimer.restart()
+    }
+    Timer {
+        id: linkTimer
+        property string url
+        property int tries: 0
+        interval: 50
+        onTriggered: {
+            if (pageStack.busy && ++tries < 40) {       // page animation still running
+                restart()
+                return
+            }
+            try {
+                var p = pageStack.push(Qt.resolvedUrl("pages/WebPage.qml"),
+                                       { url: url, readerMode: true, linkPage: true })
+                console.log("Sailfeed link: opened in the app", url, p ? "" : "(no page)")
+            } catch (e) {
+                console.log("Sailfeed link: could not open", url, e)
+                app.showMessage(qsTr("Could not open the link"), true)
+            }
+        }
+    }
     property alias unreadOnly: settings.unreadOnly
     property alias readerFontPx: settings.readerFontPx
     // Article preview text size: steps of 12 % around the system's small font
@@ -78,6 +119,69 @@ ApplicationWindow {
     property alias readerMargin: settings.readerMargin             // 0 narrow, 1 normal, 2 wide
     property alias readerColors: settings.readerColors             // 0 ambience, 1 light, 2 dark, 3 sepia
     property alias readerJustify: settings.readerJustify
+
+    // Reader colors (light, dark, sepia or like the ambience): used by the
+    // reader page (WebPage) and the preview in the settings
+    readonly property var readerPalette: {
+        function css(c, alpha) {
+            var a = alpha !== undefined ? alpha : c.a
+            return "rgba(" + Math.round(c.r * 255) + "," + Math.round(c.g * 255) + ","
+                    + Math.round(c.b * 255) + "," + a.toFixed(2) + ")"
+        }
+        var dark = Theme.colorScheme === Theme.LightOnDark
+        switch (readerColors) {
+        case 1: return { background: "#fafafa", text: "#1d1d1f", secondary: "rgba(29,29,31,0.62)", link: "#0a62b0" }
+        case 2: return { background: "#111418", text: "#e6e6e6", secondary: "rgba(230,230,230,0.62)", link: "#5ec8ff" }
+        case 3: return { background: "#f4ecd8", text: "#4a3a2a", secondary: "rgba(74,58,42,0.65)", link: "#9a4a12" }
+        default: return { background: dark ? "#111418" : "#fafafa", text: css(Theme.primaryColor, 1),
+                          secondary: css(Theme.secondaryColor), link: css(Theme.highlightColor, 1) }
+        }
+    }
+    readonly property var readerLineHeights: [1.35, 1.55, 1.8]
+
+    // Screen pixels per CSS pixel of the reader page (window.devicePixelRatio
+    // of the web view), measured by WebPage the first time a reader page is
+    // shown; until then an estimate. For the text size preview in the settings.
+    readonly property real readerPixelRatio: settings.readerPixelRatio > 0 ? settings.readerPixelRatio
+                                                                           : Theme.pixelRatio * 1.5
+    // First-run tips (FirstRunHint): each one once
+    function hintShown(key) {
+        return ("," + settings.hintsShown + ",").indexOf("," + key + ",") >= 0
+    }
+    function setHintShown(key) {
+        if (!hintShown(key))
+            settings.hintsShown = settings.hintsShown === "" ? key : settings.hintsShown + "," + key
+    }
+    function resetHints() {
+        settings.hintsShown = ""
+        settings.previewsOpened = 0
+        lastTipShown = 0
+    }
+    // Time of the last first-run tip (FirstRunHint: at most one every 45 s)
+    property real lastTipShown: 0
+    // No feeds yet (after signing in, before the first subscription): the
+    // article and feed lists explain how to subscribe
+    readonly property bool noFeeds: config.isAccountValid && feedModel.loaded && feedModel.count === 0
+                                    && !synchronizer.inOperation
+
+    // After the 10th preview, once: a hint that the preview can be skipped
+    // (advice, not a gesture: a banner instead of a hand; 15 Oct)
+    function notePreviewOpened() {
+        if (skipPreview || hintShown("skipPreviewAdvice"))
+            return
+        settings.previewsOpened = settings.previewsOpened + 1
+        if (settings.previewsOpened < 10)
+            return
+        setHintShown("skipPreviewAdvice")
+        showMessage(qsTr("Rather the full article right away? Settings → Article preview → Skip the preview."),
+                    false, qsTr("Settings"),
+                    function() { pageStack.push(Qt.resolvedUrl("pages/SettingsPreviewPage.qml")) }, 10000)
+    }
+
+    function noteReaderPixelRatio(ratio) {
+        if (ratio > 0.5 && ratio < 8 && Math.abs(ratio - settings.readerPixelRatio) > 0.01)
+            settings.readerPixelRatio = ratio
+    }
     property alias readerImages: settings.readerImages
     // Sites that always open in the original (site keys, see Html.siteKey)
     readonly property var originalSiteList: settings.originalSites === "" ? [] : settings.originalSites.split("\n")
@@ -302,6 +406,7 @@ ApplicationWindow {
         property int settingsVersion: 0
         property int openMode: 0               // 0 reader, 1 original, 2 external
         property bool skipPreview: false       // tap in the list opens the full article
+        property bool linksInApp: true         // links in articles: app (reader mode) or browser
         property bool unreadOnly: false
         property int readerFontPx: 20          // reader mode text size (CSS px)
         property int previewFontStep: 0        // -2 … 6
@@ -313,6 +418,9 @@ ApplicationWindow {
         property int readerMargin: 1
         property int readerColors: 0
         property bool readerJustify: false
+        property int previewsOpened: 0          // counted until the "skip the preview" hint (not backed up)
+        property string hintsShown: ""          // keys of the first-run tips shown (FirstRunHint), comma separated
+        property real readerPixelRatio: 0       // measured in the web view, see app.readerPixelRatio (not backed up: per device)
         property bool readerImages: true
         property string originalSites: ""      // newline separated site keys
         property bool backupTextSizes: true    // settings backup: include the text sizes

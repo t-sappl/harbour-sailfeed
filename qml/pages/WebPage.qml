@@ -4,6 +4,7 @@
 import QtQuick 2.6
 import Sailfish.Silica 1.0
 import Sailfish.WebView 1.0
+import Sailfish.Share 1.0
 import harbour.sailfeed 1.0
 import "../components"
 
@@ -18,6 +19,10 @@ WebViewPage {
     property string feedTitle
     property var articleModel: null
     property bool starred: false        // bookmark of the shown article
+    property string articleTitle        // shown while the page is prepared
+    // Opened from a link in an article (app.openLink): back button instead of
+    // previous/next, no article to bookmark
+    property bool linkPage: false
 
     // reader mode phases
     readonly property int phaseOriginal: 0    // loading/showing the original page
@@ -40,21 +45,8 @@ WebViewPage {
     property bool waitingPrefetch: false
     property int extractTries: 0
 
-    function cssColor(c, alpha) {
-        var a = alpha !== undefined ? alpha : c.a
-        return "rgba(" + Math.round(c.r * 255) + "," + Math.round(c.g * 255) + ","
-                + Math.round(c.b * 255) + "," + a.toFixed(2) + ")"
-    }
-
-    // Reader colors: like the ambience, light, dark or sepia (setting)
-    readonly property string readerBackground: {
-        switch (app.readerColors) {
-        case 1: return "#fafafa"
-        case 2: return "#111418"
-        case 3: return "#f4ecd8"
-        default: return Theme.colorScheme === Theme.LightOnDark ? "#111418" : "#fafafa"
-        }
-    }
+    // Reader colors: like the ambience, light, dark or sepia (setting, app.readerPalette)
+    readonly property string readerBackground: app.readerPalette.background
 
     // Effective reader colors are dark (dark scheme, or "like the ambience" in a dark ambience)
     readonly property bool readerDark: app.readerColors === 2
@@ -77,23 +69,15 @@ WebViewPage {
     }
 
     function readerStyle() {
-        var colors
-        switch (app.readerColors) {
-        case 1: colors = { text: "#1d1d1f", secondary: "rgba(29,29,31,0.62)", link: "#0a62b0" }; break
-        case 2: colors = { text: "#e6e6e6", secondary: "rgba(230,230,230,0.62)", link: "#5ec8ff" }; break
-        case 3: colors = { text: "#4a3a2a", secondary: "rgba(74,58,42,0.65)", link: "#9a4a12" }; break
-        default:
-            colors = { text: cssColor(Theme.primaryColor, 1), secondary: cssColor(Theme.secondaryColor),
-                       link: cssColor(Theme.highlightColor, 1) }
-        }
+        var colors = app.readerPalette
         return {
-            background: readerBackground,
+            background: colors.background,
             text: colors.text,
             secondary: colors.secondary,
             link: colors.link,
             fontPx: app.readerPxFor(page.feedId),
             serif: app.readerSerif,
-            lineHeight: [1.35, 1.55, 1.8][Math.max(0, Math.min(2, app.readerLineSpacing))],
+            lineHeight: app.readerLineHeights[Math.max(0, Math.min(2, app.readerLineSpacing))],
             margin: app.readerMargin,
             justify: app.readerJustify,
             images: app.readerImages
@@ -104,6 +88,8 @@ WebViewPage {
     // the article preview was open: no waiting for the page's network load.
     // explicitReader: chosen in the pulley, also for "original" sites
     function start(explicitReader) {
+        if (linkPage)
+            console.log("Sailfeed link: link page starts", page.url)
         phase = phaseOriginal
         extractTries = 0
         waitingPrefetch = false
@@ -236,7 +222,14 @@ WebViewPage {
         feedId = d.feedId || -1
         feedTitle = d.feedTitle || ""
         starred = d.starred === true
+        articleTitle = d.title || ""
         app.lastOpenedItemId = d.itemId
+        // The cover slides in from the side of the button (previous: from
+        // the left), so the change of article can be followed (device test 13 Oct)
+        sliding = true
+        coverSlide.from = delta * (page.width > 0 ? page.width : Screen.width)
+        cover.x = coverSlide.from
+        coverSlide.restart()
         page.url = d.url
         start()
     }
@@ -250,14 +243,23 @@ WebViewPage {
             Prefetch.prefetch(articleModel.get(row).url)
     }
 
-    onPhaseChanged: if (phase === phaseShown || phase === phaseFailed) prefetchNext()
+    onPhaseChanged: {
+        if (phase === phaseShown || phase === phaseFailed)
+            prefetchNext()
+        if (phase === phaseShown && readerMode)
+            pulleyTipTimer.restart()
+        // CSS pixel size of the web view, for the text size preview in the settings
+        if (phase === phaseShown)
+            webView.runJavaScript("return window.devicePixelRatio", function(r) { app.noteReaderPixelRatio(Number(r)) })
+    }
 
     // Start once the page is on screen (the WebView is only active then).
     onStatusChanged: {
         if (status !== PageStatus.Active)
             return
         // Reached from the article preview: going back skips the preview.
-        var prev = pageStack.previousPage(page)
+        // (Not for a link opened from the preview: back leads to the preview.)
+        var prev = linkPage ? null : pageStack.previousPage(page)
         if (prev && prev.hasOwnProperty("skipOnReturn"))
             prev.skipOnReturn = true
         if (!started) {
@@ -271,21 +273,14 @@ WebViewPage {
         anchors.fill: parent
         webView.footerMargin: navBar.height
 
+        // Things about the page and its link (15 Oct: text size, colors and
+        // reader mode ↔ original are in the bottom bar and left the pulley;
+        // eight entries were too many). The lowest entry is reached first.
         PullDownMenu {
+            // Look for the feeds of the shown website (e.g. a blog linked in an article)
             MenuItem {
-                text: qsTr("Open in browser")
-                onClicked: Qt.openUrlExternally(page.url)
-            }
-            MenuItem {
-                text: qsTr("Copy link")
-                onClicked: {
-                    Clipboard.text = page.url.toString()
-                    hint.show(qsTr("Link copied"))
-                }
-            }
-            MenuItem {
-                text: page.readerMode ? qsTr("Show original website") : qsTr("Reader mode")
-                onClicked: page.readerMode ? page.showOriginal() : page.showReader()
+                text: qsTr("Subscribe to website")
+                onClicked: pageStack.push(Qt.resolvedUrl("SubscribePage.qml"), { initialUrl: page.url.toString() })
             }
             MenuItem {
                 readonly property bool listed: app.originalSiteList.length >= 0 && app.isOriginalSite(page.url)
@@ -306,19 +301,19 @@ WebViewPage {
                 }
             }
             MenuItem {
-                visible: page.readerMode && page.phase === page.phaseShown
-                text: page.readerDark ? qsTr("Light colors") : qsTr("Dark colors")
-                onClicked: page.toggleReaderColors()
+                text: qsTr("Copy link")
+                onClicked: {
+                    Clipboard.text = page.url.toString()
+                    hint.show(qsTr("Link copied"))
+                }
             }
             MenuItem {
-                visible: page.readerMode && page.phase === page.phaseShown
-                text: qsTr("Smaller text")
-                onClicked: page.changeFontSize(-2)
+                text: qsTr("Share")
+                onClicked: shareAction.trigger()
             }
             MenuItem {
-                visible: page.readerMode && page.phase === page.phaseShown
-                text: qsTr("Larger text")
-                onClicked: page.changeFontSize(2)
+                text: qsTr("Open in browser")
+                onClicked: Qt.openUrlExternally(page.url)
             }
         }
     }
@@ -333,8 +328,81 @@ WebViewPage {
             if (page.readerMode && page.phase === page.phaseOriginal)
                 page.extract(true)
             else if (page.phase === page.phaseReader)
-                page.phase = page.phaseShown
+                page.confirmReader()
         }
+        // Link in the reader page tapped or long pressed (script in
+        // HtmlUtils::readerHtml): "sailfeed:tap|long:<id>:<url>"
+        onTitleChanged: {
+            var t = String(flick.webView.title)
+            if (t.indexOf("sailfeed:") === 0)
+                page.handleLinkMessage(t, "title")
+        }
+    }
+
+    // Link messages of the reader page, from the title or from polling
+    // (linkPoll); each id is handled once.
+    property var handledLinks: ({})
+    function handleLinkMessage(msg, channel) {
+        var m = String(msg).match(/^sailfeed:(tap|long):([a-z0-9]+-[0-9]+):(.+)$/)
+        if (!m) {
+            console.log("Sailfeed link: unreadable message via", channel, msg)
+            return
+        }
+        if (handledLinks[m[2]])
+            return
+        handledLinks[m[2]] = true
+        if (!readerMode || phase !== phaseShown || status !== PageStatus.Active) {
+            console.log("Sailfeed link: ignored (page not ready)", m[1], m[3])
+            return
+        }
+        console.log("Sailfeed link:", m[1], "via", channel, m[3])
+        try {
+            app.openLink(m[3], m[1] === "long")
+        } catch (e) {
+            console.log("Sailfeed link: error", e)
+        }
+    }
+
+    // Second channel: the page also keeps its messages in an attribute of
+    // <html>; fetched and cleared here while the reader page is on screen.
+    Timer {
+        id: linkPoll
+        interval: 250
+        repeat: true
+        running: page.readerMode && page.phase === page.phaseShown
+                 && page.status === PageStatus.Active && Qt.application.active
+        onTriggered: {
+            webView.runJavaScript("var e=document.documentElement,q=e?e.getAttribute('data-sf-links'):null;"
+                                  + "if(q)e.removeAttribute('data-sf-links');return q||''", function(result) {
+                var lines = String(result || "").split("\n")
+                for (var i = 0; i < lines.length; i++) {
+                    if (lines[i] !== "")
+                        page.handleLinkMessage(lines[i], "poll")
+                }
+            })
+        }
+    }
+
+    // The reader page finished loading: uncover it only once the web view
+    // really shows it (the marker in its head), and a moment later, when it is
+    // painted. Before, the end of the interrupted original page's load already
+    // uncovered it and the original flashed up (device test 13 Oct).
+    function confirmReader() {
+        webView.runJavaScript("return document.querySelector('meta[name=\"sailfeed-reader\"]') ? 1 : 0", function(result) {
+            if (page.phase === page.phaseReader && Number(result) === 1)
+                revealTimer.restart()
+        })
+    }
+    Timer {
+        id: revealTimer
+        interval: 200
+        onTriggered: if (page.phase === page.phaseReader) page.phase = page.phaseShown
+    }
+    // Safety net: the check never answered
+    Timer {
+        interval: 4000
+        running: page.phase === page.phaseReader
+        onTriggered: if (page.phase === page.phaseReader) page.phase = page.phaseShown
     }
 
     Connections {
@@ -387,38 +455,102 @@ WebViewPage {
         onTriggered: page.extract(true)
     }
 
-    // Covers the original page until the reader page is ready.
+    // Covers the original page until the reader page is ready, and slides in
+    // on next/previous. Fades out, so the reader page appears calmly.
+    property bool sliding: false
+    readonly property bool coverShown: covered || sliding
+    onCoverShownChanged: {
+        if (coverShown) {
+            coverFade.stop()
+            cover.opacity = 1
+        } else {
+            coverFade.start()
+        }
+    }
+
     Rectangle {
-        anchors.fill: parent
-        visible: page.covered
+        id: cover
+        width: parent.width
+        height: parent.height
+        opacity: page.coverShown ? 1 : 0
+        visible: opacity > 0
         color: page.readerBackground
 
         Column {
             anchors.centerIn: parent
             width: parent.width - 2 * Theme.horizontalPageMargin
             spacing: Theme.paddingLarge
+            Label {
+                width: parent.width
+                visible: text !== ""
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                maximumLineCount: 4
+                truncationMode: TruncationMode.Elide
+                color: Theme.highlightColor
+                font.pixelSize: Theme.fontSizeLarge
+                text: page.articleTitle
+            }
             BusyIndicator {
                 anchors.horizontalCenter: parent.horizontalCenter
                 size: BusyIndicatorSize.Large
-                running: page.covered
+                running: cover.visible
             }
             Label {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 color: Theme.secondaryHighlightColor
-                text: qsTr("Preparing reader mode …")
+                text: page.readerMode ? qsTr("Preparing reader mode …") : qsTr("Loading website …")
             }
         }
     }
 
-    PageBusyIndicator { running: !page.covered && flick.webView.loading }
+    NumberAnimation {
+        id: coverFade
+        target: cover
+        property: "opacity"
+        to: 0
+        duration: 200
+    }
+    NumberAnimation {
+        id: coverSlide
+        target: cover
+        property: "x"
+        to: 0
+        duration: 250
+        easing.type: Easing.OutCubic
+        // The original website shows while loading: keep the cover a moment
+        onStopped: {
+            if (page.readerMode)
+                page.sliding = false
+            else
+                originalHold.restart()
+        }
+    }
+    Timer {
+        id: originalHold
+        interval: 600
+        onTriggered: page.sliding = false
+    }
+
+    PageBusyIndicator { running: !page.coverShown && flick.webView.loading }
 
     // Next / previous article without leaving the web view.
+    ShareAction {
+        id: shareAction
+        mimeType: "text/x-url"
+        resources: [{ "type": "text/x-url",
+                      "linkTitle": page.articleTitle !== "" ? page.articleTitle : page.url.toString(),
+                      "status": page.url.toString() }]
+    }
+
     ArticleNavBar {
         id: navBar
-        visible: page.articleModel !== null && page.itemId >= 0
-        info: page.siblingInfo
+        visible: (page.articleModel !== null && page.itemId >= 0) || page.linkPage
+        info: page.linkPage ? Html.siteKey(page.url) : page.siblingInfo
+        showBack: page.linkPage
+        onBack: pageStack.navigateBack()
         showTextSize: page.readerMode && page.phase === page.phaseShown
         showColorToggle: showTextSize
         darkColors: page.readerDark
@@ -432,11 +564,28 @@ WebViewPage {
         onToggleBookmark: {
             page.starred = !page.starred
             page.articleModel.setStarredById(page.itemId, page.starred)
-            hint.show(page.starred ? qsTr("Bookmark set") : qsTr("Bookmark removed"))
+            // No hint: the filled star in the bar shows it (device test 15 Oct)
         }
-        showBrowser: true
-        onOpenBrowser: Qt.openUrlExternally(page.url)
+        // Reader mode ↔ original (15 Oct: replaces "open in browser", now in
+        // the pulley). Not offered when the reader mode found no article.
+        showModeToggle: !(page.readerMode && page.phase === page.phaseFailed)
+        readerShown: page.readerMode
+        onToggleMode: page.readerMode ? page.showOriginal() : page.showReader()
     }
 
     Hint { id: hint; anchors.bottomMargin: navBar.height }
+
+    // First-run tip: the pulley holds "Subscribe to website", browser, colors …
+    FirstRunHint {
+        id: pulleyTip
+        key: "webPulley"
+        direction: TouchInteraction.Down
+        interactionMode: TouchInteraction.Pull
+        text: qsTr("Pull down for more: subscribe to this website, share it, open it in the browser")
+    }
+    Timer {
+        id: pulleyTipTimer
+        interval: 1500
+        onTriggered: if (page.status === PageStatus.Active && page.phase === page.phaseShown) pulleyTip.show()
+    }
 }

@@ -1,3 +1,49 @@
+* Thu Oct 15 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.1.0-1
+- Subscribe to website: enter (or paste) the address of a website, an
+  article or a feed; Sailfeed finds the site's feeds (announced in the
+  page, linked, in parent pages or at well-known addresses of common blog
+  systems), checks them and shows each with its newest articles to
+  subscribe, into a folder. Comment feeds and podcasts are marked.
+- Search ("Search" in the pulley of the article list and the feed list) in
+  the articles on the device – titles, or titles and text, in all feeds or
+  the current selection, read ones included – and in feed titles.
+- Web view pulley: "Subscribe to website" for the page shown, e.g. a blog
+  linked in an article.
+- First start: the sign-in page explains Nextcloud News (with links),
+  empty article and feed lists say how to subscribe; tips for the hidden
+  gestures (feed list, full article, pulley, mark-all button, long press),
+  one at a time; press and hold the icon in About to see them again.
+- New app icon.
+- Links in articles open in reader mode inside the app or in the browser
+  (setting); a long press opens them the other way. Links with
+  target="_blank" work now. A link opens as its own page with a back
+  button.
+- Previous/next article slides in from the matching side.
+- Reader mode appears without the original page flashing up.
+- Article list: room below the camera when paging, paging needs a shorter
+  swipe, no highlight when a swipe starts.
+- Article list: "Show read articles" / "Load older articles" always in the
+  same place; no wrong "No older articles" hint.
+- Articles at the end of the list are marked as read reliably.
+- Settings reorganised: a short main page with a summary per subject and
+  the settings on sub-pages (article list, article preview, reader mode,
+  Nextcloud account and backup, privacy); live preview for text sizes,
+  font, spacing, margins and colours that stays in view in the reader mode
+  settings; mark-as-read delay as a choice.
+- Fix: choices in the settings (links in articles, font, colours, line
+  spacing, margins, full article, greying out, feed sort order) could
+  change by themselves when the settings page opened.
+- Reader mode: the bottom bar switches between reader mode and original
+  website; "Open in browser", "Share", "Copy link" and "Subscribe to
+  website" in a shorter pulley.
+- Article preview: a calm "Show full article" row instead of two buttons;
+  share, copy link and open in browser in the pulley.
+- Fix: large gap below the title of articles that start with an image.
+- Subscribe to website: feeds already subscribed are recognised more
+  reliably (redirects, the feed's own address, tracking parameters).
+- Bottom bar readable in light ambiences (opaque, stronger counter).
+- Fix: English texts with "(s)" plurals.
+
 * Sat Oct 10 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.0.0-1
 - First public release (GitHub, OpenRepos).
 - Article list with thumbnails and excerpts, grouped by day, page-wise
@@ -13,7 +59,8 @@
 - Reader mode (Mozilla Readability) with preloading, consent wall handling
   with the in-app browser's cookies, font, text size (also per feed), line
   spacing, margins, colors (light/dark/sepia), images, sites that always
-  open in the original.
+  open in the original; links open in reader mode or in the browser
+  (setting, long press the other way).
 - Full article in reader mode, as the original website or in the browser;
   the preview can be skipped.
 - Bar in preview and reader mode: previous/next, text size, bookmark,

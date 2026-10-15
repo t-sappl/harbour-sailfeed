@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172" width="172" height="172">
+  <!-- Proposal A "text sail": a sail made of text lines (the lines of a feed) on a boat, coral red. -->
+  <defs>
+    <path id="drop" d="M 86 0.6 A 85.4 85.4 0 0 1 171.4 86 A 85.4 85.4 0 0 1 86 171.4 L 10.6 171.4 A 10 10 0 0 1 0.6 161.4 L 0.6 86 A 85.4 85.4 0 0 1 86 0.6 Z"/>
+    <linearGradient id="rim" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0715a"/><stop offset="1" stop-color="#b8321f"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0.8" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#e85d45"/><stop offset="1" stop-color="#c63f2a"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0.62" cy="0.22" r="0.7">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.12"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.6" stdDeviation="1.4" flood-color="#5a1208" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <use href="#drop" fill="url(#rim)"/>
+  <g transform="translate(90 82) scale(0.94) translate(-90 -82)">
+    <use href="#drop" fill="url(#face)"/>
+    <use href="#drop" fill="url(#shine)"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="69" y="40" width="14" height="7" rx="3.5" fill="#ffffff"/>
+    <rect x="59" y="51.5" width="24" height="7" rx="3.5" fill="#ffffff"/>
+    <rect x="49" y="63.0" width="34" height="7" rx="3.5" fill="#ffffff"/>
+    <rect x="39" y="74.5" width="44" height="7" rx="3.5" fill="#ffffff"/>
+    <rect x="29" y="86.0" width="54" height="7" rx="3.5" fill="#ffffff"/>
+    <rect x="19" y="97.5" width="64" height="7" rx="3.5" fill="#ffffff"/>
+    <rect x="92" y="52" width="10" height="7" rx="3.5" fill="#ffe7df"/>
+    <rect x="92" y="63.5" width="18" height="7" rx="3.5" fill="#ffe7df"/>
+    <rect x="92" y="75.0" width="26" height="7" rx="3.5" fill="#ffe7df"/>
+    <rect x="92" y="86.5" width="34" height="7" rx="3.5" fill="#ffe7df"/>
+    <rect x="84" y="30" width="5" height="88" rx="1.5" fill="#ffffff"/>
+    <path d="M 44 122 L 128 122 L 116 140 L 56 140 Z" fill="#ffffff"/>
+  </g>
+</svg>

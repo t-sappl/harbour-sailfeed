@@ -23,7 +23,7 @@ target_compile_definitions(fuoten PRIVATE QT_NO_KEYWORDS QT_NO_CAST_FROM_ASCII Q
 target_link_libraries(fuoten PUBLIC Qt5::Core Qt5::Network Qt5::Sql)
 
 add_executable(backendtest backendtest.cpp
-    ${SRC}/src/htmlutils.cpp ${SRC}/src/articlemodel.cpp ${SRC}/src/feedmodel.cpp ${SRC}/src/feedrowsmodel.cpp ${SRC}/src/feedrowsmodel.h ${SRC}/src/feedmanager.cpp ${SRC}/src/feedmanager.h ${SRC}/src/configuration.cpp ${SRC}/src/accountmanager.cpp ${SRC}/src/secretstore.cpp ${SRC}/src/prefetcher.cpp ${SRC}/src/prefetcher.h ${SRC}/src/geckocookiejar.cpp ${SRC}/src/geckocookiejar.h ${SRC}/src/nextcloudfiles.cpp ${SRC}/src/nextcloudfiles.h ${SRC}/src/settingsbackup.cpp ${SRC}/src/settingsbackup.h ${SRC}/src/cloudbackup.cpp ${SRC}/src/cloudbackup.h
+    ${SRC}/src/htmlutils.cpp ${SRC}/src/articlemodel.cpp ${SRC}/src/feedmodel.cpp ${SRC}/src/feedrowsmodel.cpp ${SRC}/src/feedrowsmodel.h ${SRC}/src/feedmanager.cpp ${SRC}/src/feedmanager.h ${SRC}/src/configuration.cpp ${SRC}/src/accountmanager.cpp ${SRC}/src/secretstore.cpp ${SRC}/src/prefetcher.cpp ${SRC}/src/prefetcher.h ${SRC}/src/geckocookiejar.cpp ${SRC}/src/geckocookiejar.h ${SRC}/src/nextcloudfiles.cpp ${SRC}/src/nextcloudfiles.h ${SRC}/src/settingsbackup.cpp ${SRC}/src/settingsbackup.h ${SRC}/src/cloudbackup.cpp ${SRC}/src/cloudbackup.h ${SRC}/src/feedfinder.cpp ${SRC}/src/feedfinder.h
     ${SRC}/src/articlemodel.h ${SRC}/src/feedmodel.h ${SRC}/src/configuration.h ${SRC}/src/accountmanager.h)
 target_include_directories(backendtest PRIVATE ${SRC}/src)
 target_compile_definitions(backendtest PRIVATE SAILFEED_NO_SECRETS QT_NO_CAST_FROM_ASCII QT_USE_QSTRINGBUILDER SAILFEED_VERSION="0.1.0")

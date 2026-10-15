@@ -11,6 +11,20 @@ Page {
     // Velocity (px/s) above which scrolling is free instead of page-wise.
     readonly property real fastFlickThreshold: 2500 * Theme.pixelRatio
     readonly property real sectionHeight: Theme.itemSizeExtraSmall
+    // Room above the first article of a following page: the camera of the
+    // Jolla Phone covered part of it (device test 13 Oct). The display cutout
+    // where Silica reports one (Screen.topCutout, not on older releases),
+    // at least two large paddings.
+    readonly property real topInset: {
+        var cut = 0
+        if (page.isPortrait && Screen.topCutout !== undefined && Screen.topCutout)
+            cut = Screen.topCutout.height + Theme.paddingSmall
+        return Math.max(cut, 2 * Theme.paddingLarge)
+    }
+    // A short swipe turns the page: distance or speed (device test 13 Oct:
+    // paging took too much effort)
+    readonly property real pageDragDistance: Theme.paddingLarge
+    readonly property real pageFlickVelocity: 300 * Theme.pixelRatio
 
     // "Mark when scrolling on": ids of articles that were fully visible for the
     // delay; they are greyed out when the list moves on (or the page is left
@@ -28,9 +42,20 @@ Page {
                                       && (articles.hiddenCount > 0 || articles.canFetchOlder)
 
     function showReadArticles() {
+        olderHintWanted = false
         articles.showRead = true
         if (articles.canFetchOlder)
             articles.fetchOlder()
+    }
+
+    // "No older articles" only answers a tap on "Load older articles" – not
+    // "Show read articles" (which also loads older ones) or the automatic
+    // load after selecting a feed (device test 14 Oct: the hint appeared
+    // when showing the read articles)
+    property bool olderHintWanted: false
+    function loadOlder() {
+        olderHintWanted = true
+        articles.fetchOlder()
     }
 
     Connections {
@@ -44,8 +69,15 @@ Page {
             if (page.olderAvailable && articles.count < 10)
                 articles.fetchOlder()
         }
-        onOlderFetched: if (newArticles === 0 && list.count > 0) hint.show(qsTr("No older articles"))
-        onFetchOlderFailed: hint.show(message !== "" ? message : qsTr("Could not load older articles"))
+        onOlderFetched: {
+            if (newArticles === 0 && list.count > 0 && page.olderHintWanted)
+                hint.show(qsTr("No older articles"))
+            page.olderHintWanted = false
+        }
+        onFetchOlderFailed: {
+            page.olderHintWanted = false
+            hint.show(message !== "" ? message : qsTr("Could not load older articles"))
+        }
     }
 
     onStatusChanged: {
@@ -60,6 +92,9 @@ Page {
             if (row >= 0)
                 list.positionViewAtIndex(row, ListView.Contain)
         }
+        // First-run tips (one per visit, see showNextTip)
+        if (status === PageStatus.Active && config.isAccountValid)
+            feedsTipTimer.restart()
         // Ask for the account on first start.
         if (status === PageStatus.Active && !config.isAccountValid && !loginShown) {
             loginShown = true
@@ -68,15 +103,29 @@ Page {
     }
     property bool loginShown: false
 
+    // The action rows in the footer: with articles always, in an empty list
+    // once loading is over (and signed in)
+    readonly property bool actionsShown: list.count > 0
+                                         || (!articles.inOperation && !synchronizer.inOperation
+                                             && config.isAccountValid)
+
     SilicaListView {
         id: list
         anchors.fill: parent
         model: articles
+        // A press that turns into a swipe within this time no longer
+        // highlights the article under the finger (device test 13 Oct)
+        pressDelay: 120
 
         property real dragStartY: 0
         readonly property real pageHeight: height - (headerItem ? headerItem.height : 0)
 
         header: PageHeader {
+            id: listHeader
+            // No search button here: the top left corner belongs to Silica's
+            // navigation (the glow of the attached feed list, tap = back) and
+            // the button took its taps (device test 14 Oct). Search is in the
+            // pulley of this page and of the feed list.
             title: app.currentSelectionName
             description: synchronizer.inOperation
                          ? qsTr("Updating …")
@@ -87,12 +136,24 @@ Page {
         // "Show read articles" / "Load older articles" (read ones the first
         // sync did not fetch) as calm list rows, and room below the last
         // article, so it can be scrolled above the mark-all button.
+        // Always here, also for an empty list: directly below the articles,
+        // but at least at the lower third of the screen (one-handed). Before,
+        // an empty list showed it at the bottom of the page and a short one
+        // right below its articles, so it jumped (device test 14 Oct).
         footer: Column {
+            id: footerColumn
             width: list.width
-            Item { width: 1; height: Theme.paddingMedium; visible: readRow.visible || olderRow.visible }
+            // Space down to the lower third; footerColumn.y is where the
+            // articles end (in content coordinates)
+            Item {
+                width: 1
+                visible: readRow.visible || olderRow.visible
+                height: Math.max(Theme.paddingMedium,
+                                 list.height * 0.66 - (footerColumn.y - list.originY))
+            }
             ListActionItem {
                 id: readRow
-                visible: page.readOffer && list.count > 0
+                visible: page.readOffer && page.actionsShown
                 iconSource: "image://theme/icon-m-acknowledge"
                 text: qsTr("Show read articles")
                 description: qsTr("Older, read articles available")
@@ -100,11 +161,11 @@ Page {
             }
             ListActionItem {
                 id: olderRow
-                visible: page.olderAvailable && list.count > 0
+                visible: page.olderAvailable && page.actionsShown
                 iconSource: "image://theme/icon-m-down"
                 text: articles.fetchingOlder ? qsTr("Loading older articles …") : qsTr("Load older articles")
                 busy: articles.fetchingOlder
-                onClicked: articles.fetchOlder()
+                onClicked: page.loadOlder()
             }
             Item {
                 width: parent.width
@@ -138,7 +199,8 @@ Page {
                     pageStack.push(Qt.resolvedUrl("WebPage.qml"),
                                    { url: d.url, readerMode: app.openMode === 0, itemId: d.itemId,
                                      feedId: d.feedId || -1, feedTitle: d.feedTitle || "",
-                                     articleModel: articles, starred: d.starred === true })
+                                     articleModel: articles, starred: d.starred === true,
+                                     articleTitle: d.title || "" })
                     return
                 }
                 pageStack.push(Qt.resolvedUrl("ArticlePage.qml"),
@@ -183,6 +245,8 @@ Page {
                 enabled: articles.unreadCount > 0
                 onClicked: page.markAllWithRemorse()
             }
+            // Right above "Refresh": a short pull (device test 14 Oct)
+            MenuItem { text: qsTr("Search"); onClicked: pageStack.push(Qt.resolvedUrl("SearchPage.qml")) }
             MenuItem {
                 text: config.isAccountValid ? qsTr("Refresh") : qsTr("Sign in")
                 enabled: !synchronizer.inOperation
@@ -197,12 +261,16 @@ Page {
 
         ViewPlaceholder {
             enabled: list.count === 0 && !articles.inOperation && !articles.fetchingOlder
+            // No feeds yet (first start with an empty Nextcloud News): say
+            // how to get some, where it is done (15 Oct)
             text: !config.isAccountValid ? qsTr("No account")
                 : (synchronizer.inOperation ? qsTr("Loading articles …")
-                   : (page.readOffer ? qsTr("No unread articles") : qsTr("No articles")))
+                   : (app.noFeeds ? qsTr("No feeds yet")
+                      : (page.readOffer ? qsTr("No unread articles") : qsTr("No articles"))))
             hintText: !config.isAccountValid ? qsTr("Pull down to sign in")
                 : (synchronizer.inOperation ? ""
-                   : (page.readOffer ? qsTr("Older, read articles available") : qsTr("Pull down to refresh")))
+                   : (app.noFeeds ? qsTr("Swipe right to the feed list, pull down there and choose \"Subscribe to website\".")
+                      : (page.readOffer ? qsTr("Older, read articles available") : qsTr("Pull down to refresh"))))
         }
 
         BusyIndicator {
@@ -226,9 +294,14 @@ Page {
             if (Math.abs(verticalVelocity) >= page.fastFlickThreshold)
                 return                      // fast flick: let it scroll freely
 
-            cancelFlick()
             var delta = contentY - dragStartY
-            var dir = Math.abs(delta) < Theme.itemSizeSmall ? 0 : (delta > 0 ? 1 : -1)
+            var v = verticalVelocity
+            var dir = 0
+            if (Math.abs(delta) >= page.pageDragDistance)
+                dir = delta > 0 ? 1 : -1
+            else if (Math.abs(v) >= page.pageFlickVelocity && (v > 0) === (delta >= 0))
+                dir = v > 0 ? 1 : -1
+            cancelFlick()
             scrollToPage(dragStartY + dir * pageHeight)
         }
 
@@ -247,6 +320,7 @@ Page {
                 var top = item.y
                 if (item.firstInSection)
                     top -= page.sectionHeight          // keep the day header visible
+                top -= page.topInset                    // clear of the camera
                 if (headerItem && top <= headerItem.y + headerItem.height)
                     top = minY                          // first page: show the page header
                 y = Math.max(minY, top)
@@ -280,18 +354,6 @@ Page {
         }
     }
 
-    // Empty list: the same action row, in the lower part of the screen
-    // (child of the page, not of the list: a ListView puts its children into
-    // its moving content item)
-    ListActionItem {
-        anchors { bottom: parent.bottom; bottomMargin: Theme.itemSizeHuge }
-        visible: list.count === 0 && (page.olderAvailable || page.readOffer)
-                 && !articles.inOperation && !articles.fetchingOlder && config.isAccountValid
-        iconSource: page.readOffer ? "image://theme/icon-m-acknowledge" : "image://theme/icon-m-down"
-        text: page.readOffer ? qsTr("Show read articles") : qsTr("Load older articles")
-        onClicked: page.readOffer ? page.showReadArticles() : articles.fetchOlder()
-    }
-
     RemorsePopup { id: markAllRemorse }
 
     function markAllWithRemorse() {
@@ -300,6 +362,7 @@ Page {
 
     // Push-up button for one-handed "mark all as read"
     MarkAllButton {
+        id: markAllButton
         anchors { right: parent.right; rightMargin: Theme.horizontalPageMargin; bottom: parent.bottom; bottomMargin: Theme.paddingLarge * 2 }
         visible: app.showMarkAllButton && list.count > 0 && config.isAccountValid && !pulley.active
         dimmed: list.moving
@@ -310,6 +373,58 @@ Page {
     }
 
     Hint { id: hint }
+
+    // First-run tips of this page, one per visit and in this order (the
+    // tip component also keeps 45 s between any two tips):
+    // 1. swipe right to the feeds (also with no feeds yet: that is where
+    //    subscribing starts), 2. push up the mark-all button (it looks like a
+    //    button, but a tap does nothing), 3. long press on an article.
+    function showNextTip() {
+        if (status !== PageStatus.Active)
+            return
+        if (list.count > 0 || app.noFeeds) {
+            if (feedsTip.show())
+                return
+        }
+        if (!app.hintShown("feedList") || list.count === 0)
+            return
+        if (markAllButton.visible && !markAllButton.allRead) {
+            if (markAllTip.show())
+                return
+        }
+        if (app.hintShown("markAll") || !markAllButton.visible)
+            articleMenuTip.show()
+    }
+
+    FirstRunHint {
+        id: feedsTip
+        key: "feedList"
+        direction: TouchInteraction.Right
+        interactionMode: TouchInteraction.Swipe
+        text: qsTr("Swipe right for your feeds and folders")
+    }
+    FirstRunHint {
+        id: markAllTip
+        key: "markAll"
+        direction: TouchInteraction.Up
+        interactionMode: TouchInteraction.Swipe
+        handCenterX: markAllButton.x + markAllButton.width / 2
+        // The text right beside the button, at its height
+        labelRightMargin: page.width - markAllButton.x + Theme.paddingSmall
+        labelBottomMargin: page.height - markAllButton.y - markAllButton.height
+        text: qsTr("Push the round button up to mark all listed articles as read")
+    }
+    FirstRunHint {
+        id: articleMenuTip
+        key: "articleMenu"
+        showHand: false
+        text: qsTr("Press and hold an article: bookmark, mark as unread, mark all above or below as read")
+    }
+    Timer {
+        id: feedsTipTimer
+        interval: 1200
+        onTriggered: page.showNextTip()
+    }
 
     function flushSeen() {
         var ids = []
@@ -339,11 +454,16 @@ Page {
             autoReadTimer.restart()
     }
 
-    // Marks every fully visible article as read; partly visible ones stay unread.
+    // Marks every fully visible article as read; partly visible ones stay
+    // unread – except at the end of the list: it cannot scroll further, so an
+    // article cut off at the top there (it was cut off at the bottom of the
+    // page before) counts when at least half of it is visible. Before, such
+    // articles were never marked (device test 14 Oct).
     // deferred: only remember them (seenIds), marked when the list moves on.
     function markVisibleRead(deferred) {
         var top = list.contentY
         var bottom = top + list.height
+        var atEnd = list.contentY >= list.originY + list.contentHeight - list.height - 1
         var x = list.width / 2
         var rows = []
         // Walk down the visible area item by item (works without itemAtIndex, Qt 5.6).
@@ -352,7 +472,9 @@ Page {
         while (y < bottom) {
             var item = list.itemAt(x, y)
             if (!item) { y += Theme.paddingSmall; continue }
-            if (item.y >= top && item.y + item.height <= bottom) {
+            var shown = Math.min(bottom, item.y + item.height) - Math.max(top, item.y)
+            if ((item.y >= top && item.y + item.height <= bottom)
+                    || (atEnd && item.y < top && shown >= item.height / 2)) {
                 var row = list.indexAt(x, item.y + 1)
                 if (row >= 0)
                     rows.push(row)

@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QSet>
 #include <QSortFilterProxyModel>
+#include <QStringList>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantMap>
@@ -47,6 +48,12 @@ class ArticleModel : public QSortFilterProxyModel
     Q_PROPERTY(int hiddenCount READ hiddenCount NOTIFY hiddenCountChanged)
     // Unread articles among the listed ones (greys out "mark all as read")
     Q_PROPERTY(int unreadCount READ unreadCount NOTIFY unreadCountChanged)
+    // Search (1.1): only articles containing every word of searchText, in the
+    // title or – with searchFullText – also in the text; read ones included.
+    Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchChanged)
+    Q_PROPERTY(bool searchFullText READ searchFullText WRITE setSearchFullText NOTIFY searchChanged)
+    // Search page: without search words show nothing (instead of everything)
+    Q_PROPERTY(bool searchOnly READ searchOnly WRITE setSearchOnly NOTIFY searchChanged)
 public:
     enum Roles {
         ItemIdRole = Qt::UserRole + 100,
@@ -81,6 +88,17 @@ public:
     // All starred articles (any feed, read or unread; "unread only" does
     // not apply here). setSelection() leaves this view.
     Q_INVOKABLE void selectStarred();
+
+    QString searchText() const { return m_searchText; }
+    void setSearchText(const QString &text);
+    bool searchFullText() const { return m_searchFullText; }
+    bool searchOnly() const { return m_searchOnly; }
+    void setSearchOnly(bool only);
+    void setSearchFullText(bool fullText);
+    // Whether a title (and text) contains every word of a search (case and
+    // accents as typed are folded; for the desktop test)
+    static bool matchesSearch(const QStringList &words, const QString &foldedHaystack);
+    static QStringList searchWords(const QString &text);
     bool starredOnly() const { return m_starredOnly; }
 
     bool unreadOnly() const { return m_unreadOnly; }
@@ -135,6 +153,7 @@ public:
     static QString dayText(const QDateTime &pubDate, const QDateTime &now);
 
 Q_SIGNALS:
+    void searchChanged();
     void storageChanged(Fuoten::AbstractStorage *storage);
     void selectionChanged();
     void unreadOnlyChanged(bool unreadOnly);
@@ -172,6 +191,11 @@ private:
     void onSourceDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 
     Fuoten::ArticleListFilterModel *m_source;
+    QString m_searchText;
+    QStringList m_searchWords;
+    bool m_searchFullText = true;
+    bool m_searchOnly = false;
+    mutable QHash<qint64, QString> m_searchCache;     // id -> folded "title \n plain text"
     int m_folderId = -1;
     int m_feedId = -1;
     bool m_starredOnly = false;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Article preview: title, feed / date, image, body; then "Share" and "Show full article"
-// (reader mode; "Show website" / "Open in browser" for the other open modes).
+// Article preview: title, feed / date, image, body; then a calm row "Show full
+// article" (reader mode; "Show website" / "Open in browser" for the other open
+// modes). Share, copy link and the browser are in the pulley (15 Oct).
 import QtQuick 2.6
 import Sailfish.Silica 1.0
 import Sailfish.Share 1.0
@@ -25,7 +26,13 @@ Page {
     // Reader mode: download the web page in the background while the preview
     // is being read, so "Open website" can show the article right away.
     Component.onCompleted: {
+        if (enterFrom !== 0) {
+            slideIn.from = enterFrom * (page.width > 0 ? page.width : Screen.width)
+            slideIn.start()
+        }
         app.lastOpenedItemId = articleData.itemId || -1
+        // Counts toward the one-time hint "skip the preview" (10th preview)
+        app.notePreviewOpened()
         if (app.openMode === 0 && articleData.url)
             Prefetch.prefetch(articleData.url)
     }
@@ -34,6 +41,8 @@ Page {
     onStatusChanged: {
         if (status !== PageStatus.Active)
             return
+        if (!skipOnReturn && app.openMode !== 2 && articleData.url)
+            fullArticleTipTimer.restart()
         if (skipOnReturn) {
             backTimer.start()
             return
@@ -43,7 +52,7 @@ Page {
                                    { url: articleData.url, readerMode: app.openMode === 0,
                                      itemId: articleData.itemId, feedId: articleData.feedId || -1,
                                      feedTitle: articleData.feedTitle || "", articleModel: articleModel,
-                                     starred: page.starred })
+                                     starred: page.starred, articleTitle: articleData.title || "" })
     }
 
     Timer {
@@ -84,8 +93,30 @@ Page {
             return
         }
         articleModel.markRead(row)
+        // Without the page stack's animation (always from the right): the new
+        // article slides in from the side of the button, the previous one
+        // from the left (device test 13 Oct)
         pageStack.replace(Qt.resolvedUrl("ArticlePage.qml"),
-                          { articleData: articleModel.get(row), articleModel: articleModel })
+                          { articleData: articleModel.get(row), articleModel: articleModel, enterFrom: delta },
+                          PageStackAction.Immediate)
+    }
+
+    // Set by openSibling(): 1 next (slides in from the right), -1 previous (from the left)
+    property int enterFrom: 0
+
+    // Links in feed texts are usually absolute; "/path" and "path" are
+    // taken relative to the article's address.
+    function absoluteLink(link) {
+        var s = String(link)
+        var base = (articleData.url || "").toString()
+        if (/^[a-z][a-z0-9+.-]*:/i.test(s) || base === "")
+            return s
+        var m = base.match(/^([a-z]+:\/\/[^\/]+)(.*\/)?/i)
+        if (!m)
+            return s
+        if (s.indexOf("//") === 0)
+            return base.split(":")[0] + ":" + s
+        return s.charAt(0) === "/" ? m[1] + s : m[1] + (m[2] || "/") + s
     }
 
     readonly property string siblingInfo: {
@@ -94,19 +125,34 @@ Page {
     }
 
     SilicaFlickable {
+        id: flick
         anchors { left: parent.left; right: parent.right; top: parent.top; bottom: navBar.top }
+        transform: Translate { id: slide }
         clip: true
         contentHeight: column.height + Theme.paddingLarge
         // Hidden while skipped on the way back from the web view
         opacity: page.skipOnReturn ? 0 : 1
 
+        // About the article and its link (15 Oct: bookmark and text size are
+        // in the bottom bar and left the pulley). The lowest entry is reached first.
         PullDownMenu {
             MenuItem {
-                text: page.starred ? qsTr("Remove bookmark") : qsTr("Bookmark")
+                visible: (articleData.url || "").toString() !== ""
+                text: qsTr("Copy link")
                 onClicked: {
-                    page.starred = !page.starred
-                    articleModel.setStarredById(articleData.itemId, page.starred)
+                    Clipboard.text = articleData.url.toString()
+                    hint.show(qsTr("Link copied"))
                 }
+            }
+            MenuItem {
+                visible: (articleData.url || "").toString() !== ""
+                text: qsTr("Share")
+                onClicked: shareAction.trigger()
+            }
+            MenuItem {
+                visible: (articleData.url || "").toString() !== ""
+                text: qsTr("Open in browser")
+                onClicked: Qt.openUrlExternally(articleData.url)
             }
             MenuItem {
                 text: page.unread ? qsTr("Mark as read") : qsTr("Mark as unread")
@@ -114,16 +160,6 @@ Page {
                     page.unread = !page.unread
                     articleModel.setUnreadById(articleData.itemId, page.unread)
                 }
-            }
-            MenuItem {
-                text: qsTr("Smaller text")
-                enabled: page.fontStep > -2
-                onClicked: page.changeFontSize(-1)
-            }
-            MenuItem {
-                text: qsTr("Larger text")
-                enabled: page.fontStep < 6
-                onClicked: page.changeFontSize(1)
             }
         }
 
@@ -177,6 +213,7 @@ Page {
                 clip: true
             }
             Label {
+                id: bodyLabel
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 // linkColor only works for StyledText; RichText takes the link
@@ -186,27 +223,38 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: page.bodyFontPx
                 linkColor: Theme.highlightColor
-                onLinkActivated: Qt.openUrlExternally(link)
+
+                // Links: tap as set ("Links in articles"), long press the
+                // other way (a Label alone has no long press on links)
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        var link = bodyLabel.linkAt(mouse.x, mouse.y)
+                        if (link !== "")
+                            app.openLink(page.absoluteLink(link), false)
+                    }
+                    onPressAndHold: {
+                        var link = bodyLabel.linkAt(mouse.x, mouse.y)
+                        if (link !== "")
+                            app.openLink(page.absoluteLink(link), true)
+                    }
+                }
             }
 
-            Row {
-                x: Theme.horizontalPageMargin
-                spacing: Theme.paddingLarge
-                Button {
-                    width: (column.width - 2 * Theme.horizontalPageMargin - Theme.paddingLarge) / 2
-                    text: qsTr("Share")
-                    onClicked: shareAction.trigger()
-                }
-                Button {
-                    width: (column.width - 2 * Theme.horizontalPageMargin - Theme.paddingLarge) / 2
-                    // Says what it does, so it is not mixed up with "open in
-                    // browser" (globe in the bottom bar, device test 11 Oct)
-                    text: app.openMode === 2 ? qsTr("Open in browser")
-                        : app.openMode === 1 ? qsTr("Show website")
-                        : qsTr("Show full article")
-                    enabled: (articleData.url || "").toString() !== ""
-                    onClicked: page.openWebsite()
-                }
+            // A calm row instead of two buttons "Share" / "Show full article"
+            // (device test 15 Oct: dominant and redundant – the full article is
+            // also a swipe to the left, sharing is in the pulley). Says what it
+            // does, so it is not mixed up with "Open in browser" in the pulley.
+            ListActionItem {
+                width: parent.width
+                visible: (articleData.url || "").toString() !== ""
+                text: app.openMode === 2 ? qsTr("Open in browser")
+                    : app.openMode === 1 ? qsTr("Show website")
+                    : qsTr("Show full article")
+                // The same as a swipe to the left – said here, so the gesture
+                // is learnt (device test 15 Oct); no swipe for the browser
+                description: app.openMode === 2 ? "" : qsTr("or swipe left")
+                onClicked: page.openWebsite()
             }
         }
         // At the end of the article: push up for the next one.
@@ -216,6 +264,15 @@ Page {
         }
 
         VerticalScrollDecorator { }
+    }
+
+    NumberAnimation {
+        id: slideIn
+        target: slide
+        property: "x"
+        to: 0
+        duration: 250
+        easing.type: Easing.OutCubic
     }
 
     ArticleNavBar {
@@ -232,13 +289,24 @@ Page {
         onToggleBookmark: {
             page.starred = !page.starred
             articleModel.setStarredById(articleData.itemId, page.starred)
-            hint.show(page.starred ? qsTr("Bookmark set") : qsTr("Bookmark removed"))
+            // No hint: the filled star in the bar shows it (device test 15 Oct)
         }
-        showBrowser: !!articleData.url
-        onOpenBrowser: Qt.openUrlExternally(articleData.url)
     }
 
     Hint { id: hint; anchors.bottomMargin: navBar.height }
+
+    FirstRunHint {
+        id: fullArticleTip
+        key: "fullArticle"
+        direction: TouchInteraction.Left
+        interactionMode: TouchInteraction.Swipe
+        text: qsTr("Swipe left for the full article")
+    }
+    Timer {
+        id: fullArticleTipTimer
+        interval: 1200
+        onTriggered: if (page.status === PageStatus.Active) fullArticleTip.show()
+    }
 
     ShareAction {
         id: shareAction

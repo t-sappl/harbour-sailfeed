@@ -87,7 +87,10 @@ QString Prefetcher::cookieInfo() const
     const int n = m_jar->geckoCookieCount();
     if (n < 0)
         return tr("Browser cookies not readable (%1)").arg(path);
-    return tr("%n browser cookie(s) shared with the reader mode", nullptr, n);
+    // Two strings instead of %n: there is no English translation file to
+    // resolve plural forms ("1 browser cookie(s)" in English otherwise)
+    return n == 1 ? tr("1 browser cookie shared with the reader mode")
+                  : tr("%1 browser cookies shared with the reader mode").arg(n);
 }
 
 void Prefetcher::clear()

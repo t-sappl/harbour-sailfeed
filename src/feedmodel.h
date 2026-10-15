@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <QSortFilterProxyModel>
+#include <QStringList>
 #include <QVariantList>
 
 namespace Fuoten {
@@ -90,6 +91,13 @@ public:
     // Favorites for the settings backup: [{ id, title }] (title empty for a
     // feed that is not in the list), and replacing them all at once.
     Q_INVOKABLE QVariantList favoriteFeeds() const;
+    // Addresses of all subscribed feeds (for "Subscribe to website")
+    Q_INVOKABLE QStringList feedUrls() const;
+    // The subscribed feeds as {url, link, title} ("Subscribe to website": already subscribed?)
+    Q_INVOKABLE QVariantList subscribedFeeds() const;
+    // Feeds whose title contains every word of text (search, 1.1):
+    // [{ id, title, unread, favicon, folderName }], in list order
+    Q_INVOKABLE QVariantList feedsMatching(const QString &text) const;
     Q_INVOKABLE void setFavoriteIds(const QVariantList &ids);
     void setSortMode(int mode);
     // Database file for the article counts of MostActive/MostStarred

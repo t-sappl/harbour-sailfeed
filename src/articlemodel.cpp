@@ -253,6 +253,7 @@ void ArticleModel::reload()
     // so forget the session state here; re-inserted rows are filtered anew.
     m_keep.clear();
     m_extra.clear();
+    m_searchCache.clear();
     m_canFetchOlder = true;
     Q_EMIT fetchingOlderChanged();
     applySelection();
@@ -262,12 +263,76 @@ void ArticleModel::reload()
         m_source->load();
 }
 
+QStringList ArticleModel::searchWords(const QString &text)
+{
+    QStringList words = text.toCaseFolded().split(QLatin1Char(' '));
+    QStringList out;
+    for (const QString &w : words) {
+        const QString t = w.trimmed();
+        if (!t.isEmpty())
+            out << t;
+    }
+    return out;
+}
+
+bool ArticleModel::matchesSearch(const QStringList &words, const QString &foldedHaystack)
+{
+    for (const QString &w : words)
+        if (!foldedHaystack.contains(w))
+            return false;
+    return true;
+}
+
+void ArticleModel::setSearchText(const QString &text)
+{
+    if (text == m_searchText)
+        return;
+    m_searchText = text;
+    m_searchWords = searchWords(text);
+    invalidateFilter();
+    Q_EMIT searchChanged();
+}
+
+void ArticleModel::setSearchOnly(bool only)
+{
+    if (only == m_searchOnly)
+        return;
+    m_searchOnly = only;
+    invalidateFilter();
+    Q_EMIT searchChanged();
+}
+
+void ArticleModel::setSearchFullText(bool fullText)
+{
+    if (fullText == m_searchFullText)
+        return;
+    m_searchFullText = fullText;
+    m_searchCache.clear();
+    invalidateFilter();
+    Q_EMIT searchChanged();
+}
+
 bool ArticleModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
-    if (!m_unreadOnly || m_starredOnly || m_showRead)
-        return true;
     const QModelIndex idx = m_source->index(sourceRow, 0, sourceParent);
     auto *a = m_source->data(idx, Qt::DisplayRole).value<Fuoten::Article *>();
+    if (m_searchOnly && m_searchWords.isEmpty())
+        return false;
+    if (!m_searchWords.isEmpty()) {
+        // Search: read articles too; the plain text is built once per article
+        if (!a)
+            return false;
+        auto it = m_searchCache.constFind(a->id());
+        if (it == m_searchCache.constEnd()) {
+            QString hay = a->title();
+            if (m_searchFullText)
+                hay += QLatin1Char('\n') + HtmlUtils::plainExcerpt(a->body(), 1000000);
+            it = m_searchCache.insert(a->id(), hay.toCaseFolded());
+        }
+        return matchesSearch(m_searchWords, it.value());
+    }
+    if (!m_unreadOnly || m_starredOnly || m_showRead)
+        return true;
     return a && (a->unread() || m_keep.contains(a->id()));
 }
 
