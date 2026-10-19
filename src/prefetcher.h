@@ -32,6 +32,10 @@ public:
     // Decoded HTML of a finished download, or "" if none.
     Q_INVOKABLE QString html(const QUrl &url) const;
     Q_INVOKABLE bool isPending(const QUrl &url) const;
+    // Milliseconds since the download of url last received data (or
+    // started), -1 if it is not running. Slow connections: the reader mode
+    // keeps waiting while data still comes in instead of starting over.
+    Q_INVOKABLE int idleMs(const QUrl &url) const;
     // Drops downloaded pages, e.g. after a consent wall was found: the other
     // pages from that site were most likely downloaded as the wall, too.
     Q_INVOKABLE void clear();
@@ -71,4 +75,5 @@ private:
     QHash<QString, QString> m_cache;
     QStringList m_order;                    // oldest first
     QHash<QString, QNetworkReply *> m_pending;
+    QHash<QString, qint64> m_lastData;      // pending key -> ms since epoch
 };

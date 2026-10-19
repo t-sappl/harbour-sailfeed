@@ -12,7 +12,7 @@ Page {
     id: page
 
     // Snapshot from ArticleModel.get(row): itemId, title, feedTitle, dateText,
-    // body (cleaned HTML), url, thumb, unread, starred
+    // body (cleaned HTML), url, thumb, hasContent, unread, starred
     property var articleData: ({})
     property var articleModel
 
@@ -33,7 +33,7 @@ Page {
         app.lastOpenedItemId = articleData.itemId || -1
         // Counts toward the one-time hint "skip the preview" (10th preview)
         app.notePreviewOpened()
-        if (app.openMode === 0 && articleData.url)
+        if (page.openMode === 0 && articleData.url)
             Prefetch.prefetch(articleData.url)
     }
 
@@ -41,15 +41,15 @@ Page {
     onStatusChanged: {
         if (status !== PageStatus.Active)
             return
-        if (!skipOnReturn && app.openMode !== 2 && articleData.url)
+        if (!skipOnReturn && page.openMode !== 2 && articleData.url)
             fullArticleTipTimer.restart()
         if (skipOnReturn) {
             backTimer.start()
             return
         }
-        if (app.openMode !== 2 && articleData.url && !pageStack.nextPage(page))
+        if (page.openMode !== 2 && articleData.url && !pageStack.nextPage(page))
             pageStack.pushAttached(Qt.resolvedUrl("WebPage.qml"),
-                                   { url: articleData.url, readerMode: app.openMode === 0,
+                                   { url: articleData.url, readerMode: page.openMode === 0,
                                      itemId: articleData.itemId, feedId: articleData.feedId || -1,
                                      feedTitle: articleData.feedTitle || "", articleModel: articleModel,
                                      starred: page.starred, articleTitle: articleData.title || "" })
@@ -63,6 +63,8 @@ Page {
 
     // Text size of this article's feed (or the general one, see app.previewStepFor)
     readonly property int feedId: articleData.feedId || -1
+    // "Full article" of this feed (feed settings) or the general one
+    readonly property int openMode: app.openModeFor(feedId)
     readonly property int fontStep: app.previewStepFor(feedId)
     readonly property int bodyFontPx: Math.round(Theme.fontSizeSmall * (1 + 0.12 * fontStep))
 
@@ -76,7 +78,7 @@ Page {
     }
 
     function openWebsite() {
-        if (app.openMode === 2)
+        if (page.openMode === 2)
             Qt.openUrlExternally(articleData.url)
         else if (pageStack.nextPage(page))
             pageStack.navigateForward()
@@ -212,8 +214,21 @@ Page {
                 asynchronous: true
                 clip: true
             }
+            // Reached by paging from an article with text: say why it is
+            // empty instead of jumping to the full article (1.2)
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                visible: articleData.hasContent === false
+                text: qsTr("The feed sends no text for this article.")
+                wrapMode: Text.Wrap
+                font.pixelSize: page.bodyFontPx
+                font.italic: true
+                color: Theme.secondaryHighlightColor
+            }
             Label {
                 id: bodyLabel
+                visible: articleData.hasContent !== false
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 // linkColor only works for StyledText; RichText takes the link
@@ -248,12 +263,12 @@ Page {
             ListActionItem {
                 width: parent.width
                 visible: (articleData.url || "").toString() !== ""
-                text: app.openMode === 2 ? qsTr("Open in browser")
-                    : app.openMode === 1 ? qsTr("Show website")
+                text: page.openMode === 2 ? qsTr("Open in browser")
+                    : page.openMode === 1 ? qsTr("Show website")
                     : qsTr("Show full article")
                 // The same as a swipe to the left – said here, so the gesture
                 // is learnt (device test 15 Oct); no swipe for the browser
-                description: app.openMode === 2 ? "" : qsTr("or swipe left")
+                description: page.openMode === 2 ? "" : qsTr("or swipe left")
                 onClicked: page.openWebsite()
             }
         }

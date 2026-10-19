@@ -95,6 +95,9 @@ public:
     Q_INVOKABLE QStringList feedUrls() const;
     // The subscribed feeds as {url, link, title} ("Subscribe to website": already subscribed?)
     Q_INVOKABLE QVariantList subscribedFeeds() const;
+    // One feed for the feed settings page: id, title, url, link, folderId,
+    // folderName, favicon; empty map if unknown
+    Q_INVOKABLE QVariantMap feedInfo(int feedId) const;
     // Feeds whose title contains every word of text (search, 1.1):
     // [{ id, title, unread, favicon, folderName }], in list order
     Q_INVOKABLE QVariantList feedsMatching(const QString &text) const;

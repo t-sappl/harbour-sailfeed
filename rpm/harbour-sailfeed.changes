@@ -1,3 +1,27 @@
+* Mon Oct 19 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.2.0-1
+- Feed settings: long press a feed → "Feed settings …", or "Feed settings"
+  in the pulley of a feed's article list. Name and folder (rename and move
+  moved here), and the feed's own list view, preview (show or skip) and
+  full article mode (reader mode, original website, browser) – each like
+  the general setting until changed; reset of the feed's text size; the
+  feed's address (tap to copy).
+- Compact list view: title and source only, small thumbnail, about twice
+  as many articles per page (Settings → Article list, also per feed).
+- Order of the article list: newest first or oldest first.
+- Articles without text in the feed (e.g. news.ORF.at) open the full
+  article directly instead of an empty preview.
+- Reader mode: swipe left for the next article (swipe right still goes
+  back); a one-time tip shows it.
+- Slow connections: the reader mode keeps waiting while the page still
+  arrives instead of starting over; after 10 s it offers the text from the
+  feed or the browser; no more blank page with busy indicators.
+- Storage: read articles older than 1, 3, 6 or 12 months are deleted at
+  the start (bookmarks and unread articles always stay; new installations
+  3 months, updates "Never" with a one-time hint); number of articles and
+  database size in the settings. Image cache size adjustable (50–500 MB)
+  and "Clear image cache".
+- The new settings are part of the settings backup.
+
 * Thu Oct 15 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.1.0-1
 - Subscribe to website: enter (or paste) the address of a website, an
   article or a feed; Sailfeed finds the site's feeds (announced in the

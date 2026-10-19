@@ -36,6 +36,8 @@ class ArticleModel : public QSortFilterProxyModel
     Q_PROPERTY(int feedId READ feedId NOTIFY selectionChanged)
     Q_PROPERTY(bool starredOnly READ starredOnly NOTIFY selectionChanged)
     Q_PROPERTY(bool unreadOnly READ unreadOnly WRITE setUnreadOnly NOTIFY unreadOnlyChanged)
+    // Order by date: newest first (default) or oldest first (1.2 setting)
+    Q_PROPERTY(bool oldestFirst READ oldestFirst WRITE setOldestFirst NOTIFY oldestFirstChanged)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged)
     Q_PROPERTY(bool inOperation READ inOperation NOTIFY inOperationChanged)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
@@ -67,7 +69,8 @@ public:
         UnreadRole,
         StarredRole,
         PubDateRole,
-        ArticleRole
+        ArticleRole,
+        HasContentRole
     };
     Q_ENUM(Roles)
 
@@ -107,6 +110,8 @@ public:
     int hiddenCount() const;
     int unreadCount() const { return m_unreadCount; }
     void setUnreadOnly(bool unreadOnly);
+    bool oldestFirst() const;
+    void setOldestFirst(bool oldestFirst);
 
     bool loaded() const;
     bool inOperation() const;
@@ -157,6 +162,7 @@ Q_SIGNALS:
     void storageChanged(Fuoten::AbstractStorage *storage);
     void selectionChanged();
     void unreadOnlyChanged(bool unreadOnly);
+    void oldestFirstChanged();
     void loadedChanged(bool loaded);
     void inOperationChanged(bool inOperation);
     void countChanged(int count);
@@ -182,6 +188,7 @@ private:
     struct Extra {
         QString excerpt;
         QString thumb;
+        bool hasContent = true;     // HtmlUtils::hasContent
     };
 
     Fuoten::Article *articleAt(int row) const;

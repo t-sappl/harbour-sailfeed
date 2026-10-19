@@ -88,16 +88,6 @@ Page {
                                { title: qsTr("Add folder"), acceptText: qsTr("Add") })
         d.accepted.connect(function() { FeedManager.addFolder(d.value) })
     }
-    function renameFeed(feedId, title) {
-        var d = pageStack.push(Qt.resolvedUrl("NameDialog.qml"),
-                               { title: qsTr("Rename feed"), initialValue: title })
-        d.accepted.connect(function() { FeedManager.renameFeed(feedId, d.value) })
-    }
-    function moveFeed(feedId, title, folderId) {
-        var d = pageStack.push(Qt.resolvedUrl("FolderPickerDialog.qml"),
-                               { feedTitle: title, currentFolderId: Math.max(0, folderId) })
-        d.accepted.connect(function() { FeedManager.moveFeed(feedId, d.folderId) })
-    }
     function renameFolder(folderId, name) {
         var d = pageStack.push(Qt.resolvedUrl("NameDialog.qml"),
                                { title: qsTr("Rename folder"), initialValue: name })
@@ -284,15 +274,10 @@ Page {
                         text: model.favorite ? qsTr("Remove from favorites") : qsTr("Add to favorites")
                         onClicked: app.feeds.setFavorite(row.rowFeedId, !model.favorite)
                     }
+                    // Name, folder and the feed's own reading settings
                     MenuItem {
-                        text: qsTr("Rename")
-                        enabled: !FeedManager.busy
-                        onClicked: page.renameFeed(row.rowFeedId, row.name)
-                    }
-                    MenuItem {
-                        text: qsTr("Move to folder")
-                        enabled: !FeedManager.busy
-                        onClicked: page.moveFeed(row.rowFeedId, row.name, row.rowFolderId)
+                        text: qsTr("Feed settings …")
+                        onClicked: pageStack.push(Qt.resolvedUrl("FeedSettingsPage.qml"), { feedId: row.rowFeedId })
                     }
                     MenuItem {
                         text: qsTr("Delete")

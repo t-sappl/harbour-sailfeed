@@ -35,7 +35,8 @@ Page {
                 title: qsTr("Article list")
                 summary: settingsPage.join([app.autoReadDelay === 0 ? qsTr("Not marked as read by itself")
                                                                     : qsTr("Read after %1 s").arg(app.autoReadDelay),
-                                            app.unreadOnly ? qsTr("unread only") : ""])
+                                            app.unreadOnly ? qsTr("unread only") : "",
+                                            app.listView === 1 ? qsTr("compact") : ""])
                 target: Qt.resolvedUrl("SettingsListPage.qml")
             }
             SettingsEntry {

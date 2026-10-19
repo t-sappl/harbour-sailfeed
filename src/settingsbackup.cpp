@@ -32,6 +32,7 @@ const Spec kGeneral[] = {
     { "feedSortMode",        Type::Int,  0, 4 },
     { "openMode",            Type::Int,  0, 2 },
     { "skipPreview",         Type::Bool, 0, 1 },
+    { "listView",            Type::Int,  0, 1 },
     { "linksInApp",          Type::Bool, 0, 1 },
     { "unreadOnly",          Type::Bool, 0, 1 },
     { "readerSerif",         Type::Bool, 0, 1 },
@@ -42,6 +43,15 @@ const Spec kGeneral[] = {
     { "readerImages",        Type::Bool, 0, 1 },
     { "shareBrowserCookies", Type::Bool, 0, 1 },
     { "clearCookiesAtStart", Type::Bool, 0, 1 },
+    // Deleting old read articles: months, 0 = never (settings file, Cleanup)
+    { "deleteReadAfter",     Type::Int,  0, 12 },
+    { "imageCacheMB",        Type::Int,  20, 1000 },    // settings file, Cleanup
+    { "oldestFirst",         Type::Bool, 0, 1 },
+    // Feed settings (1.2): exceptions per feed ID, like the text sizes;
+    // a feed without an entry follows the general setting
+    { "feedListView",        Type::PerFeed, 0, 1 },     // 0 detailed, 1 compact
+    { "feedSkipPreview",     Type::PerFeed, 0, 1 },     // 0 show, 1 skip
+    { "feedOpenMode",        Type::PerFeed, 0, 2 },     // like openMode
 };
 
 const Spec kTextSizes[] = {
@@ -325,15 +335,28 @@ QVariantMap SettingsBackup::plan(const QVariantMap &current, const QVariantMap &
     int settingsChanged = 0;
     bool textSizesChanged = false;
 
-    if (replace) {
-        for (const QString &key : generalKeys()) {
-            QVariant b, c;
-            if (!validValue(key, backup.value(key), &b))
-                continue;
-            if (!validValue(key, current.value(key), &c) || c != b) {
-                changes.insert(key, b);
-                ++settingsChanged;
-            }
+    for (const QString &key : generalKeys()) {
+        QVariant b, c;
+        if (!validValue(key, backup.value(key), &b))
+            continue;
+        const bool hasCurrent = validValue(key, current.value(key), &c);
+        QVariant next;
+        if (isPerFeedKey(key)) {
+            // Feed settings: replaced, or merged like favorites ("add missing")
+            QVariantMap merged = replace || !hasCurrent ? QVariantMap() : c.toMap();
+            const QVariantMap fromBackup = b.toMap();
+            for (auto it = fromBackup.cbegin(); it != fromBackup.cend(); ++it)
+                if (replace || !merged.contains(it.key()))
+                    merged.insert(it.key(), it.value());
+            next = merged;
+        } else if (replace) {
+            next = b;
+        } else {
+            continue;                   // "add missing" keeps the general settings
+        }
+        if (!hasCurrent || c != next) {
+            changes.insert(key, next);
+            ++settingsChanged;
         }
     }
 

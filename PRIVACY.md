@@ -19,10 +19,10 @@ Files are inside the app's own sandbox folders (`~/.config`, `~/.local/share` an
 |---|---|---|
 | Server address, user name, your internal user ID on the server, time of the last sync and backup | Sign-in to your Nextcloud, settings backup | Settings → Nextcloud → "Sign out", or uninstalling |
 | App password | Sign-in to your Nextcloud | Stored encrypted in the system's secure storage (Sailfish Secrets), only readable by this app; removed with "Sign out" |
-| Folders, feeds and articles (SQLite database), including read and bookmark changes not yet sent | Reading, also offline | "Sign out" empties the database; uninstalling removes it |
+| Folders, feeds and articles (SQLite database), including read and bookmark changes not yet sent | Reading, also offline | Read articles (not bookmarks) older than the chosen time are deleted at the start (Settings → Article list → "Delete read articles after"); "Sign out" empties the database; uninstalling removes it |
 | Settings (dconf and the settings file), favorite feeds | Your choices in the app | The settings file goes with uninstalling; the dconf values with `dconf reset -f /apps/harbour-sailfeed/` in a terminal |
 | Settings before the last restore (`settings-before-restore.json`) | Undoing a restore of the settings backup | Uninstalling |
-| Image cache (thumbnails, article images, favicons; max. 100 MB) | Faster display, less data traffic | Uninstalling |
+| Image cache (thumbnails, article images, favicons; max. 100 MB, adjustable 50–500 MB) | Faster display, less data traffic | Settings → Article list → "Clear image cache"; uninstalling |
 | Data of the in-app browser (Sailfish WebView: cookies, site data, cache) | Websites opened in the app, e.g. your choice on a consent banner | Settings → Privacy → "Delete cookies and website data" (done at the next start), or "Delete cookies at every start"; uninstalling |
 | Preloaded web pages for the reader mode | Faster reader mode | Kept in memory only (last 8 pages), gone when the app closes |
 

@@ -97,6 +97,16 @@ QUrl thumbnail(const QUrl &enclosureLink, const QString &enclosureMime,
     return QUrl();
 }
 
+bool hasContent(const QString &body, const QUrl &enclosureLink, int minTextChars)
+{
+    if (!enclosureLink.isEmpty())
+        return true;
+    if (plainExcerpt(body, 0).size() >= minTextChars)
+        return true;
+    // Rule 2 of thumbnail() alone: a usable <img> in the body
+    return !thumbnail(QUrl(), QString(), body, QUrl(), QUrl(QStringLiteral("https://localhost/"))).isEmpty();
+}
+
 QString decodeEntities(const QString &text)
 {
     if (!text.contains(QLatin1Char('&')))
@@ -294,6 +304,13 @@ bool isListedSite(const QString &url, const QStringList &sites)
 // links. Same-page anchors ("#…") keep their normal behaviour. Links with
 // target="_blank" did nothing before (device test 13 Oct morning), they are
 // handled the same way now.
+// Swipe from right to left (1.2, author 17 Oct): "sailfeed:swipe:<id>:next"
+// opens the next article. Detected here in the page instead of a QML
+// MouseArea over the web view (that would take scrolling and links) and
+// without an attached page in the page stack; the swipe to the right stays
+// Silica's back navigation. Ignored when zoomed in, with more than one
+// finger, in sideways scrollable parts (tables, code) and when mostly
+// vertical, slow or short.
 static QString readerLinkScript()
 {
     return QStringLiteral(
@@ -318,6 +335,18 @@ static QString readerLinkScript()
         "document.addEventListener('touchcancel',stop,{passive:true});"
         "document.addEventListener('contextmenu',function(e){var a=linkOf(e.target);if(!a)return;"
         "e.preventDefault();e.stopPropagation();stop();if(Date.now()-longAt>=1000){longAt=Date.now();send('long',a.href);}},true);"
+        // swipe to the next article
+        "var sw=null;"
+        "function sideScroll(el){for(;el&&el!==document.body&&el.nodeType===1;el=el.parentNode){"
+        "if(el.scrollWidth>el.clientWidth+2){var o=getComputedStyle(el).overflowX;if(o==='auto'||o==='scroll')return true;}}return false;}"
+        "function zoomed(){var v=window.visualViewport;return v&&v.scale>1.05;}"
+        "document.addEventListener('touchstart',function(e){sw=null;if(e.touches.length!==1||zoomed()||sideScroll(e.target))return;"
+        "sw={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};},{passive:true});"
+        "document.addEventListener('touchmove',function(e){if(sw&&e.touches.length!==1)sw=null;},{passive:true});"
+        "document.addEventListener('touchcancel',function(){sw=null;},{passive:true});"
+        "document.addEventListener('touchend',function(e){if(!sw||!e.changedTouches.length)return;"
+        "var dx=e.changedTouches[0].clientX-sw.x,dy=e.changedTouches[0].clientY-sw.y,dt=Date.now()-sw.t;sw=null;"
+        "if(dx<=-Math.max(60,window.innerWidth*0.25)&&Math.abs(dy)<Math.abs(dx)*0.5&&dt<800)send('swipe','next');},{passive:true});"
         "})();</script>");
 }
 

@@ -172,6 +172,18 @@ class H(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        # Slow connection: the page comes in four parts, 0.8 s apart
+        if u.path == "/public/slow.html":
+            parts = [b"<html><head><title>Langsam</title></head><body>", b"<p>Teil 1</p>", b"<p>Teil 2</p>", b"</body></html>"]
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(sum(len(p) for p in parts)))
+            self.end_headers()
+            for part in parts:
+                self.wfile.write(part)
+                self.wfile.flush()
+                time.sleep(0.8)
+            return
         if u.path == "/public/echo.html":
             data = ("<html><body>COOKIES:" + (self.headers.get("Cookie") or "") + "</body></html>").encode()
             self.send_response(200)

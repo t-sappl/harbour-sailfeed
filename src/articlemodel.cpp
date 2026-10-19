@@ -121,6 +121,7 @@ QHash<int, QByteArray> ArticleModel::roleNames() const
         { StarredRole,   QByteArrayLiteral("starred") },
         { PubDateRole,   QByteArrayLiteral("pubDate") },
         { ArticleRole,   QByteArrayLiteral("article") },
+        { HasContentRole, QByteArrayLiteral("hasContent") },
     };
 }
 
@@ -146,6 +147,7 @@ QVariant ArticleModel::data(const QModelIndex &index, int role) const
     case StarredRole:   return a->starred();
     case PubDateRole:   return a->pubDate();
     case ArticleRole:   return QVariant::fromValue<QObject *>(a);
+    case HasContentRole: return extraFor(a).hasContent;
     default:            return QVariant();
     }
 }
@@ -198,6 +200,22 @@ void ArticleModel::selectStarred()
     invalidateFilter();
     Q_EMIT selectionChanged();
     reload();
+}
+
+bool ArticleModel::oldestFirst() const
+{
+    return m_source->sortOrder() == Qt::AscendingOrder;
+}
+
+void ArticleModel::setOldestFirst(bool oldestFirst)
+{
+    if (oldestFirst == this->oldestFirst())
+        return;
+    // Sorted anew once (dynamic sorting is off, see the constructor); the
+    // list starts at the top again
+    m_source->setSortOrder(oldestFirst ? Qt::AscendingOrder : Qt::DescendingOrder);
+    m_source->sort(0);
+    Q_EMIT oldestFirstChanged();
 }
 
 void ArticleModel::setUnreadOnly(bool unreadOnly)
@@ -369,6 +387,7 @@ const ArticleModel::Extra &ArticleModel::extraFor(Fuoten::Article *a) const
         e.excerpt = HtmlUtils::plainExcerpt(a->body(), kExcerptChars);
         e.thumb = HtmlUtils::thumbnail(a->enclosureLink(), a->enclosureMime(), a->body(),
                                        a->mediaThumbnail(), a->url()).toString();
+        e.hasContent = HtmlUtils::hasContent(a->body(), a->enclosureLink());
         it = m_extra.insert(a->id(), e);
     }
     return it.value();
@@ -577,6 +596,7 @@ QVariantMap ArticleModel::get(int row) const
     m.insert(QStringLiteral("body"), HtmlUtils::cleanBody(a->body()));
     m.insert(QStringLiteral("url"), a->url());
     m.insert(QStringLiteral("thumb"), extraFor(a).thumb);
+    m.insert(QStringLiteral("hasContent"), extraFor(a).hasContent);
     m.insert(QStringLiteral("unread"), a->unread());
     m.insert(QStringLiteral("starred"), a->starred());
     return m;

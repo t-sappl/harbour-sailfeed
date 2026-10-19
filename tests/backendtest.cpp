@@ -13,6 +13,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <functional>
+#include <algorithm>
 #include <cstdio>
 
 #include <Fuoten/API/Component>
@@ -36,6 +37,9 @@
 #include "settingsbackup.h"
 #include "cloudbackup.h"
 #include "feedfinder.h"
+#include "articlecleaner.h"
+#include <QTemporaryDir>
+#include <QFileInfo>
 
 static int failures = 0;
 #define CHECK(cond) do { if (!(cond)) { ++failures; std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } else { std::printf("ok   %s\n", #cond); } } while (0)
@@ -62,6 +66,15 @@ static void testHtml()
     CHECK_EQ(thumbnail(QUrl(), QString(), QStringLiteral("<img src=data:image/png;base64,AAA>"), QUrl(QStringLiteral("https://m/t.jpg")), base).toString(),
              QStringLiteral("https://m/t.jpg"));
     CHECK(thumbnail(QUrl(), QString(), QStringLiteral("<p>none</p>"), QUrl(), base).isEmpty());
+
+    // 1.2: articles without text open the full article at once
+    CHECK(!HtmlUtils::hasContent(QString(), QUrl()));                                           // news.orf.at
+    CHECK(!HtmlUtils::hasContent(QStringLiteral("  <p>&nbsp;</p> "), QUrl()));
+    CHECK(!HtmlUtils::hasContent(QStringLiteral("<a href=\"https://x/a\">Weiterlesen &hellip;</a>"), QUrl()));
+    CHECK(!HtmlUtils::hasContent(QStringLiteral("<img src=\"https://t/p.gif\" width=\"1\" height=\"1\">"), QUrl()));   // tracking pixel only
+    CHECK(HtmlUtils::hasContent(QStringLiteral("<p>Der Ministerrat hat heute das Budget beschlossen.</p>"), QUrl()));
+    CHECK(HtmlUtils::hasContent(QStringLiteral("<img src=\"https://comic/today.png\">"), QUrl()));                      // comic
+    CHECK(HtmlUtils::hasContent(QString(), QUrl(QStringLiteral("https://pod/ep1.mp3"))));                               // podcast
     CHECK_EQ(decodeEntities(QStringLiteral("F&uuml;nf &amp; &#8222;x&#x201C; &hellip; &bogus;")),
              QString::fromUtf8("Fünf & „x“ … &bogus;"));
     CHECK_EQ(plainExcerpt(QStringLiteral("<p>Hallo&nbsp;<b>Welt</b></p>\n<script>evil()</script><p>Zwei</p>"), 220),
@@ -70,6 +83,8 @@ static void testHtml()
     const QString ex = plainExcerpt(longText, 50);
     CHECK(ex.size() <= 51 && ex.endsWith(QChar(0x2026)));
     CHECK(readerHtml(QStringLiteral("not json"), ReaderStyle()).isEmpty());
+    // 1.2: swipe to the left in the reader page reports "next"
+    CHECK(readerHtml(QStringLiteral("{\"content\":\"<p>x</p>\"}"), ReaderStyle()).contains(QStringLiteral("send('swipe','next')")));
     CHECK(readerHtml(QStringLiteral("{\"title\":\"x\",\"content\":\"  \"}"), ReaderStyle()).isEmpty());
     {
         const QString r = readerHtml(QStringLiteral("{\"title\":\"A <b>&</b>\",\"siteName\":\"Golem\",\"content\":\"<p>Text</p>\",\"lang\":\"de\"}"), ReaderStyle());
@@ -454,9 +469,40 @@ static void testSettingsBackup()
     SettingsBackup b;
     CHECK(b.generalKeys().contains(QStringLiteral("readerColors")));
     CHECK(b.generalKeys().contains(QStringLiteral("linksInApp")));
+    CHECK(b.generalKeys().contains(QStringLiteral("listView")));            // 1.2: compact list
+    CHECK(b.generalKeys().contains(QStringLiteral("deleteReadAfter")));     // deleting old read articles
+    CHECK(b.generalKeys().contains(QStringLiteral("imageCacheMB")));
+    CHECK(b.generalKeys().contains(QStringLiteral("oldestFirst")));
     CHECK(b.textSizeKeys().contains(QStringLiteral("readerFontPerFeed")));
     CHECK(!b.generalKeys().contains(QStringLiteral("readerFontPx")));      // a text size
     CHECK(!b.deviceName().isEmpty());
+
+    // Feed settings (1.2): per feed ID, validated, merged by "add missing"
+    {
+        QVariantMap in, st0;
+        in.insert(QStringLiteral("5"), 1.0);
+        in.insert(QStringLiteral("6"), 7.0);                    // out of range: dropped
+        in.insert(QStringLiteral("x"), 1.0);                    // no feed ID: dropped
+        st0.insert(QStringLiteral("feedOpenMode"), in);
+        const QVariantMap back = b.parse(b.serialize(st0, false)).value(QStringLiteral("state")).toMap();
+        CHECK_EQ(back.value(QStringLiteral("feedOpenMode")).toMap().size(), 1);
+        CHECK_EQ(back.value(QStringLiteral("feedOpenMode")).toMap().value(QStringLiteral("5")).toInt(), 1);
+        CHECK(b.generalKeys().contains(QStringLiteral("feedSkipPreview")));
+        QVariantMap cur, bak, curMap, bakMap;
+        curMap.insert(QStringLiteral("5"), 1);
+        bakMap.insert(QStringLiteral("5"), 0);
+        bakMap.insert(QStringLiteral("9"), 1);
+        cur.insert(QStringLiteral("feedListView"), curMap);
+        bak.insert(QStringLiteral("feedListView"), bakMap);
+        QVariantMap pl = b.plan(cur, bak, SettingsBackup::AddMissing, false);
+        const QVariantMap merged = pl.value(QStringLiteral("changes")).toMap().value(QStringLiteral("feedListView")).toMap();
+        CHECK_EQ(merged.value(QStringLiteral("5")).toInt(), 1);   // own value kept
+        CHECK_EQ(merged.value(QStringLiteral("9")).toInt(), 1);   // missing one added
+        pl = b.plan(cur, bak, SettingsBackup::Replace, false);
+        CHECK_EQ(pl.value(QStringLiteral("changes")).toMap().value(QStringLiteral("feedListView")).toMap(), bakMap);
+        pl = b.plan(cur, cur, SettingsBackup::AddMissing, false);
+        CHECK(!pl.value(QStringLiteral("changes")).toMap().contains(QStringLiteral("feedListView")));
+    }
 
     auto fav = [](qint64 id, const QString &title) {
         QVariantMap m;
@@ -837,6 +883,165 @@ static void testAutoBackup(Configuration *config)
     CHECK_EQ(offers, 1);
 }
 
+
+// Deleting old read articles (ArticleCleaner) on a database with libfuoten's schema
+static void testCleaner()
+{
+    QTemporaryDir dir;
+    CHECK(dir.isValid());
+    const QString db = dir.path() + QStringLiteral("/database.sqlite");
+    const QString ini = dir.path() + QStringLiteral("/settings.ini");
+
+    // Defaults: new installation 3 months, update "never" plus the hint
+    ArticleCleaner::initDefault(ini, false);
+    CHECK_EQ(QSettings(ini, QSettings::IniFormat).value(QStringLiteral("storage/deleteReadAfterMonths")).toInt(), 3);
+    ArticleCleaner::initDefault(ini, true);     // already decided: unchanged
+    CHECK_EQ(QSettings(ini, QSettings::IniFormat).value(QStringLiteral("storage/deleteReadAfterMonths")).toInt(), 3);
+    const QString ini2 = dir.path() + QStringLiteral("/update.ini");
+    ArticleCleaner::initDefault(ini2, true);
+    {
+        ArticleCleaner c;
+        c.setPaths(db, ini2);
+        CHECK_EQ(c.deleteAfterMonths(), 0);
+        CHECK(c.hintPending());
+        CHECK(!ArticleCleaner::isDue(ini2, QDate::currentDate()));
+        c.dismissHint();
+        CHECK(!c.hintPending());
+    }
+
+    const QDateTime now = QDateTime::currentDateTime();
+    const qint64 nowSecs = now.toMSecsSinceEpoch() / 1000;
+    const qint64 old = nowSecs - 200LL * 24 * 3600;     // > 6 months
+    const qint64 recent = nowSecs - 10LL * 24 * 3600;
+    {
+        QSqlDatabase d = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("cleanertest"));
+        d.setDatabaseName(db);
+        CHECK(d.open());
+        QSqlQuery q(d);
+        // libfuoten's tables (SQLiteStorage itself keeps one global
+        // connection "fuotendb" with its first path, so it cannot be used
+        // for a second database here)
+        CHECK(q.exec(QStringLiteral("CREATE TABLE feeds (id INTEGER PRIMARY KEY NOT NULL, folderId INTEGER NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, "
+                                    "link TEXT NOT NULL, added INTEGER NOT NULL, unreadCount INTEGER DEFAULT 0, ordering INTEGER NOT NULL, pinned INTEGER NOT NULL, "
+                                    "updateErrorCount INTEGER NOT NULL, lastUpdateError TEXT, faviconLink TEXT)")));
+        CHECK(q.exec(QStringLiteral("CREATE TABLE items (id INTEGER PRIMARY KEY NOT NULL, feedId INTEGER NOT NULL, guid TEXT NOT NULL, guidHash TEXT NOT NULL, "
+                                    "url TEXT NOT NULL, title TEXT NOT NULL, author TEXT NOT NULL, pubDate INTEGER NOT NULL, body TEXT NOT NULL, enclosureMime TEXT, "
+                                    "enclosureLink TEXT, unread INTEGER NOT NULL, starred INTEGER NOT NULL, lastModified INTEGER NOT NULL, fingerprint TEXT NOT NULL, "
+                                    "queue INTEGER DEFAULT 0, rtl INTEGER NOT NULL DEFAULT 0, mediaThumbnail TEXT, mediaDescription TEXT, "
+                                    "FOREIGN KEY(feedId) REFERENCES feeds(id) ON DELETE CASCADE)")));
+        CHECK(q.exec(QStringLiteral("INSERT INTO feeds (id, folderId, title, url, link, added, ordering, pinned, updateErrorCount) VALUES (1, 0, 'F', 'u', 'l', 0, 0, 0, 0)")));
+        auto add = [&](int id, qint64 pub, int unread, int starred, int queue) {
+            QSqlQuery i(d);
+            i.prepare(QStringLiteral("INSERT INTO items (id, feedId, guid, guidHash, url, title, author, pubDate, body, unread, starred, lastModified, fingerprint, queue) "
+                                     "VALUES (?, 1, 'g', ?, 'u', 't', 'a', ?, 'b', ?, ?, 0, 'f', ?)"));
+            i.addBindValue(id); i.addBindValue(QString::number(id)); i.addBindValue(pub);
+            i.addBindValue(unread); i.addBindValue(starred); i.addBindValue(queue);
+            return i.exec();
+        };
+        CHECK(add(1, old, 0, 0, 0));        // read, old -> deleted
+        CHECK(add(2, old, 0, 1, 0));        // bookmark -> stays
+        CHECK(add(3, old, 1, 0, 0));        // unread -> stays
+        CHECK(add(4, old, 0, 0, 1));        // change not sent yet -> stays
+        CHECK(add(5, recent, 0, 0, 0));     // read, recent -> stays
+        d.close();
+    }
+    QSqlDatabase::removeDatabase(QStringLiteral("cleanertest"));
+    auto ids = [&]() {
+        QStringList l;
+        QSqlDatabase d = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("cleanerids"));
+        d.setDatabaseName(db);
+        d.open();
+        {
+            QSqlQuery q(d);
+            q.exec(QStringLiteral("SELECT id FROM items ORDER BY id"));
+            while (q.next())
+                l << q.value(0).toString();
+        }
+        d.close();
+        d = QSqlDatabase();
+        QSqlDatabase::removeDatabase(QStringLiteral("cleanerids"));
+        return l.join(QLatin1Char(','));
+    };
+
+    // Due at once (never ran), a cutoff of 3 months
+    CHECK(ArticleCleaner::isDue(ini, now.date()));
+    CHECK_EQ(ArticleCleaner::runIfDue(db, ini, now), 1);
+    CHECK_EQ(ids(), QStringLiteral("2,3,4,5"));
+    // At most once a day
+    CHECK(!ArticleCleaner::isDue(ini, now.date()));
+    CHECK_EQ(ArticleCleaner::runIfDue(db, ini, now), -1);
+    CHECK(ArticleCleaner::isDue(ini, now.date().addDays(1)));
+
+    ArticleCleaner c;
+    c.setPaths(db, ini);
+    const QString info = c.storageInfo();
+    std::printf("     storageInfo: %s\n", qUtf8Printable(info));
+    CHECK(info.contains(QStringLiteral("4 articles stored")));
+    CHECK(info.contains(QStringLiteral("1 article deleted")));
+    // A shorter setting cleans up at the next start, even on the same day
+    c.setDeleteAfterMonths(12);
+    CHECK_EQ(c.deleteAfterMonths(), 12);
+    CHECK(ArticleCleaner::isDue(ini, now.date()));
+    CHECK_EQ(ArticleCleaner::runIfDue(db, ini, now), 0);
+    CHECK(!ArticleCleaner::isDue(ini, now.date()));
+    CHECK(c.storageInfo().contains(QStringLiteral("nothing to delete")));
+    c.setDeleteAfterMonths(0);
+    CHECK(!ArticleCleaner::isDue(ini, now.date().addDays(5)));
+    c.setDeleteAfterMonths(1);
+
+    // Many deletions: VACUUM gives the space back
+    {
+        QSqlDatabase d = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("cleanerbulk"));
+        d.setDatabaseName(db);
+        d.open();
+        d.transaction();
+        const QString body(4000, QLatin1Char('x'));
+        for (int id = 100; id < 100 + ArticleCleaner::vacuumThreshold + 50; ++id) {
+            QSqlQuery i(d);
+            i.prepare(QStringLiteral("INSERT INTO items (id, feedId, guid, guidHash, url, title, author, pubDate, body, unread, starred, lastModified, fingerprint) "
+                                     "VALUES (?, 1, 'g', ?, 'u', 't', 'a', ?, ?, 0, 0, 0, 'f')"));
+            i.addBindValue(id); i.addBindValue(QString::number(id)); i.addBindValue(recent - 30LL * 24 * 3600); i.addBindValue(body);
+            i.exec();
+        }
+        d.commit();
+        d.close();
+        d = QSqlDatabase();
+        QSqlDatabase::removeDatabase(QStringLiteral("cleanerbulk"));
+    }
+    const qint64 before = QFileInfo(db).size();
+    bool vacuumed = false;
+    CHECK_EQ(ArticleCleaner::deleteOld(db, recent - 24 * 3600, &vacuumed), ArticleCleaner::vacuumThreshold + 50);
+    CHECK(vacuumed);
+    CHECK(QFileInfo(db).size() < before / 2);
+    CHECK_EQ(ids(), QStringLiteral("2,3,4,5"));
+    // Small cleanups do not compact
+    CHECK_EQ(ArticleCleaner::deleteOld(db, nowSecs, &vacuumed), 1);
+    CHECK(!vacuumed);
+    CHECK_EQ(ids(), QStringLiteral("2,3,4"));
+    // Image cache (1.2): size, limit, clearing without "prepared"
+    {
+        const QString cacheDir = dir.path() + QStringLiteral("/images");
+        QDir().mkpath(cacheDir + QStringLiteral("/data8/a"));
+        QDir().mkpath(cacheDir + QStringLiteral("/prepared"));
+        auto write = [](const QString &path, int bytes) { QFile f(path); f.open(QIODevice::WriteOnly); f.write(QByteArray(bytes, 'x')); };
+        write(cacheDir + QStringLiteral("/data8/a/one.d"), 3000);
+        write(cacheDir + QStringLiteral("/data8/a/two.d"), 2000);
+        write(cacheDir + QStringLiteral("/prepared/busy.tmp"), 500);
+        ArticleCleaner ic;
+        ic.setPaths(db, ini, cacheDir);
+        CHECK_EQ(ic.imageCacheMB(), ArticleCleaner::defaultImageCacheMB);
+        CHECK_EQ(ArticleCleaner::imageCacheLimit(ini), qint64(100) * 1024 * 1024);
+        ic.setImageCacheMB(250);
+        CHECK_EQ(ArticleCleaner::imageCacheLimit(ini), qint64(250) * 1024 * 1024);
+        CHECK_EQ(ic.imageCacheBytes(), 5000.0);
+        CHECK_EQ(ic.clearImageCache(), 5000.0);
+        CHECK_EQ(ic.imageCacheBytes(), 0.0);
+        CHECK(QFile::exists(cacheDir + QStringLiteral("/prepared/busy.tmp")));
+    }
+    // Missing database: nothing happens
+    CHECK_EQ(ArticleCleaner::runIfDue(dir.path() + QStringLiteral("/none.sqlite"), ini, now.addDays(1)), -1);
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
@@ -849,6 +1054,7 @@ int main(int argc, char **argv)
     testHtml();
     testAges();
     testSettingsBackup();
+    testCleaner();
     testFeedFinder(port);
 
     // Legacy 0.1.0 settings with a base64 password must be migrated
@@ -940,6 +1146,24 @@ int main(int argc, char **argv)
     CHECK_EQ(role(1, ArticleModel::ThumbRole).toString(), QStringLiteral("https://cdn.example.com/ring.jpg"));
     CHECK_EQ(role(2, ArticleModel::ItemIdRole).toInt(), 104);
     CHECK(role(2, ArticleModel::ThumbRole).toString().isEmpty());
+    // 1.2: oldest first, and back
+    {
+        QStringList newestFirst;
+        for (int r = 0; r < model.count(); ++r)
+            newestFirst << role(r, ArticleModel::ItemIdRole).toString();
+        CHECK(!model.oldestFirst());
+        model.setOldestFirst(true);
+        CHECK(model.oldestFirst());
+        QStringList oldest;
+        for (int r = 0; r < model.count(); ++r)
+            oldest << role(r, ArticleModel::ItemIdRole).toString();
+        QStringList reversed = newestFirst;
+        std::reverse(reversed.begin(), reversed.end());
+        CHECK_EQ(oldest.join(QLatin1Char(',')), reversed.join(QLatin1Char(',')));
+        CHECK(role(0, ArticleModel::PubDateRole).toDateTime() <= role(model.count() - 1, ArticleModel::PubDateRole).toDateTime());
+        model.setOldestFirst(false);
+        CHECK_EQ(role(0, ArticleModel::ItemIdRole).toInt(), 101);
+    }
     CHECK_EQ(role(3, ArticleModel::ThumbRole).toString(), QStringLiteral("https://cdn.example.com/pixel.jpg"));
     CHECK_EQ(role(3, ArticleModel::DayRole).toString(), QStringLiteral("Yesterday"));
     CHECK(model.roleNames().value(ArticleModel::ThumbRole) == "thumb");
@@ -1443,6 +1667,23 @@ int main(int argc, char **argv)
         CHECK(!pf.isPending(QUrl(QStringLiteral("ftp://example.com/x"))));
         pf.clear();
         CHECK(pf.html(page).isEmpty());
+
+        // Slow page (1.2): idleMs stays small while data comes in, -1 when done
+        done = false;
+        const QUrl slow(QStringLiteral("http://127.0.0.1:%1/public/slow.html").arg(port));
+        CHECK_EQ(pf.idleMs(slow), -1);
+        QElapsedTimer t;
+        t.start();
+        pf.prefetch(slow);
+        CHECK(pf.idleMs(slow) >= 0);
+        int maxIdle = 0;
+        CHECK(waitFor([&] { maxIdle = qMax(maxIdle, pf.idleMs(slow)); return done; }));
+        std::printf("     slow page: %lld ms, longest pause %d ms\n", static_cast<long long>(t.elapsed()), maxIdle);
+        CHECK(t.elapsed() >= 2000);
+        CHECK(maxIdle < 1500);
+        CHECK(okHtml);
+        CHECK(pf.html(slow).contains(QStringLiteral("Teil 2")));
+        CHECK_EQ(pf.idleMs(slow), -1);
     }
 
     // Prefetcher sends the in-app browser's (Gecko) cookies: consent walls

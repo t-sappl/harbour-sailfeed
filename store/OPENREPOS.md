@@ -14,32 +14,33 @@
 
 **License:** GPL-3.0-or-later
 
-## Description for the OpenRepos page (HTML, 1.1)
+## Description for the OpenRepos page (HTML, 1.2)
 
-> **Note for the author – do not paste this note.** The line "New in 1.1" is replaced with every version. Paste only the HTML inside the code block below into the description field. Reworked 15 Oct (bold label per line and slashes looked unsettled; clipboard → "Subscribe to website", search added, only the text size is per feed); order and wording as the author put it on the page. Also upload the 512 px icon (`design/harbour-sailfeed-512.png`) and screenshots (see below).
+> **Note for the author – do not paste this note.** The line "New in 1.2" is replaced with every version. Paste only the HTML inside the code block below into the description field. Reworked 15 Oct (bold label per line and slashes looked unsettled; clipboard → "Subscribe to website", search added, only the text size is per feed); order and wording as the author put it on the page. Also upload the 512 px icon (`design/harbour-sailfeed-512.png`) and screenshots (see below).
 
 ```html
 <p><strong>Feed reader for Nextcloud News on Sailfish OS, with a clean reader mode</strong></p>
 
 <p>I built Sailfeed for myself after moving partly from Android to Sailfish OS: my RSS feeds should be in the same state everywhere – read on the phone, read on the tablet. <a href="https://apps.nextcloud.com/apps/news">Nextcloud News</a> keeps them in sync, Sailfeed is the native reader for it, based on <a href="https://github.com/Huessenbergnetz/libfuoten">libfuoten</a>. I use it every day and share it for anyone who finds it useful.</p>
 
-<p><strong>New in 1.1:</strong> subscribe to websites and feeds, search, links in reader mode, a calmer reader mode and various refinements.</p>
+<p><strong>New in 1.2:</strong> settings per feed, a compact list view, oldest first, swipe to the next article, better on slow connections, and old read articles are cleaned up.</p>
 
 <p><strong>Feeds</strong></p>
 <ul>
 <li>Subscribe to website: paste the address of a site or an article – Sailfeed finds its feeds and shows their newest articles</li>
 <li>Search in the articles on your device and in feed titles</li>
 <li>Folders, favorite feeds, bookmarks, several sort orders; rename, move, delete</li>
+<li>Settings per feed: list view, preview, how the full article opens</li>
 </ul>
 
 <p><strong>Reading</strong></p>
 <ul>
-<li>Article list grouped by day, page-wise scrolling with one hand, read articles greyed out automatically</li>
+<li>Article list grouped by day – detailed or compact, newest or oldest first –, page-wise scrolling with one hand, read articles greyed out automatically</li>
 <li>Swipe from the preview to the full article in a clean reader mode – no ads, no cookie banners; font, colors and spacing as you like, text size remembered per feed</li>
-<li>Bottom bar for one-handed reading: previous / next, text size, bookmark, light / dark, reader mode or original website</li>
+<li>Bottom bar for one-handed reading: previous / next, text size, bookmark, light / dark, reader mode or original website; swipe left for the next article</li>
 <li>Links in articles open in reader mode or in the browser</li>
 <li>Mark as read with one hand (push-up button) or by long press – always with undo</li>
-<li>Works offline: read and bookmark changes are sent with the next sync</li>
+<li>Works offline: read and bookmark changes are sent with the next sync; old read articles are cleaned up to save space</li>
 <li>Settings backup in your Nextcloud files, app password in Sailfish Secrets, Sailjail, cover actions, portrait and landscape, English and German</li>
 </ul>
 
@@ -60,15 +61,17 @@ Why it exists: I moved partly from Android to Sailfish OS and wanted my RSS feed
 A personal project – built for my own use and the features I need most. Bug reports are welcome on GitHub, but I can't promise support or feature requests.
 
 Features:
-- Article list with excerpt and thumbnail, grouped by day, page-wise scrolling, read articles greyed out; optionally unread only (read ones on request); older articles loadable
+- Article list with excerpt and thumbnail (or compact: title and source), grouped by day, newest or oldest first, page-wise scrolling, read articles greyed out; optionally unread only (read ones on request); older articles loadable
 - Feed list (swipe right): bookmarks, folders and feeds with favicons and unread counts, "Other feeds" for feeds without a folder, empty folders too; sort by unread, name or activity; favorite feeds
 - Subscribe to website: finds the feeds of a website or article (also from the web view), shows them with their newest articles; comment feeds and podcasts marked
 - Search: articles on the device (titles and text, also read ones) and feed titles
 - Feed management: folders, rename, move, delete
+- Feed settings: per feed list view, preview (show or skip) and full article mode; feeds without text open the full article directly
 - Mark as read automatically (when scrolling on, or at once), with a push-up button for one hand, by long press (read/unread, bookmark, all above/below) or per feed and folder – all with undo
 - Reader mode without ads, cookie banners and overlays (Mozilla Readability), preloaded for quick opening; font, text size (also per feed), line spacing, margins, colors (light/dark/sepia, quick light/dark toggle), images; sites that always open in the original; links in an article open in reader mode or in the browser (long press: the other way)
 - Full article in reader mode, as the original website in the app, or in the browser; the preview can be skipped
-- One-handed bar in preview and reader mode: previous/next article, text size, bookmark, open in browser
+- One-handed bar in preview and reader mode: previous/next article, text size, bookmark, open in browser; swipe left in reader mode for the next article
+- Storage: old read articles deleted after a chosen time (bookmarks and unread ones stay), adjustable image cache
 - Portrait and landscape
 - Sign-in with the browser (Nextcloud Login Flow) or an app password; understandable error hints
 - Offline-friendly: read and bookmark changes are queued and synced
@@ -98,6 +101,16 @@ Voraussetzung: ein Nextcloud-Server mit installierter App **Nextcloud News** –
 
 Funktionen (kurz): Artikelliste mit Vorschaubild und seitenweisem Scrollen, Feedliste mit Ordnern, Lesezeichen und Favoriten, Feeds und Ordner verwalten, automatisch und einhändig als gelesen markieren, Lesemodus ohne Werbung und Cookie-Banner (Schrift, Größe, Farben einstellbar), Hoch- und Querformat, Anmeldung im Browser, offline nutzbar, Sicherung der Einstellungen in der eigenen Nextcloud. Deutsch und Englisch.
 
+## Changelog 1.2.0 (paste into the OpenRepos changelog field)
+
+- New: Feed settings – long press a feed or use the pulley of its article list: name, folder, and the feed's own list view, preview and full article mode
+- New: compact list view (title and source, about twice as many articles per page), also per feed
+- New: order "oldest first"
+- New: swipe left in reader mode for the next article
+- Articles without text in the feed open the full article directly
+- Slow connections: reader mode keeps waiting instead of starting over, offers the feed's text or the browser after 10 s, no more blank page
+- Storage: old read articles are deleted after a chosen time (bookmarks and unread ones always stay; off after an update, with a hint); image cache size and "Clear image cache"
+
 ## Changelog 1.1.0 (paste into the OpenRepos changelog field)
 
 - New: Subscribe to website – finds the feeds of a website or article and shows them with their newest articles; recognises feeds you already subscribe to; also from the web view pulley
@@ -120,6 +133,6 @@ First public release.
 - Settings backup in your own Nextcloud files
 - Portrait and landscape; English and German
 
-## Screenshots (in `screenshots/`, taken 11 and 15 Oct; also shown in the README)
+## Screenshots (in `screenshots/`, taken 19 Oct for 1.2; also shown in the README)
 
-Upload in this order (as in the README): `article-list.png`, `feeds.png`, `search.png`, `preview.png`, `reader.png`, `reader2.png` (reader mode with light colors), `settings.png`.
+Upload in this order (as in the README): `article-list.png`, `feeds.png`, `preview.png`, `reader.png`, `original.png`, `search.png`, `bookmarks.png`, `subscribe.png`, `feed-settings.png`, `settings-list.png`.

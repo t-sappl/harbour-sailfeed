@@ -72,6 +72,10 @@ Page {
         onOlderFetched: {
             if (newArticles === 0 && list.count > 0 && page.olderHintWanted)
                 hint.show(qsTr("No older articles"))
+            // Oldest first: they went to the top, far from the button
+            else if (newArticles > 0 && app.oldestFirst)
+                hint.show(newArticles === 1 ? qsTr("1 older article added at the top")
+                                            : qsTr("%1 older articles added at the top").arg(newArticles))
             page.olderHintWanted = false
         }
         onFetchOlderFailed: {
@@ -189,15 +193,19 @@ Page {
             onClicked: {
                 articles.markRead(index)
                 var d = articles.get(index)
-                if (app.skipPreview && (d.url || "").toString() !== "") {
-                    // Setting "Skip the preview": straight to the full article
+                // General settings or the feed's own (feed settings)
+                var mode = app.openModeFor(d.feedId || -1)
+                // Setting "Skip the preview", or nothing to preview (1.2: the
+                // feed sends no text, e.g. news.orf.at): straight to the full article
+                if ((app.skipPreviewFor(d.feedId || -1) || d.hasContent === false)
+                        && (d.url || "").toString() !== "") {
                     app.lastOpenedItemId = d.itemId
-                    if (app.openMode === 2) {
+                    if (mode === 2) {
                         Qt.openUrlExternally(d.url)
                         return
                     }
                     pageStack.push(Qt.resolvedUrl("WebPage.qml"),
-                                   { url: d.url, readerMode: app.openMode === 0, itemId: d.itemId,
+                                   { url: d.url, readerMode: mode === 0, itemId: d.itemId,
                                      feedId: d.feedId || -1, feedTitle: d.feedTitle || "",
                                      articleModel: articles, starred: d.starred === true,
                                      articleTitle: d.title || "" })
@@ -238,6 +246,12 @@ Page {
             id: pulley
             busy: synchronizer.inOperation
             MenuItem { text: qsTr("Settings"); onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml")) }
+            // Only while one feed is selected; at the top: rarely used
+            MenuItem {
+                visible: app.currentFeedId >= 0
+                text: qsTr("Feed settings")
+                onClicked: pageStack.push(Qt.resolvedUrl("FeedSettingsPage.qml"), { feedId: app.currentFeedId })
+            }
             MenuItem { text: qsTr("Feeds"); onClicked: pageStack.navigateBack() }
             MenuItem {
                 text: qsTr("Mark all as read")

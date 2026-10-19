@@ -26,20 +26,23 @@ Reads the feeds of your own Nextcloud server in a native Silica interface.
 > can't promise support or feature requests.
 
 <p align="center">
-  <img src="screenshots/article-list.png" width="24%" alt="Article list">
-  <img src="screenshots/feeds.png" width="24%" alt="Feed list">
-  <img src="screenshots/search.png" width="24%" alt="Search">
-  <img src="screenshots/preview.png" width="24%" alt="Article preview">
+  <img src="screenshots/article-list.png" width="19%" alt="Article list">
+  <img src="screenshots/feeds.png" width="19%" alt="Feed list">
+  <img src="screenshots/preview.png" width="19%" alt="Article preview">
+  <img src="screenshots/reader.png" width="19%" alt="Reader mode">
+  <img src="screenshots/original.png" width="19%" alt="Original website">
 </p>
 <p align="center">
-  <img src="screenshots/reader.png" width="24%" alt="Reader mode">
-  <img src="screenshots/reader2.png" width="24%" alt="Reader mode, light colors">
-  <img src="screenshots/settings.png" width="24%" alt="Settings">
+  <img src="screenshots/search.png" width="19%" alt="Search">
+  <img src="screenshots/bookmarks.png" width="19%" alt="Bookmarks">
+  <img src="screenshots/subscribe.png" width="19%" alt="Subscribe to website">
+  <img src="screenshots/feed-settings.png" width="19%" alt="Feed settings">
+  <img src="screenshots/settings-list.png" width="19%" alt="Article list settings">
 </p>
 
 ## Features
 
-- **Article list** – title, source and age, excerpt and thumbnail, grouped by "Today", "Yesterday" and date; page-wise scrolling that stops at the start of an article (free scrolling on fast flicks); read articles greyed out; optionally unread articles only
+- **Article list** – title, source and age, excerpt and thumbnail, grouped by "Today", "Yesterday" and date; detailed or compact (title and source only), newest or oldest first; page-wise scrolling that stops at the start of an article (free scrolling on fast flicks); read articles greyed out; optionally unread articles only
 - **Reader mode** – using Mozilla's Readability.js: the article's website without ads, cookie banners and overlays; text size, font, line spacing, margins, justified text, colors (ambience, light, dark, sepia) and images adjustable; sites that should always open in the original; pages are preloaded while the preview is displayed, so it opens quickly; consent walls (e.g. "with ads or subscription") are shown once for your choice, which is then remembered; links in an article open in reader mode in the app or in the browser (setting; a long press opens them the other way)
 - **Article Preview** - a preview of each article with the option to swipe left to read the article in Reader mode or Full article mode - can be switched off in the Settings
 - **Full article** – in reader mode, as the original website in the app (Sailfish WebView) or in the external browser
@@ -47,10 +50,13 @@ Reads the feeds of your own Nextcloud server in a native Silica interface.
 - **Subscribe to website** – enter or paste the address of a website, an article or a feed: Sailfeed finds the site's feeds (announced in the page, linked, in parent pages, at the usual addresses of blog systems), checks them and shows each with its newest articles to subscribe; also from the pulley of the web view, e.g. for a blog linked in an article. Comment feeds and podcasts are marked
 - **Search** – "Search" in the pulley of the article list and the feed list: searches the articles on the device (titles, or titles and text; all feeds or the current selection; read ones too) and the feed titles
 - **Feed management** – folders, rename, move and delete feeds and folders
+- **Feed settings** – long press a feed (or the pulley of its article list): name, folder and the feed's own list view, preview and full article mode, each "like the general setting" until changed; feeds that send no text open the full article directly
 - **Mark as read** – automatically for articles you have seen for a few seconds (greyed out when you scroll on, or at once); one-handed with a push-up button at the bottom right (like Nextcloud News app on Android); long press for mark as read/unread, bookmark, mark all above or below as read; mark a whole feed or folder from the feed list – all with undo
-- **Navigation** – swipe left from the preview into reader mode and right straight back to the list; a one-handed bar in preview and reader mode (previous/next article, text size, bookmark, open in browser); the preview can be skipped; the list keeps its position
+- **Navigation** – swipe left from the preview into reader mode and right straight back to the list; a one-handed bar in preview and reader mode (previous/next article, text size, bookmark, open in browser); swipe left in reader mode for the next article; the preview can be skipped; the list keeps its position
 - **Portrait and Landscape** - Landscape mode will be refined in future versions (e.g. 2 columns / Article List and Article side-by-side)
 - **Settings backup** – settings, favorite feeds and sites in the original (optionally the text sizes) saved in Nextcloud files, automatically after changes, earlier states kept; restore them on another device or after a new installation (offered after signing in), replacing or only adding what is missing, with undo
+- **Storage** – read articles older than a chosen time are deleted (bookmarks and unread ones always stay); adjustable image cache that can be cleared
+- **Slow connections** – the reader mode waits for a page that is still arriving and offers the feed's own text or the browser when it takes long
 - **Languages** – English, German
 - **Offline-mode** – read and bookmark changes are queued and sent in one go with the next sync, also when the app goes to the background
 - **Sailfish native** – Silica components, pulley menus, remorse timers, cover with unread count and refresh action, Sailjail sandbox, app password in Sailfish Secrets

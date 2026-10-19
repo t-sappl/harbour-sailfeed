@@ -124,11 +124,87 @@
     </message>
 </context>
 <context>
+    <name>AddFeedDialog</name>
+    <message>
+        <location filename="../qml/pages/AddFeedDialog.qml" line="+39"/>
+        <source>Add feed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Add</source>
+        <translation type="unfinished">Hinzufügen</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Feed address</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>The address of the RSS or Atom feed. The address of a website often works too, if it announces its feed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Folder</source>
+        <translation type="unfinished">Ordner</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>No folder</source>
+        <translation type="unfinished">Kein Ordner</translation>
+    </message>
+</context>
+<context>
+    <name>ArticleCleaner</name>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="+201"/>
+        <source>1 article stored (%1 MB)</source>
+        <translation>1 Artikel gespeichert (%1 MB)</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 articles stored (%2 MB)</source>
+        <translation>%1 Artikel gespeichert (%2 MB)</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Database: %1 MB</source>
+        <translation>Datenbank: %1 MB</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Last cleanup %1: nothing to delete</source>
+        <translation>Letztes Aufräumen %1: nichts zu löschen</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Last cleanup %1: 1 article deleted</source>
+        <translation>Letztes Aufräumen %1: 1 Artikel gelöscht</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Last cleanup %1: %2 articles deleted</source>
+        <translation>Letztes Aufräumen %1: %2 Artikel gelöscht</translation>
+    </message>
+</context>
+<context>
     <name>ArticleListPage</name>
     <message>
         <location filename="../qml/pages/ArticleListPage.qml" line="+74"/>
         <source>No older articles</source>
         <translation>Keine älteren Artikel</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>1 older article added at the top</source>
+        <translation>1 älterer Artikel oben hinzugefügt</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 older articles added at the top</source>
+        <translation>%1 ältere Artikel oben hinzugefügt</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -157,12 +233,12 @@
     </message>
     <message>
         <location line="+1"/>
-        <location line="+114"/>
+        <location line="+124"/>
         <source>Older, read articles available</source>
         <translation>Ältere, gelesene Artikel vorhanden</translation>
     </message>
     <message>
-        <location line="-107"/>
+        <location line="-117"/>
         <source>Load older articles</source>
         <translation>Ältere Artikel laden</translation>
     </message>
@@ -172,7 +248,7 @@
         <translation>Ältere Artikel werden geladen …</translation>
     </message>
     <message>
-        <location line="+46"/>
+        <location line="+50"/>
         <source>Mark as read</source>
         <translation>Als gelesen markieren</translation>
     </message>
@@ -207,7 +283,12 @@
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+4"/>
+        <source>Feed settings</source>
+        <translation>Feed-Einstellungen</translation>
+    </message>
+    <message>
+        <location line="+3"/>
         <source>Feeds</source>
         <translation>Feeds</translation>
     </message>
@@ -305,7 +386,7 @@
 <context>
     <name>ArticleModel</name>
     <message>
-        <location filename="../src/articlemodel.cpp" line="+598"/>
+        <location filename="../src/articlemodel.cpp" line="+618"/>
         <source>now</source>
         <translation>jetzt</translation>
     </message>
@@ -338,7 +419,7 @@
 <context>
     <name>ArticlePage</name>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="+74"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="+76"/>
         <source>Text size %1 % for %2</source>
         <translation>Textgröße %1 % für %2</translation>
     </message>
@@ -384,12 +465,17 @@
     </message>
     <message>
         <location line="+5"/>
-        <location line="+97"/>
+        <location line="+110"/>
         <source>Open in browser</source>
         <translation>Im Browser öffnen</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-43"/>
+        <source>The feed sends no text for this article.</source>
+        <translation>Der Feed liefert für diesen Artikel keinen Text.</translation>
+    </message>
+    <message>
+        <location line="+44"/>
         <source>Show website</source>
         <translation>Webseite anzeigen</translation>
     </message>
@@ -469,6 +555,172 @@
     </message>
 </context>
 <context>
+    <name>FeedSettingsPage</name>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="+39"/>
+        <source>Feed renamed</source>
+        <translation>Feed umbenannt</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Feed moved</source>
+        <translation>Feed verschoben</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>The server rejected the change</source>
+        <translation>Der Server hat die Änderung abgelehnt</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Reader mode</source>
+        <translation>Lesemodus</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Original website</source>
+        <translation>Original-Webseite</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>External browser</source>
+        <translation>Externer Browser</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <location line="+1"/>
+        <source>Feed settings</source>
+        <translation>Feed-Einstellungen</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Name</source>
+        <translation>Name</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Rename feed</source>
+        <translation>Feed umbenennen</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Folder</source>
+        <translation>Ordner</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No folder</source>
+        <translation>Kein Ordner</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Reading</source>
+        <translation>Lesen</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>List view</source>
+        <translation>Listenansicht</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <location line="+16"/>
+        <location line="+13"/>
+        <source>Like the general setting (%1)</source>
+        <translation>Wie allgemein (%1)</translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>compact</source>
+        <translation>kompakt</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>detailed</source>
+        <translation>ausführlich</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Detailed</source>
+        <translation>Ausführlich</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Compact</source>
+        <translation>Kompakt</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Preview</source>
+        <translation>Vorschau</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Tapping an article opens the full article right away – useful for feeds without texts.</source>
+        <translation>Ein Tipp auf einen Artikel öffnet gleich den ganzen Artikel – praktisch für Feeds ohne Texte.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>skipped</source>
+        <translation>übersprungen</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>shown</source>
+        <translation>angezeigt</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Show</source>
+        <translation>Anzeigen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Skip</source>
+        <translation>Überspringen</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Full article</source>
+        <translation>Ganzer Artikel</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Reset the text size of this feed</source>
+        <translation>Textgröße dieses Feeds zurücksetzen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>It was changed while reading; afterwards the general size applies.</source>
+        <translation>Sie wurde beim Lesen geändert; danach gilt die allgemeine Größe.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Text size reset</source>
+        <translation>Textgröße zurückgesetzt</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Text size: the general size. A size changed with A− / A+ while reading is kept for this feed.</source>
+        <translation>Textgröße: die allgemeine Größe. Eine beim Lesen mit A− / A+ geänderte Größe wird für diesen Feed gemerkt.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Text size: the general size (sizes per feed are off in the settings).</source>
+        <translation>Textgröße: die allgemeine Größe (Größen pro Feed sind in den Einstellungen aus).</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Address</source>
+        <translation>Adresse</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Address copied</source>
+        <translation>Adresse kopiert</translation>
+    </message>
+</context>
+<context>
     <name>FeedSortComboBox</name>
     <message>
         <location filename="../qml/components/FeedSortComboBox.qml" line="+9"/>
@@ -505,22 +757,17 @@
     <name>FeedsPage</name>
     <message>
         <location filename="../qml/pages/FeedsPage.qml" line="+88"/>
-        <location line="+226"/>
+        <location line="+211"/>
         <source>Add folder</source>
         <translation>Ordner hinzufügen</translation>
     </message>
     <message>
-        <location line="-226"/>
+        <location line="-211"/>
         <source>Add</source>
         <translation>Hinzufügen</translation>
     </message>
     <message>
         <location line="+5"/>
-        <source>Rename feed</source>
-        <translation>Feed umbenennen</translation>
-    </message>
-    <message>
-        <location line="+10"/>
         <source>Rename folder</source>
         <translation>Ordner umbenennen</translation>
     </message>
@@ -567,24 +814,23 @@
     <message>
         <location line="+4"/>
         <location line="+34"/>
-        <location line="+55"/>
+        <location line="+50"/>
         <source>Subscribe to website</source>
         <translation>Webseite abonnieren</translation>
     </message>
     <message>
-        <location line="-84"/>
-        <location line="+52"/>
+        <location line="-79"/>
         <source>Rename</source>
         <translation>Umbenennen</translation>
     </message>
     <message>
-        <location line="-47"/>
-        <location line="+57"/>
+        <location line="+5"/>
+        <location line="+52"/>
         <source>Delete</source>
         <translation>Löschen</translation>
     </message>
     <message>
-        <location line="-52"/>
+        <location line="-47"/>
         <source>Deleting folder and its feeds</source>
         <translation>Ordner und seine Feeds werden gelöscht</translation>
     </message>
@@ -624,12 +870,7 @@
         <translation>Zu Favoriten hinzufügen</translation>
     </message>
     <message>
-        <location line="+9"/>
-        <source>Move to folder</source>
-        <translation>In Ordner verschieben</translation>
-    </message>
-    <message>
-        <location line="+10"/>
+        <location line="+14"/>
         <source>Deleting feed</source>
         <translation>Feed wird gelöscht</translation>
     </message>
@@ -649,22 +890,27 @@
         <translation>Zieh nach unten und wähle „Webseite abonnieren“: Sailfeed findet die Feeds einer Webseite für dich.</translation>
     </message>
     <message>
-        <location line="-224"/>
+        <location line="-219"/>
         <source>Folder added</source>
         <translation>Ordner hinzugefügt</translation>
     </message>
     <message>
-        <location line="-59"/>
+        <location line="-49"/>
         <source>Pull down and choose &quot;Subscribe to website&quot;</source>
         <translation>Zieh nach unten und wähle „Webseite abonnieren“</translation>
     </message>
     <message>
-        <location line="+115"/>
+        <location line="+105"/>
         <source>Bookmarks</source>
         <translation>Lesezeichen</translation>
     </message>
     <message>
-        <location line="+154"/>
+        <location line="+116"/>
+        <source>Feed settings …</source>
+        <translation>Feed-Einstellungen …</translation>
+    </message>
+    <message>
+        <location line="+33"/>
         <source>Search</source>
         <translation>Suche</translation>
     </message>
@@ -682,6 +928,19 @@
         <location line="+2"/>
         <source>Sign in first</source>
         <translation>Zuerst anmelden</translation>
+    </message>
+</context>
+<context>
+    <name>FolderPage</name>
+    <message>
+        <location filename="../qml/pages/FolderPage.qml" line="+32"/>
+        <source>Folders</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>All articles</source>
+        <translation type="unfinished">Alle Artikel</translation>
     </message>
 </context>
 <context>
@@ -857,7 +1116,7 @@
 <context>
     <name>Prefetcher</name>
     <message>
-        <location filename="../src/prefetcher.cpp" line="+86"/>
+        <location filename="../src/prefetcher.cpp" line="+87"/>
         <source>No browser cookies yet</source>
         <translation>Noch keine Browser-Cookies</translation>
     </message>
@@ -1204,7 +1463,7 @@
 <context>
     <name>SettingsBackup</name>
     <message>
-        <location filename="../src/settingsbackup.cpp" line="+280"/>
+        <location filename="../src/settingsbackup.cpp" line="+290"/>
         <source>This is not a Sailfeed settings backup.</source>
         <translation>Das ist keine Sicherung der Sailfeed-Einstellungen.</translation>
     </message>
@@ -1217,7 +1476,7 @@
 <context>
     <name>SettingsListPage</name>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="+17"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="+32"/>
         <source>Article list</source>
         <translation>Artikelliste</translation>
     </message>
@@ -1272,6 +1531,51 @@
         <translation>Beim Weiterscrollen</translation>
     </message>
     <message>
+        <location line="+6"/>
+        <source>List view</source>
+        <translation>Listenansicht</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Title and source only, about twice as many articles per page.</source>
+        <translation>Nur Titel und Quelle, etwa doppelt so viele Artikel pro Seite.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Title, source, the beginning of the text and an image.</source>
+        <translation>Titel, Quelle, der Anfang des Textes und ein Bild.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Detailed</source>
+        <translation>Ausführlich</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Compact</source>
+        <translation>Kompakt</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Order</source>
+        <translation>Reihenfolge</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Read from the oldest article on. New articles come at the end of the list.</source>
+        <translation>Lesen ab dem ältesten Artikel. Neue Artikel kommen ans Ende der Liste.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Newest first</source>
+        <translation>Neueste zuerst</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Oldest first</source>
+        <translation>Älteste zuerst</translation>
+    </message>
+    <message>
         <location line="+4"/>
         <source>Show unread articles only</source>
         <translation>Nur ungelesene Artikel anzeigen</translation>
@@ -1310,6 +1614,81 @@
         <location line="+1"/>
         <source>Can also be changed at the top of the feed list.</source>
         <translation>Lässt sich auch oben in der Feedliste ändern.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Storage</source>
+        <translation>Speicher</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Delete read articles after</source>
+        <translation>Gelesene Artikel löschen</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Read articles stay on this device.</source>
+        <translation>Gelesene Artikel bleiben auf diesem Gerät.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Read articles older than this are deleted from this device when the app starts. Bookmarked and unread articles always stay. A change takes effect at the next start.</source>
+        <translation>Ältere gelesene Artikel werden beim Start der App von diesem Gerät gelöscht. Lesezeichen und ungelesene Artikel bleiben immer. Eine Änderung wirkt ab dem nächsten Start.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Never</source>
+        <translation>Nie</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 month</source>
+        <translation>Nach 1 Monat</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>3 months</source>
+        <translation>Nach 3 Monaten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>6 months</source>
+        <translation>Nach 6 Monaten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 year</source>
+        <translation>Nach 1 Jahr</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Image cache</source>
+        <translation>Bildzwischenspeicher</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Images already loaded are not downloaded again. A new size applies at the next start.</source>
+        <translation>Bereits geladene Bilder werden nicht noch einmal heruntergeladen. Eine neue Größe gilt ab dem nächsten Start.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>%1 MB</source>
+        <translation>%1 MB</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Clear image cache</source>
+        <translation>Bildzwischenspeicher leeren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Now %1 MB</source>
+        <translation>Derzeit %1 MB</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Image cache cleared (%1 MB)</source>
+        <translation>Bildzwischenspeicher geleert (%1 MB)</translation>
     </message>
 </context>
 <context>
@@ -1463,18 +1842,18 @@
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+27"/>
         <source>not signed in</source>
         <translation>nicht angemeldet</translation>
     </message>
     <message>
-        <location line="-39"/>
-        <location line="+29"/>
+        <location line="-40"/>
+        <location line="+30"/>
         <source>Reader mode</source>
         <translation>Lesemodus</translation>
     </message>
     <message>
-        <location line="-29"/>
+        <location line="-30"/>
         <source>Original website</source>
         <translation>Original-Webseite</translation>
     </message>
@@ -1484,12 +1863,12 @@
         <translation>Externer Browser</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+24"/>
         <source>Article preview</source>
         <translation>Artikelvorschau</translation>
     </message>
     <message>
-        <location line="-20"/>
+        <location line="-21"/>
         <source>Like the ambience</source>
         <translation>Wie die Ambience</translation>
     </message>
@@ -1527,6 +1906,11 @@
         <location line="+1"/>
         <source>unread only</source>
         <translation>nur ungelesene</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>compact</source>
+        <translation>kompakt</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -1979,7 +2363,7 @@
 <context>
     <name>WebPage</name>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="+68"/>
+        <location filename="../qml/pages/WebPage.qml" line="+91"/>
         <source>Dark colors</source>
         <translation>Dunkle Farben</translation>
     </message>
@@ -1989,17 +2373,22 @@
         <translation>Helle Farben</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+36"/>
         <source>This site always opens in the original</source>
         <translation>Diese Seite öffnet sich immer im Original</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+38"/>
         <source>Please make your choice on the page, the reader mode follows automatically</source>
         <translation>Bitte auf der Seite eine Auswahl treffen, der Lesemodus folgt automatisch</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+53"/>
+        <source>Text from the feed – the website loads too slowly</source>
+        <translation>Text aus dem Feed – die Webseite lädt zu langsam</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>Reader mode not available for this page</source>
         <translation>Lesemodus für diese Seite nicht verfügbar</translation>
     </message>
@@ -2014,7 +2403,7 @@
         <translation>Textgröße %1</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+34"/>
         <source>Last article</source>
         <translation>Letzter Artikel</translation>
     </message>
@@ -2024,22 +2413,38 @@
         <translation>Erster Artikel</translation>
     </message>
     <message>
-        <location line="+95"/>
+        <location line="+96"/>
         <source>Share</source>
         <translation>Teilen</translation>
     </message>
     <message>
         <location line="+4"/>
+        <location line="+255"/>
         <source>Open in browser</source>
         <translation>Im Browser öffnen</translation>
     </message>
     <message>
-        <location line="+269"/>
+        <location line="-11"/>
+        <source>This takes long – the connection or the website is slow.</source>
+        <translation>Das dauert lange – die Verbindung oder die Webseite ist langsam.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Read the text from the feed</source>
+        <translation>Text aus dem Feed lesen</translation>
+    </message>
+    <message>
+        <location line="+89"/>
         <source>Pull down for more: subscribe to this website, share it, open it in the browser</source>
         <translation>Zieh nach unten für mehr: diese Webseite abonnieren, teilen, im Browser öffnen</translation>
     </message>
     <message>
-        <location line="-302"/>
+        <location line="+11"/>
+        <source>Swipe left for the next article</source>
+        <translation>Wische nach links für den nächsten Artikel</translation>
+    </message>
+    <message>
+        <location line="-382"/>
         <source>Subscribe to website</source>
         <translation>Webseite abonnieren</translation>
     </message>
@@ -2069,7 +2474,7 @@
         <translation>%1 öffnet sich ab jetzt im Original</translation>
     </message>
     <message>
-        <location line="+207"/>
+        <location line="+252"/>
         <source>Preparing reader mode …</source>
         <translation>Lesemodus wird vorbereitet …</translation>
     </message>
@@ -2082,22 +2487,23 @@
 <context>
     <name>harbour-sailfeed</name>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="+62"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="+64"/>
         <source>Could not open the link</source>
         <translation>Der Link konnte nicht geöffnet werden</translation>
     </message>
     <message>
-        <location line="+114"/>
+        <location line="+162"/>
         <source>Rather the full article right away? Settings → Article preview → Skip the preview.</source>
         <translation>Lieber gleich den ganzen Artikel? Einstellungen → Artikelvorschau → Vorschau überspringen.</translation>
     </message>
     <message>
         <location line="+1"/>
+        <location line="+321"/>
         <source>Settings</source>
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location line="+128"/>
+        <location line="-189"/>
         <source>Latest backup</source>
         <translation>Neueste Sicherung</translation>
     </message>
@@ -2117,7 +2523,7 @@
         <translation>Einstellungen wie vor der Wiederherstellung</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+38"/>
         <location line="+14"/>
         <source>All articles</source>
         <translation>Alle Artikel</translation>
@@ -2128,7 +2534,12 @@
         <translation>Lesezeichen</translation>
     </message>
     <message>
-        <location line="+103"/>
+        <location line="+94"/>
+        <source>New: Sailfeed can delete old read articles to save space.</source>
+        <translation>Neu: Sailfeed kann alte gelesene Artikel löschen, um Platz zu sparen.</translation>
+    </message>
+    <message>
+        <location line="+37"/>
         <source>Retry</source>
         <translation>Erneut versuchen</translation>
     </message>

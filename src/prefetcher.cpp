@@ -4,6 +4,7 @@
 #include "geckocookiejar.h"
 #include "configuration.h"
 
+#include <QDateTime>
 #include <QSettings>
 
 #include <QNetworkAccessManager>
@@ -121,9 +122,19 @@ void Prefetcher::prefetch(const QUrl &url)
 
     QNetworkReply *reply = m_nam->get(req);
     m_pending.insert(k, reply);
-    connect(reply, &QNetworkReply::downloadProgress, reply, [reply](qint64 received, qint64) {
-        if (received > maxBytes)
+    m_lastData.insert(k, QDateTime::currentMSecsSinceEpoch());
+    connect(reply, &QNetworkReply::downloadProgress, this, [this, reply, k](qint64 received, qint64) {
+        if (received > maxBytes) {
             reply->abort();
+            return;
+        }
+        if (m_pending.value(k) == reply)
+            m_lastData.insert(k, QDateTime::currentMSecsSinceEpoch());
+    });
+    // Headers and redirects are progress, too (before the first byte of the page)
+    connect(reply, &QNetworkReply::metaDataChanged, this, [this, reply, k]() {
+        if (m_pending.value(k) == reply)
+            m_lastData.insert(k, QDateTime::currentMSecsSinceEpoch());
     });
     connect(reply, &QNetworkReply::finished, this, [this, reply, url]() { onFinished(reply, url); });
 }
@@ -132,6 +143,7 @@ void Prefetcher::onFinished(QNetworkReply *reply, const QUrl &url)
 {
     const QString k = key(url);
     m_pending.remove(k);
+    m_lastData.remove(k);
     reply->deleteLater();
 
     const QString type = reply->header(QNetworkRequest::ContentTypeHeader).toString().toLower();
@@ -177,4 +189,12 @@ QString Prefetcher::html(const QUrl &url) const
 bool Prefetcher::isPending(const QUrl &url) const
 {
     return m_pending.contains(key(url));
+}
+
+int Prefetcher::idleMs(const QUrl &url) const
+{
+    const QString k = key(url);
+    if (!m_pending.contains(k))
+        return -1;
+    return static_cast<int>(qMin<qint64>(QDateTime::currentMSecsSinceEpoch() - m_lastData.value(k), 1 << 30));
 }

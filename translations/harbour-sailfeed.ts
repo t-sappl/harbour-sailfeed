@@ -157,44 +157,77 @@
     </message>
 </context>
 <context>
+    <name>ArticleCleaner</name>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="201"/>
+        <source>1 article stored (%1 MB)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="203"/>
+        <source>%1 articles stored (%2 MB)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="205"/>
+        <source>Database: %1 MB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="214"/>
+        <source>Last cleanup %1: nothing to delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="216"/>
+        <source>Last cleanup %1: 1 article deleted</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/articlecleaner.cpp" line="218"/>
+        <source>Last cleanup %1: %2 articles deleted</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ArticleListPage</name>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="131"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="135"/>
         <source>Updating …</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="220"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="228"/>
         <source>Remove bookmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="220"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="228"/>
         <source>Bookmark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="240"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="248"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="241"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="255"/>
         <source>Feeds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="243"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="257"/>
         <source>Mark all as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="360"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="374"/>
         <source>Marking all as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="251"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="265"/>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
@@ -204,133 +237,148 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="79"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="77"/>
+        <source>1 older article added at the top</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/ArticleListPage.qml" line="78"/>
+        <source>%1 older articles added at the top</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/ArticleListPage.qml" line="83"/>
         <source>Could not load older articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="132"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="136"/>
         <source>Refresh failed – pull down to try again</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="133"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="137"/>
         <source>Including read articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="158"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="162"/>
         <source>Show read articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="159"/>
-        <location filename="../qml/pages/ArticleListPage.qml" line="273"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="163"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="287"/>
         <source>Older, read articles available</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="166"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="170"/>
         <source>Load older articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="166"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="170"/>
         <source>Loading older articles …</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="212"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="220"/>
         <source>Mark as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="212"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="220"/>
         <source>Mark as unread</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="225"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="233"/>
         <source>Mark all above as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="230"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="238"/>
         <source>Mark all below as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="249"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="252"/>
+        <source>Feed settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/ArticleListPage.qml" line="263"/>
         <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="251"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="265"/>
         <source>Sign in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="266"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="280"/>
         <source>No account</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="267"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="281"/>
         <source>Loading articles …</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="268"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="282"/>
         <source>No feeds yet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="269"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="283"/>
         <source>No articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="269"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="283"/>
         <source>No unread articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="270"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="284"/>
         <source>Pull down to sign in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="272"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="286"/>
         <source>Swipe right to the feed list, pull down there and choose &quot;Subscribe to website&quot;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="273"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="287"/>
         <source>Pull down to refresh</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="371"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="385"/>
         <source>All articles are read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="372"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="386"/>
         <source>Push the button up to mark all as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="404"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="418"/>
         <source>Swipe right for your feeds and folders</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="415"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="429"/>
         <source>Push the round button up to mark all listed articles as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="421"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="435"/>
         <source>Press and hold an article: bookmark, mark as unread, mark all above or below as read</source>
         <translation type="unfinished"></translation>
     </message>
@@ -338,32 +386,32 @@
 <context>
     <name>ArticleModel</name>
     <message>
-        <location filename="../src/articlemodel.cpp" line="598"/>
+        <location filename="../src/articlemodel.cpp" line="618"/>
         <source>now</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/articlemodel.cpp" line="600"/>
+        <location filename="../src/articlemodel.cpp" line="620"/>
         <source>%1 min</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/articlemodel.cpp" line="602"/>
+        <location filename="../src/articlemodel.cpp" line="622"/>
         <source>%1 h</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/articlemodel.cpp" line="604"/>
+        <location filename="../src/articlemodel.cpp" line="624"/>
         <source>%1 d</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/articlemodel.cpp" line="615"/>
+        <location filename="../src/articlemodel.cpp" line="635"/>
         <source>Today</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/articlemodel.cpp" line="617"/>
+        <location filename="../src/articlemodel.cpp" line="637"/>
         <source>Yesterday</source>
         <translation type="unfinished"></translation>
     </message>
@@ -371,83 +419,88 @@
 <context>
     <name>ArticlePage</name>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="74"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="76"/>
         <source>Text size %1 % for %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="75"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="77"/>
         <source>Text size %1 %</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="92"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="94"/>
         <source>Last article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="92"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="94"/>
         <source>First article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="158"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="160"/>
         <source>Mark as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="158"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="160"/>
         <source>Mark as unread</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="141"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="143"/>
         <source>Copy link</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="144"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="146"/>
         <source>Link copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="149"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="151"/>
         <source>Share</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="154"/>
-        <location filename="../qml/pages/ArticlePage.qml" line="251"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="156"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="266"/>
         <source>Open in browser</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="252"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="223"/>
+        <source>The feed sends no text for this article.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/ArticlePage.qml" line="267"/>
         <source>Show website</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="253"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="268"/>
         <source>Show full article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="256"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="271"/>
         <source>or swipe left</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="262"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="277"/>
         <source>Next article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="263"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="278"/>
         <source>Previous article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="303"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="318"/>
         <source>Swipe left for the full article</source>
         <translation type="unfinished"></translation>
     </message>
@@ -502,6 +555,172 @@
     </message>
 </context>
 <context>
+    <name>FeedSettingsPage</name>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="39"/>
+        <source>Feed renamed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="41"/>
+        <source>Feed moved</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="45"/>
+        <source>The server rejected the change</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="49"/>
+        <source>Reader mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="49"/>
+        <source>Original website</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="49"/>
+        <source>External browser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="60"/>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="61"/>
+        <source>Feed settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="65"/>
+        <source>Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="71"/>
+        <source>Rename feed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="76"/>
+        <source>Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="77"/>
+        <source>No folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="87"/>
+        <source>Reading</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="93"/>
+        <source>List view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="97"/>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="113"/>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="126"/>
+        <source>Like the general setting (%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="97"/>
+        <source>compact</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="97"/>
+        <source>detailed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="100"/>
+        <source>Detailed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="101"/>
+        <source>Compact</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="106"/>
+        <source>Preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="109"/>
+        <source>Tapping an article opens the full article right away – useful for feeds without texts.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="113"/>
+        <source>skipped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="113"/>
+        <source>shown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="116"/>
+        <source>Show</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="117"/>
+        <source>Skip</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="122"/>
+        <source>Full article</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="138"/>
+        <source>Reset the text size of this feed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="139"/>
+        <source>It was changed while reading; afterwards the general size applies.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="142"/>
+        <source>Text size reset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="153"/>
+        <source>Text size: the general size. A size changed with A− / A+ while reading is kept for this feed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="154"/>
+        <source>Text size: the general size (sizes per feed are off in the settings).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="157"/>
+        <source>Address</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedSettingsPage.qml" line="164"/>
+        <source>Address copied</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>FeedSortComboBox</name>
     <message>
         <location filename="../qml/components/FeedSortComboBox.qml" line="9"/>
@@ -538,7 +757,7 @@
     <name>FeedsPage</name>
     <message>
         <location filename="../qml/pages/FeedsPage.qml" line="88"/>
-        <location filename="../qml/pages/FeedsPage.qml" line="314"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="299"/>
         <source>Add folder</source>
         <translation type="unfinished"></translation>
     </message>
@@ -549,140 +768,129 @@
     </message>
     <message>
         <location filename="../qml/pages/FeedsPage.qml" line="93"/>
-        <source>Rename feed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="103"/>
         <source>Rename folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="112"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="102"/>
         <source>Feed added</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="131"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="121"/>
         <source>The server rejected the change</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="145"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="135"/>
         <source>Feeds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="153"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="143"/>
         <source>All articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="163"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="153"/>
         <source>Mark all as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="166"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="156"/>
         <source>Marking all as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="223"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="213"/>
         <source>Mark folder as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="227"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="217"/>
         <source>Marking folder as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="231"/>
-        <location filename="../qml/pages/FeedsPage.qml" line="265"/>
-        <location filename="../qml/pages/FeedsPage.qml" line="320"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="221"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="255"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="305"/>
         <source>Subscribe to website</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="236"/>
-        <location filename="../qml/pages/FeedsPage.qml" line="288"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="226"/>
         <source>Rename</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="241"/>
-        <location filename="../qml/pages/FeedsPage.qml" line="298"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="231"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="283"/>
         <source>Delete</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="246"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="236"/>
         <source>Deleting folder and its feeds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="247"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="237"/>
         <source>Deleting folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="258"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="248"/>
         <source>Mark as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="261"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="251"/>
         <source>Marking as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="276"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="266"/>
         <source>Mark feed as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="280"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="270"/>
         <source>Marking feed as read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="284"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="274"/>
         <source>Remove from favorites</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="284"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="274"/>
         <source>Add to favorites</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="293"/>
-        <source>Move to folder</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="303"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="288"/>
         <source>Deleting feed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="312"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="297"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="340"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="325"/>
         <source>No feeds yet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="341"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="326"/>
         <source>Pull down and choose &quot;Subscribe to website&quot;: Sailfeed finds the feeds of a website for you.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="117"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="107"/>
         <source>Folder added</source>
         <translation type="unfinished"></translation>
     </message>
@@ -692,27 +900,32 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="173"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="163"/>
         <source>Bookmarks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="327"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="279"/>
+        <source>Feed settings …</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FeedsPage.qml" line="312"/>
         <source>Search</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="332"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="317"/>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="340"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="325"/>
         <source>No feeds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="342"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="327"/>
         <source>Sign in first</source>
         <translation type="unfinished"></translation>
     </message>
@@ -903,22 +1116,22 @@
 <context>
     <name>Prefetcher</name>
     <message>
-        <location filename="../src/prefetcher.cpp" line="86"/>
+        <location filename="../src/prefetcher.cpp" line="87"/>
         <source>No browser cookies yet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/prefetcher.cpp" line="89"/>
+        <location filename="../src/prefetcher.cpp" line="90"/>
         <source>Browser cookies not readable (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/prefetcher.cpp" line="92"/>
+        <location filename="../src/prefetcher.cpp" line="93"/>
         <source>1 browser cookie shared with the reader mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/prefetcher.cpp" line="93"/>
+        <location filename="../src/prefetcher.cpp" line="94"/>
         <source>%1 browser cookies shared with the reader mode</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1250,12 +1463,12 @@
 <context>
     <name>SettingsBackup</name>
     <message>
-        <location filename="../src/settingsbackup.cpp" line="280"/>
+        <location filename="../src/settingsbackup.cpp" line="290"/>
         <source>This is not a Sailfeed settings backup.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settingsbackup.cpp" line="285"/>
+        <location filename="../src/settingsbackup.cpp" line="295"/>
         <source>This backup was made by a newer Sailfeed version. Please update the app.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1263,98 +1476,218 @@
 <context>
     <name>SettingsListPage</name>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="17"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="32"/>
         <source>Article list</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="26"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="41"/>
         <source>Mark as read after</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="28"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="43"/>
         <source>Articles are only marked as read when you open them or mark them yourself.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="29"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="44"/>
         <source>Articles that are fully visible in the list for this time count as read.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="42"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="57"/>
         <source>Off</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="42"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="57"/>
         <source>%1 seconds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="51"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="66"/>
         <source>Grey out read articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="53"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="68"/>
         <source>Articles seen for the time above are greyed out when you scroll on, not while you are still reading.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="54"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="69"/>
         <source>Articles are greyed out as soon as the time above is over.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="57"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="72"/>
         <source>At once</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="58"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="73"/>
         <source>When scrolling on</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="62"/>
-        <source>Show unread articles only</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="63"/>
-        <source>Articles read in this session stay visible until the next refresh.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="69"/>
-        <source>Button &quot;Mark all as read&quot;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="70"/>
-        <source>Push it up to mark all as read, with one hand.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="76"/>
-        <source>Feed list</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../qml/pages/SettingsListPage.qml" line="79"/>
-        <source>Feeds with the most articles in the last 30 days first. Counts articles synced to this device.</source>
+        <source>List view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsListPage.qml" line="81"/>
-        <source>Feeds with unread articles first. Inside both groups by activity: articles of the last 30 days, each bookmarked article counts three times.</source>
+        <source>Title and source only, about twice as many articles per page.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsListPage.qml" line="82"/>
+        <source>Title, source, the beginning of the text and an image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="85"/>
+        <source>Detailed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="86"/>
+        <source>Compact</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="91"/>
+        <source>Order</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="93"/>
+        <source>Read from the oldest article on. New articles come at the end of the list.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="97"/>
+        <source>Newest first</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="98"/>
+        <source>Oldest first</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="102"/>
+        <source>Show unread articles only</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="103"/>
+        <source>Articles read in this session stay visible until the next refresh.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="109"/>
+        <source>Button &quot;Mark all as read&quot;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="110"/>
+        <source>Push it up to mark all as read, with one hand.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="116"/>
+        <source>Feed list</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="119"/>
+        <source>Feeds with the most articles in the last 30 days first. Counts articles synced to this device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="121"/>
+        <source>Feeds with unread articles first. Inside both groups by activity: articles of the last 30 days, each bookmarked article counts three times.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="122"/>
         <source>Can also be changed at the top of the feed list.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="127"/>
+        <source>Storage</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="132"/>
+        <source>Delete read articles after</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="134"/>
+        <source>Read articles stay on this device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="135"/>
+        <source>Read articles older than this are deleted from this device when the app starts. Bookmarked and unread articles always stay. A change takes effect at the next start.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="148"/>
+        <source>Never</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="149"/>
+        <source>1 month</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="150"/>
+        <source>3 months</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="151"/>
+        <source>6 months</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="152"/>
+        <source>1 year</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="170"/>
+        <source>Image cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="171"/>
+        <source>Images already loaded are not downloaded again. A new size applies at the next start.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="183"/>
+        <source>%1 MB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="190"/>
+        <source>Clear image cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="191"/>
+        <source>Now %1 MB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsListPage.qml" line="196"/>
+        <source>Image cache cleared (%1 MB)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1509,13 +1842,13 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="58"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="59"/>
         <source>not signed in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="19"/>
-        <location filename="../qml/pages/SettingsPage.qml" line="48"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="49"/>
         <source>Reader mode</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1530,7 +1863,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="42"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="43"/>
         <source>Article preview</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1575,67 +1908,72 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="43"/>
-        <source>Skipped</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="43"/>
-        <source>Shown</source>
+        <location filename="../qml/pages/SettingsPage.qml" line="39"/>
+        <source>compact</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="44"/>
+        <source>Skipped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsPage.qml" line="44"/>
+        <source>Shown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/SettingsPage.qml" line="45"/>
         <source>text %1 %</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="51"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="52"/>
         <source>size %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="57"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="58"/>
         <source>Nextcloud</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="60"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="61"/>
         <source>backup by hand</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="61"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="62"/>
         <source>not backed up yet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="62"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="63"/>
         <source>backed up %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="67"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="68"/>
         <source>Browser cookies for the reader mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="68"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="69"/>
         <source>No browser cookies for the reader mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="69"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="70"/>
         <source>deleted at every start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="66"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="67"/>
         <source>Privacy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SettingsPage.qml" line="76"/>
+        <location filename="../qml/pages/SettingsPage.qml" line="77"/>
         <source>About Sailfeed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2025,102 +2363,123 @@
 <context>
     <name>WebPage</name>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="68"/>
+        <location filename="../qml/pages/WebPage.qml" line="91"/>
         <source>Dark colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="68"/>
+        <location filename="../qml/pages/WebPage.qml" line="91"/>
         <source>Light colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="100"/>
+        <location filename="../qml/pages/WebPage.qml" line="127"/>
         <source>This site always opens in the original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="136"/>
+        <location filename="../qml/pages/WebPage.qml" line="165"/>
         <source>Please make your choice on the page, the reader mode follows automatically</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="172"/>
+        <location filename="../qml/pages/WebPage.qml" line="218"/>
+        <source>Text from the feed – the website loads too slowly</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/WebPage.qml" line="223"/>
         <source>Reader mode not available for this page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="182"/>
+        <location filename="../qml/pages/WebPage.qml" line="233"/>
         <source>Text size %1 for %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="183"/>
+        <location filename="../qml/pages/WebPage.qml" line="234"/>
         <source>Text size %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="216"/>
+        <location filename="../qml/pages/WebPage.qml" line="268"/>
         <source>Last article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="216"/>
+        <location filename="../qml/pages/WebPage.qml" line="268"/>
         <source>First article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="311"/>
+        <location filename="../qml/pages/WebPage.qml" line="364"/>
         <source>Share</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="315"/>
+        <location filename="../qml/pages/WebPage.qml" line="368"/>
+        <location filename="../qml/pages/WebPage.qml" line="623"/>
         <source>Open in browser</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="584"/>
+        <location filename="../qml/pages/WebPage.qml" line="612"/>
+        <source>This takes long – the connection or the website is slow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/WebPage.qml" line="617"/>
+        <source>Read the text from the feed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/WebPage.qml" line="706"/>
         <source>Pull down for more: subscribe to this website, share it, open it in the browser</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="282"/>
+        <location filename="../qml/pages/WebPage.qml" line="717"/>
+        <source>Swipe left for the next article</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/WebPage.qml" line="335"/>
         <source>Subscribe to website</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="304"/>
+        <location filename="../qml/pages/WebPage.qml" line="357"/>
         <source>Copy link</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="307"/>
+        <location filename="../qml/pages/WebPage.qml" line="360"/>
         <source>Link copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="287"/>
+        <location filename="../qml/pages/WebPage.qml" line="340"/>
         <source>Use reader mode for this site</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="287"/>
+        <location filename="../qml/pages/WebPage.qml" line="340"/>
         <source>Always open this site in the original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="297"/>
+        <location filename="../qml/pages/WebPage.qml" line="350"/>
         <source>%1 opens in the original from now on</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="504"/>
+        <location filename="../qml/pages/WebPage.qml" line="602"/>
         <source>Preparing reader mode …</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="504"/>
+        <location filename="../qml/pages/WebPage.qml" line="602"/>
         <source>Loading website …</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2128,53 +2487,59 @@
 <context>
     <name>harbour-sailfeed</name>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="62"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="64"/>
         <source>Could not open the link</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="176"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="226"/>
         <source>Rather the full article right away? Settings → Article preview → Skip the preview.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="177"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="227"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="548"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="305"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="359"/>
         <source>Latest backup</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="315"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="369"/>
         <source>Settings restored</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="315"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="369"/>
         <source>Undo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="323"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="377"/>
         <source>Settings as before the restore</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="357"/>
-        <location filename="../qml/harbour-sailfeed.qml" line="371"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="415"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="429"/>
         <source>All articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="395"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="453"/>
         <source>Bookmarks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="498"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="547"/>
+        <source>New: Sailfeed can delete old read articles to save space.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/harbour-sailfeed.qml" line="584"/>
         <source>Retry</source>
         <translation type="unfinished"></translation>
     </message>

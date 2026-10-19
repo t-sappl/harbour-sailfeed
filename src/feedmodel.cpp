@@ -275,6 +275,25 @@ QStringList FeedModel::feedUrls() const
     return out;
 }
 
+QVariantMap FeedModel::feedInfo(int feedId) const
+{
+    for (int row = 0; row < rowCount(); ++row) {
+        Fuoten::Feed *f = feedAt(row);
+        if (!f || f->id() != feedId)
+            continue;
+        QVariantMap m;
+        m.insert(QStringLiteral("id"), static_cast<int>(f->id()));
+        m.insert(QStringLiteral("title"), f->title());
+        m.insert(QStringLiteral("url"), f->url().toString());
+        m.insert(QStringLiteral("link"), f->link().toString());
+        m.insert(QStringLiteral("folderId"), static_cast<int>(f->folderId()));
+        m.insert(QStringLiteral("folderName"), f->folderName());
+        m.insert(QStringLiteral("favicon"), f->faviconLink().toString());
+        return m;
+    }
+    return QVariantMap();
+}
+
 QVariantList FeedModel::subscribedFeeds() const
 {
     QVariantList out;

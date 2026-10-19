@@ -44,6 +44,29 @@ WebViewPage {
     property bool started: false
     property bool waitingPrefetch: false
     property int extractTries: 0
+    // Slow connection (1.2): the reader mode takes long – the cover offers
+    // the feed's own text and the browser instead of only waiting
+    property bool slow: false
+    // Diagnostics (slow connections): "Sailfeed reader: …" lines with the
+    // time since start() in the log
+    property double startedAt: 0
+    function log(what) {
+        console.log("Sailfeed reader:", what, "after", Date.now() - startedAt, "ms",
+                    "phase", phase, "loading", webView.loading, page.url)
+    }
+    // The text from the feed is shown instead of the website's (showFeedText)
+    property bool feedText: false
+    // The feed's text of the shown article, "" if it has none (no-text
+    // feeds, link pages)
+    readonly property var feedArticle: {
+        if (!articleModel || itemId < 0)
+            return null
+        var row = articleModel.rowOfId(itemId)
+        if (row < 0)
+            return null
+        var d = articleModel.get(row)
+        return d.hasContent === false ? null : d
+    }
 
     // Reader colors: like the ambience, light, dark or sepia (setting, app.readerPalette)
     readonly property string readerBackground: app.readerPalette.background
@@ -88,12 +111,16 @@ WebViewPage {
     // the article preview was open: no waiting for the page's network load.
     // explicitReader: chosen in the pulley, also for "original" sites
     function start(explicitReader) {
+        startedAt = Date.now()
         if (linkPage)
             console.log("Sailfeed link: link page starts", page.url)
         phase = phaseOriginal
         extractTries = 0
         waitingPrefetch = false
         consentStage = 0
+        slow = false
+        feedText = false
+        slowTimer.restart()
         // Sites set to "always open in the original"
         if (readerMode && !explicitReader && app.isOriginalSite(page.url)) {
             readerMode = false
@@ -102,10 +129,12 @@ WebViewPage {
         if (readerMode) {
             var cached = Prefetch.html(page.url)
             if (cached !== "") {
+                log("prefetched page ready")
                 webView.loadHtml(cached, page.url)
                 return
             }
             if (Prefetch.isPending(page.url)) {
+                log("waiting for the prefetch")
                 waitingPrefetch = true
                 prefetchTimeout.restart()
                 return
@@ -144,6 +173,7 @@ WebViewPage {
             return
         phase = phaseExtracting
         extractTries++
+        log(isFinal ? "extracting (page loaded)" : "extracting (DOM ready)")
         webView.runJavaScript(Html.readerExtractScript(), function(result) {
             if (result && String(result).indexOf('"consentWall":true') >= 0) {
                 page.consentWall()
@@ -167,6 +197,27 @@ WebViewPage {
         })
     }
 
+    // Shows the article's text from the feed in the reader layout, instead of
+    // waiting for the website (slow connection). The website is not loaded
+    // any further; "Reader mode" / the mode toggle tries it again.
+    function showFeedText() {
+        var d = feedArticle
+        if (!d)
+            return
+        var html = Html.readerHtml(JSON.stringify({ title: d.title || "", byline: d.author || "",
+                                                    siteName: d.feedTitle || "", content: d.body || "" }),
+                                   readerStyle())
+        if (html === "")
+            return
+        waitingPrefetch = false
+        prefetchTimeout.stop()
+        feedText = true
+        slow = false
+        phase = phaseReader
+        webView.loadHtml(html, page.url)
+        hint.show(qsTr("Text from the feed – the website loads too slowly"))
+    }
+
     function fail() {
         phase = phaseFailed
         hint.show(qsTr("Reader mode not available for this page"))
@@ -188,6 +239,7 @@ WebViewPage {
         phase = phaseOriginal
         waitingPrefetch = false
         consentStage = 0
+        feedText = false
         loadOriginal()
     }
 
@@ -236,7 +288,7 @@ WebViewPage {
 
     // Download the following article while this one is being read.
     function prefetchNext() {
-        if (!articleModel || itemId < 0 || app.openMode !== 0)
+        if (!articleModel || itemId < 0 || app.openModeFor(feedId) !== 0)
             return
         var row = articleModel.rowOfId(itemId) + 1
         if (row > 0 && row < articleModel.count)
@@ -244,6 +296,7 @@ WebViewPage {
     }
 
     onPhaseChanged: {
+        log("phase changed")
         if (phase === phaseShown || phase === phaseFailed)
             prefetchNext()
         if (phase === phaseShown && readerMode)
@@ -323,6 +376,7 @@ WebViewPage {
     Connections {
         target: flick.webView
         onLoadingChanged: {
+            page.log(flick.webView.loading ? "web view loading" : "web view loaded")
             if (flick.webView.loading)
                 return
             if (page.readerMode && page.phase === page.phaseOriginal)
@@ -343,7 +397,7 @@ WebViewPage {
     // (linkPoll); each id is handled once.
     property var handledLinks: ({})
     function handleLinkMessage(msg, channel) {
-        var m = String(msg).match(/^sailfeed:(tap|long):([a-z0-9]+-[0-9]+):(.+)$/)
+        var m = String(msg).match(/^sailfeed:(tap|long|swipe):([a-z0-9]+-[0-9]+):(.+)$/)
         if (!m) {
             console.log("Sailfeed link: unreadable message via", channel, msg)
             return
@@ -356,6 +410,13 @@ WebViewPage {
             return
         }
         console.log("Sailfeed link:", m[1], "via", channel, m[3])
+        // Swipe to the left in the reader page: next article (1.2)
+        if (m[1] === "swipe") {
+            app.setHintShown("readerSwipe")     // knows it, no tip needed
+            if (articleModel && itemId >= 0 && !linkPage)
+                openSibling(1)
+            return
+        }
         try {
             app.openLink(m[3], m[1] === "long")
         } catch (e) {
@@ -398,9 +459,20 @@ WebViewPage {
         interval: 200
         onTriggered: if (page.phase === page.phaseReader) page.phase = page.phaseShown
     }
-    // Safety net: the check never answered
+    // The reader page may finish loading late (its images on a slow
+    // connection) or the check above may not answer: ask again and again
+    // whether the reader page is there, and uncover only then. Until 1.1 the
+    // cover went away after 4 s regardless – on a slow connection a blank
+    // page with busy indicators instead of the title and "Preparing reader
+    // mode" (device test 17 Oct). Last resort after 30 s: uncover anyway.
     Timer {
-        interval: 4000
+        interval: 600
+        repeat: true
+        running: page.phase === page.phaseReader
+        onTriggered: page.confirmReader()
+    }
+    Timer {
+        interval: 30000
         running: page.phase === page.phaseReader
         onTriggered: if (page.phase === page.phaseReader) page.phase = page.phaseShown
     }
@@ -419,14 +491,40 @@ WebViewPage {
         }
     }
 
-    // Prefetch still running when the page opened: wait a little, then load normally.
+    // Prefetch still running when the page opened: wait while data still
+    // comes in (slow connection: starting over in the web view would throw
+    // away what has arrived – until 1.1 it gave up after 2.5 s); load
+    // normally when nothing came for a while.
     Timer {
         id: prefetchTimeout
-        interval: 2500
+        interval: 1000
+        repeat: true
         onTriggered: {
-            if (page.waitingPrefetch) {
+            if (!page.waitingPrefetch) {
+                stop()
+                return
+            }
+            var idle = Prefetch.idleMs(page.url)
+            if (idle < 0 || idle > 6000) {
+                page.log("prefetch gave up, idle " + idle)
+                stop()
                 page.waitingPrefetch = false
-                page.loadOriginal()
+                if (Prefetch.html(page.url) !== "")
+                    webView.loadHtml(Prefetch.html(page.url), page.url)
+                else
+                    page.loadOriginal()
+            }
+        }
+    }
+
+    // Reader mode not ready after 10 s: say so and offer alternatives
+    Timer {
+        id: slowTimer
+        interval: 10000
+        onTriggered: {
+            if (page.covered && page.readerMode) {
+                page.slow = true
+                page.log("slow")
             }
         }
     }
@@ -503,6 +601,28 @@ WebViewPage {
                 color: Theme.secondaryHighlightColor
                 text: page.readerMode ? qsTr("Preparing reader mode …") : qsTr("Loading website …")
             }
+            // Slow connection: alternatives to waiting
+            Label {
+                width: parent.width
+                visible: page.slow
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                text: qsTr("This takes long – the connection or the website is slow.")
+            }
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: page.slow && page.feedArticle !== null
+                text: qsTr("Read the text from the feed")
+                onClicked: page.showFeedText()
+            }
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: page.slow
+                text: qsTr("Open in browser")
+                onClicked: Qt.openUrlExternally(page.url)
+            }
         }
     }
 
@@ -534,7 +654,9 @@ WebViewPage {
         onTriggered: page.sliding = false
     }
 
-    PageBusyIndicator { running: !page.coverShown && flick.webView.loading }
+    // Only for the original website: in reader mode the cover shows the
+    // waiting, and the shown reader page may still load its images
+    PageBusyIndicator { running: !page.readerMode && !page.coverShown && flick.webView.loading }
 
     // Next / previous article without leaving the web view.
     ShareAction {
@@ -583,9 +705,33 @@ WebViewPage {
         interactionMode: TouchInteraction.Pull
         text: qsTr("Pull down for more: subscribe to this website, share it, open it in the browser")
     }
+    // Next tip (1.2), not together with the pulley's: swipe left for the
+    // next article. Only with a next article; not for someone who swiped
+    // already (handleLinkMessage marks it).
+    FirstRunHint {
+        id: swipeTip
+        key: "readerSwipe"
+        direction: TouchInteraction.Left
+        interactionMode: TouchInteraction.Swipe
+        labelBottomMargin: navBar.height
+        text: qsTr("Swipe left for the next article")
+    }
+    readonly property bool hasNext: {
+        if (!articleModel || itemId < 0 || linkPage)
+            return false
+        var row = articleModel.rowOfId(itemId)
+        return row >= 0 && row + 1 < articleModel.count
+    }
     Timer {
         id: pulleyTipTimer
         interval: 1500
-        onTriggered: if (page.status === PageStatus.Active && page.phase === page.phaseShown) pulleyTip.show()
+        onTriggered: {
+            if (page.status !== PageStatus.Active || page.phase !== page.phaseShown || !page.readerMode)
+                return
+            if (!app.hintShown("webPulley"))
+                pulleyTip.show()
+            else if (page.hasNext)
+                swipeTip.show()
+        }
     }
 }

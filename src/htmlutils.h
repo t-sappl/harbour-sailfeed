@@ -25,6 +25,12 @@ QUrl thumbnail(const QUrl &enclosureLink, const QString &enclosureMime,
 // cut at maxChars (on a word boundary if possible) and gets an ellipsis.
 QString plainExcerpt(const QString &html, int maxChars = 220);
 
+// Whether the feed sent something to show in the preview (1.2): text of at
+// least minTextChars (shorter is a "Read more …" link or nothing), an image
+// in the body (not a tracking pixel) or an enclosure (image, podcast, video).
+// Articles without it open the full article at once.
+bool hasContent(const QString &body, const QUrl &enclosureLink, int minTextChars = 25);
+
 // Decodes the HTML entities that commonly appear in feeds.
 QString decodeEntities(const QString &text);
 

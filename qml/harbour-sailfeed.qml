@@ -22,6 +22,8 @@ ApplicationWindow {
     // Tap in the article list opens the full article (reader mode, original
     // or external browser) without the preview
     property alias skipPreview: settings.skipPreview
+    // Article list view: 0 detailed (title, source, excerpt, thumbnail), 1 compact
+    property alias listView: settings.listView
     // Links in an article (preview and reader mode): true opens them in the
     // app (reader mode), false in the external browser; a long press on a
     // link does the other.
@@ -64,6 +66,7 @@ ApplicationWindow {
         }
     }
     property alias unreadOnly: settings.unreadOnly
+    property alias oldestFirst: settings.oldestFirst
     property alias readerFontPx: settings.readerFontPx
     // Article preview text size: steps of 12 % around the system's small font
     property alias previewFontStep: settings.previewFontStep
@@ -112,6 +115,53 @@ ApplicationWindow {
     function resetFeedTextSizes() {
         settings.previewFontPerFeed = "{}"
         settings.readerFontPerFeed = "{}"
+    }
+    function feedHasTextSize(feedId) {
+        return _sizeMap(settings.previewFontPerFeed)[feedId] !== undefined
+            || _sizeMap(settings.readerFontPerFeed)[feedId] !== undefined
+    }
+    function resetFeedTextSize(feedId) {
+        var p = _sizeMap(settings.previewFontPerFeed)
+        var r = _sizeMap(settings.readerFontPerFeed)
+        delete p[feedId]
+        delete r[feedId]
+        settings.previewFontPerFeed = JSON.stringify(p)
+        settings.readerFontPerFeed = JSON.stringify(r)
+    }
+
+    // --- Feed settings (1.2) -------------------------------------------------
+    // Exceptions per feed ID (JSON maps in dconf, in the settings backup);
+    // -1 = "like the general setting". Read through these functions, so
+    // bindings follow changes (the map property is read inside).
+    readonly property var _perFeedKeys: ["previewFontPerFeed", "readerFontPerFeed",
+                                         "feedListView", "feedSkipPreview", "feedOpenMode"]
+    function feedSetting(name, feedId) {
+        if (!(feedId > 0))
+            return -1
+        var v = _sizeMap(settings[name])[feedId]
+        return v === undefined ? -1 : v
+    }
+    function setFeedSetting(name, feedId, value) {
+        if (!(feedId > 0))
+            return
+        var m = _sizeMap(settings[name])
+        if (value < 0)
+            delete m[feedId]
+        else
+            m[feedId] = value
+        settings[name] = JSON.stringify(m)
+    }
+    function listViewFor(feedId) {
+        var v = feedSetting("feedListView", feedId)
+        return v >= 0 ? v : settings.listView
+    }
+    function skipPreviewFor(feedId) {
+        var v = feedSetting("feedSkipPreview", feedId)
+        return v >= 0 ? v === 1 : settings.skipPreview
+    }
+    function openModeFor(feedId) {
+        var v = feedSetting("feedOpenMode", feedId)
+        return v >= 0 ? v : settings.openMode
     }
     readonly property int previewFontPx: Math.round(Theme.fontSizeSmall * (1 + 0.12 * previewFontStep))
     property alias readerSerif: settings.readerSerif
@@ -203,8 +253,8 @@ ApplicationWindow {
     // --- Settings backup (package 5) ----------------------------------------
     // The values a backup covers, as SettingsBackup expects them: the keys of
     // SettingsBackup.generalKeys/textSizeKeys, favoriteFeeds, originalSites.
-    // Most live in dconf (settings below), the privacy switches in the
-    // settings file (Prefetch), the favorites in FeedModel.
+    // Most live in dconf (settings below), the privacy switches (Prefetch)
+    // and the cleanup (Cleanup) in the settings file, the favorites in FeedModel.
     function settingsState() {
         var state = {}
         // (plain loops: in Qt 5.6 a QStringList is only array-like in JS)
@@ -220,7 +270,11 @@ ApplicationWindow {
                 state[key] = Prefetch.shareBrowserCookies
             else if (key === "clearCookiesAtStart")
                 state[key] = Prefetch.clearAtStart
-            else if (key === "previewFontPerFeed" || key === "readerFontPerFeed")
+            else if (key === "deleteReadAfter")
+                state[key] = Cleanup.deleteAfterMonths
+            else if (key === "imageCacheMB")
+                state[key] = Cleanup.imageCacheMB
+            else if (_perFeedKeys.indexOf(key) >= 0)
                 state[key] = _sizeMap(settings[key])
             else
                 state[key] = settings[key]
@@ -332,7 +386,11 @@ ApplicationWindow {
                 Prefetch.shareBrowserCookies = value
             else if (key === "clearCookiesAtStart")
                 Prefetch.clearAtStart = value
-            else if (key === "previewFontPerFeed" || key === "readerFontPerFeed")
+            else if (key === "deleteReadAfter")
+                Cleanup.deleteAfterMonths = value
+            else if (key === "imageCacheMB")
+                Cleanup.imageCacheMB = value
+            else if (_perFeedKeys.indexOf(key) >= 0)
                 settings[key] = JSON.stringify(value)
             else
                 settings[key] = value
@@ -406,8 +464,13 @@ ApplicationWindow {
         property int settingsVersion: 0
         property int openMode: 0               // 0 reader, 1 original, 2 external
         property bool skipPreview: false       // tap in the list opens the full article
+        property int listView: 0               // 0 detailed, 1 compact (title and source only)
+        property string feedListView: "{}"     // JSON { feedId: 0|1 }  feed settings: list view
+        property string feedSkipPreview: "{}"  // JSON { feedId: 0|1 }  … skip the preview
+        property string feedOpenMode: "{}"     // JSON { feedId: 0..2 } … full article
         property bool linksInApp: true         // links in articles: app (reader mode) or browser
         property bool unreadOnly: false
+        property bool oldestFirst: false       // article list: oldest first (1.2)
         property int readerFontPx: 20          // reader mode text size (CSS px)
         property int previewFontStep: 0        // -2 … 6
         property bool textSizePerFeed: true
@@ -443,6 +506,7 @@ ApplicationWindow {
         id: articleModel
         storage: localstorage
         unreadOnly: app.unreadOnly
+        oldestFirst: app.oldestFirst
     }
 
     // Load articles as soon as the local database is open.
@@ -459,10 +523,32 @@ ApplicationWindow {
         }
         if (localstorage.ready)
             app.loadModels()
+        // Update to the version with the cleanup: say once that it exists
+        if (Cleanup.hintPending)
+            cleanupHintTimer.start()
         // Settings backup: current state, and whether this device is linked yet
         cloudBackup.noteSettings(settingsFingerprint)
         if (config.isAccountValid)
             cloudBackup.checkLink()
+    }
+
+    // Deleting old read articles is off after an update ("Never"): one hint
+    // after the start, with the way to the setting (author, 15 Oct)
+    Timer {
+        id: cleanupHintTimer
+        interval: 3000
+        onTriggered: {
+            // A sync error has the banner: try again later
+            if (messageBanner.visible) {
+                restart()
+                return
+            }
+            Cleanup.dismissHint()
+            app.showMessage(qsTr("New: Sailfeed can delete old read articles to save space."), false,
+                            qsTr("Settings"), function() {
+                                pageStack.push(Qt.resolvedUrl("pages/SettingsListPage.qml"))
+                            }, 10000)
+        }
     }
 
     function loadModels() {

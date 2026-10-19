@@ -5,7 +5,7 @@
 # Open this file in the Sailfish IDE (Qt Creator of the Sailfish SDK).
 
 TARGET = harbour-sailfeed
-VERSION = 1.1.0
+VERSION = 1.2.0
 
 CONFIG += sailfishapp c++14
 QT += network sql qml quick
@@ -28,6 +28,7 @@ DEFINES += \
 SOURCES += \
     src/main.cpp \
     src/accountmanager.cpp \
+    src/articlecleaner.cpp \
     src/articlemodel.cpp \
     src/cloudbackup.cpp \
     src/configuration.cpp \
@@ -46,6 +47,7 @@ SOURCES += \
 
 HEADERS += \
     src/accountmanager.h \
+    src/articlecleaner.h \
     src/articlemodel.h \
     src/cloudbackup.h \
     src/configuration.h \

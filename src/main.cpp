@@ -2,16 +2,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <sailfishapp.h>
 
+#include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QLocale>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickView>
 #include <QScopedPointer>
 #include <QSharedPointer>
 #include <QStandardPaths>
+#include <QThread>
 #include <QTranslator>
 #include <QtQml>
 
@@ -25,6 +29,7 @@
 #include <Fuoten/Storage/SQLiteStorage>
 
 #include "accountmanager.h"
+#include "articlecleaner.h"
 #include "articlemodel.h"
 #include "cloudbackup.h"
 #include "feedmanager.h"
@@ -70,6 +75,24 @@ QString ensureDir(QStandardPaths::StandardLocation location, const QString &sub 
     return path;
 }
 
+// Deleting old read articles in the background: the window is up at once,
+// the database opens when the cleanup is done (VACUUM may take a moment
+// after the first, big cleanup).
+class CleanupThread : public QThread
+{
+public:
+    CleanupThread(const QString &db, const QString &settings, QObject *parent)
+        : QThread(parent), m_db(db), m_settings(settings) { }
+protected:
+    void run() override
+    {
+        ArticleCleaner::runIfDue(m_db, m_settings, QDateTime::currentDateTime());
+    }
+private:
+    QString m_db;
+    QString m_settings;
+};
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -88,9 +111,27 @@ int main(int argc, char *argv[])
     auto *config = new Configuration(app.data());
 
     const QString dataDir = ensureDir(QStandardPaths::AppDataLocation);
-    auto *storage = new Fuoten::SQLiteStorage(dataDir + QStringLiteral("/database.sqlite"), app.data());
+    const QString databasePath = dataDir + QStringLiteral("/database.sqlite");
+    // Deleting old read articles: decided once (new installation or update),
+    // before libfuoten creates the database
+    const QString settingsPath = Configuration::settingsFilePath();
+    ArticleCleaner::initDefault(settingsPath, QFileInfo::exists(databasePath));
+    auto *storage = new Fuoten::SQLiteStorage(databasePath, app.data());
     storage->setConfiguration(config);
-    storage->init();    // asynchronous, "ready" becomes true when done
+    // init() is asynchronous, "ready" becomes true when done. With a cleanup
+    // due (at most once a day) only after it, so nothing reads meanwhile.
+    QPointer<QThread> cleanupThread;
+    if (ArticleCleaner::isDue(settingsPath, QDate::currentDate())) {
+        auto *cleanup = new CleanupThread(databasePath, settingsPath, app.data());
+        cleanupThread = cleanup;
+        QObject::connect(cleanup, &QThread::finished, storage, [storage, cleanup]() {
+            storage->init();
+            cleanup->deleteLater();
+        });
+        cleanup->start(QThread::LowPriority);
+    } else {
+        storage->init();
+    }
 
     Fuoten::Component::setDefaultConfiguration(config);
     Fuoten::Component::setDefaultStorage(storage);
@@ -146,6 +187,8 @@ int main(int argc, char *argv[])
         [](QQmlEngine *, QJSEngine *) -> QObject * { return new FeedManager; });
     qmlRegisterSingletonType<HtmlHelper>(uri, 1, 0, "Html",
         [](QQmlEngine *, QJSEngine *) -> QObject * { return new HtmlHelper; });
+    qmlRegisterSingletonType<ArticleCleaner>(uri, 1, 0, "Cleanup",
+        [](QQmlEngine *, QJSEngine *) -> QObject * { return new ArticleCleaner; });
     qmlRegisterSingletonType<SettingsBackup>(uri, 1, 0, "SettingsBackup",
         [](QQmlEngine *, QJSEngine *) -> QObject * { return new SettingsBackup; });
 
@@ -158,7 +201,7 @@ int main(int argc, char *argv[])
     QScopedPointer<QQuickView> view(SailfishApp::createView());
 
     NamFactory namFactory(ensureDir(QStandardPaths::CacheLocation, QStringLiteral("images")),
-                          100 * 1024 * 1024);
+                          ArticleCleaner::imageCacheLimit(settingsPath));     // setting, default 100 MB
     view->engine()->setNetworkAccessManagerFactory(&namFactory);
 
     QQmlContext *ctx = view->rootContext();
@@ -172,6 +215,9 @@ int main(int argc, char *argv[])
     view->show();
 
     const int ret = app->exec();
+    // Closed during the cleanup: let it finish (a running QThread must not be destroyed)
+    if (cleanupThread)
+        cleanupThread->wait();
     view.reset();       // destroy the engine before the NAM factory
     return ret;
 }
