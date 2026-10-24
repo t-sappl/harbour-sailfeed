@@ -322,6 +322,18 @@ static void testFeedFinder(const QString &port)
     f.setKnownFeeds({ known });
     CHECK(f.feeds().size() == 1 && f.feeds().at(0).toMap().value(QStringLiteral("subscribed")).toBool());
     CHECK(f.feeds().size() == 1 && f.feeds().at(0).toMap().value(QStringLiteral("likelySubscribedAs")).toString().isEmpty());
+    // the same articles as a subscribed feed: "likely" (other address and title)
+    QVariantMap same;
+    same.insert(QStringLiteral("url"), QStringLiteral("https://gadget.example.com/rss.xml"));
+    same.insert(QStringLiteral("link"), QStringLiteral("https://gadget.example.com/"));
+    same.insert(QStringLiteral("title"), QStringLiteral("Gadgets"));
+    same.insert(QStringLiteral("articleTitles"), QVariantList{ QStringLiteral("The first gadget of the week"), QStringLiteral("Another & better gadget") });
+    f.setKnownFeeds({ same });
+    r = runFinder(f, base + QStringLiteral("/same-items.xml"));
+    CHECK(r.size() == 1 && r.at(0).toMap().value(QStringLiteral("likelySubscribedAs")).toString() == QStringLiteral("Gadgets"));
+    same.insert(QStringLiteral("articleTitles"), QVariantList{ QStringLiteral("The first gadget of the week") });     // one hit is not enough
+    f.setKnownFeeds({ same });
+    CHECK(f.feeds().size() == 1 && f.feeds().at(0).toMap().value(QStringLiteral("likelySubscribedAs")).toString().isEmpty());
     f.setKnownFeeds({});
     CHECK(!f.busy());
 }

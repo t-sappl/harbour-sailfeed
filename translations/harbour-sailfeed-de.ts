@@ -526,7 +526,7 @@
 <context>
     <name>FeedFinder</name>
     <message>
-        <location filename="../src/feedfinder.cpp" line="+529"/>
+        <location filename="../src/feedfinder.cpp" line="+563"/>
         <source>This is not a web address.</source>
         <translation>Das ist keine Webadresse.</translation>
     </message>
@@ -2249,7 +2249,7 @@
 <context>
     <name>SubscribePage</name>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="+82"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="+92"/>
         <location line="+222"/>
         <source>Subscribed</source>
         <translation>Abonniert</translation>
@@ -2363,7 +2363,7 @@
 <context>
     <name>WebPage</name>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="+91"/>
+        <location filename="../qml/pages/WebPage.qml" line="+92"/>
         <source>Dark colors</source>
         <translation>Dunkle Farben</translation>
     </message>
@@ -2487,7 +2487,7 @@
 <context>
     <name>harbour-sailfeed</name>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="+64"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="+66"/>
         <source>Could not open the link</source>
         <translation>Der Link konnte nicht geöffnet werden</translation>
     </message>
@@ -2539,7 +2539,17 @@
         <translation>Neu: Sailfeed kann alte gelesene Artikel löschen, um Platz zu sparen.</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+51"/>
+        <source>No web address in the shared content</source>
+        <translation>Im geteilten Inhalt ist keine Webadresse</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Sign in to your Nextcloud first, then share the link again</source>
+        <translation>Melde dich zuerst bei deiner Nextcloud an und teile den Link dann noch einmal</translation>
+    </message>
+    <message>
+        <location line="+50"/>
         <source>Retry</source>
         <translation>Erneut versuchen</translation>
     </message>

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <sailfishapp.h>
 
+#include <QDBusConnection>
+#include <QDBusError>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
@@ -212,6 +214,15 @@ int main(int argc, char *argv[])
     ctx->setContextProperty(QStringLiteral("cloudBackup"), cloudBackup);
 
     view->setSource(SailfishApp::pathToMainQml());
+
+    // Share target (1.2.1): the D-Bus name is OrganizationName.ApplicationName
+    // of the .desktop file's [X-Sailjail] section. Registered after the QML
+    // has created its adaptor (/share/subscribe), as the Sailfish.Share
+    // documentation asks (no race between name and objects); with ExecDBus a
+    // share also starts the app. Same as Sailcast.
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    if (!bus.registerService(QStringLiteral("org.sappl.harbour-sailfeed")))
+        qWarning("D-Bus name not registered: %s", qUtf8Printable(bus.lastError().message()));
     view->show();
 
     const int ret = app->exec();

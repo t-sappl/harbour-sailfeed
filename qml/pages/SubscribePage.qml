@@ -44,9 +44,19 @@ Page {
     function isWebAddress(text) {
         return text.length < 1000 && /^(https?|feed):\/\/\S+$/i.test(text)
     }
+    // Clipboard text as an address: also a bare domain ("linmob.net",
+    // copied without https://, device test 24 Oct), "" if it is none
+    function clipboardAddress() {
+        var t = Clipboard.hasText ? Clipboard.text.trim() : ""
+        if (isWebAddress(t))
+            return t
+        if (t.length < 300 && /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/\S*)?$/i.test(t))
+            return "https://" + t
+        return ""
+    }
 
     Component.onCompleted: {
-        var start = initialUrl !== "" ? initialUrl : (Clipboard.hasText ? Clipboard.text.trim() : "")
+        var start = initialUrl !== "" ? initialUrl : clipboardAddress()
         if (isWebAddress(start)) {
             urlField.text = start
             filledFrom = initialUrl !== "" ? 2 : 1

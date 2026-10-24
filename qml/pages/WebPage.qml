@@ -11,6 +11,7 @@ import "../components"
 WebViewPage {
     id: page
 
+
     property url url
     property bool readerMode: true
     // For next/previous article navigation (optional)

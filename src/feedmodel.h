@@ -155,6 +155,7 @@ private:
     QHash<qint64, int> m_feedMetric;        // MostActive/MostStarred counts per feed
     int m_sortMode = UnreadFirst;
     QString m_dbPath;
+    QHash<qint64, QStringList> recentArticleTitles() const;
     QSet<qint64> m_favorites;
     QHash<QString, int> m_folderFavorites;  // favorite feeds per folder
     void applyFavorites(const QSet<qint64> &favorites);

@@ -2,6 +2,8 @@
 import QtQuick 2.6
 import Sailfish.Silica 1.0
 import Nemo.Configuration 1.0
+import Nemo.DBus 2.0
+import Sailfish.Share 1.0
 import harbour.sailfeed 1.0
 import "pages"
 import "components"
@@ -548,6 +550,74 @@ ApplicationWindow {
                             qsTr("Settings"), function() {
                                 pageStack.push(Qt.resolvedUrl("pages/SettingsListPage.qml"))
                             }, 10000)
+        }
+    }
+
+    // --- Share target (1.2.1, as Sailcast) ------------------------------
+    // "Subscribe to website" in the sharing menu (.desktop share method
+    // "subscribe"). Own DBusAdaptor instead of ShareProvider: the browser
+    // shares a link as {type, linkTitle, status}, which ShareProvider
+    // rejects. The D-Bus name is registered in main() after this QML loaded.
+    DBusAdaptor {
+        service: "org.sappl.harbour-sailfeed"
+        path: "/share/subscribe"
+        iface: "org.sailfishos.share"
+        function share(shareConfiguration) { app.receiveShare(shareConfiguration) }
+    }
+    ShareAction { id: shareReader }      // only to read a share configuration
+    property string _sharedUrl: ""
+
+    // The first web address of the first resource: a link ({status}), raw
+    // data ({data}) or text; a bare domain ("cre.fm") gets https://
+    function sharedUrlOf(configuration) {
+        var resources = []
+        try {
+            shareReader.loadConfiguration(configuration)
+            resources = shareReader.resources
+        } catch (e) {
+            console.warn("Share: " + e)
+        }
+        if ((!resources || resources.length === 0) && configuration && configuration.resources)
+            resources = configuration.resources
+        if (!resources || resources.length === 0)
+            return ""
+        var r = resources[0]
+        var text = ("" + (typeof r === "string" ? r : (r.status || r.data || r.linkTitle || ""))).trim()
+        var url = text.match(/(https?|feed):\/\/[^\s"'<>]+/i)
+        if (url)
+            return url[0].replace(/[.,;:!?)\]]+$/, "").replace(/^feed:\/\/(https?:\/\/)?/i, function(all, inner) {
+                return inner ? inner : "https://"
+            })
+        if (/^[a-z0-9.-]+\.[a-z]{2,}(\/\S*)?$/i.test(text))
+            return "https://" + text
+        return ""
+    }
+    function receiveShare(configuration) {
+        var url = sharedUrlOf(configuration)
+        // Without this the sharing menu keeps waiting and the app stays behind
+        app.activate()
+        if (url === "") {
+            showMessage(qsTr("No web address in the shared content"))
+            return
+        }
+        if (!config.isAccountValid) {
+            showMessage(qsTr("Sign in to your Nextcloud first, then share the link again"))
+            return
+        }
+        _sharedUrl = url
+        shareTimer.restart()
+    }
+    Timer {
+        id: shareTimer
+        interval: 600       // the page stack may still be starting (app started by the share)
+        onTriggered: {
+            if (pageStack.depth === 0 || pageStack.busy) {
+                restart()
+                return
+            }
+            var url = app._sharedUrl
+            app._sharedUrl = ""
+            pageStack.push(Qt.resolvedUrl("pages/SubscribePage.qml"), { initialUrl: url })
         }
     }
 

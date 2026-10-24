@@ -1,3 +1,15 @@
+* Sat Oct 24 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.3.0-1
+- Share target: share a link from the browser (or text with an address)
+  to "Sailfeed – Subscribe to website"; Sailfeed opens, also when closed,
+  and finds the site's feeds.
+- Subscribe to website: feeds that carry the same articles as a subscribed
+  feed are marked "Probably already subscribed", also under another
+  address or name; an address copied without https:// is taken from the
+  clipboard.
+- Reader mode: short articles (e.g. OSnews link posts) are shown instead
+  of the site's footer.
+- German: the swipe tip uses the same "du" form as the other tips.
+
 * Mon Oct 19 2026 Thomas Sappl <thomas.sappl@gmail.com> - 1.2.0-1
 - Feed settings: long press a feed → "Feed settings …", or "Feed settings"
   in the pulley of a feed's article list. Name and folder (rename and move

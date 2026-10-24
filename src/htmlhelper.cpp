@@ -60,7 +60,11 @@ QString HtmlHelper::readerExtractScript() const
             "    for (var m = 0; m < marked.length; m++) marked[m].removeAttribute('data-sailfeed-drop');\n"
             "    var gone = doc.querySelectorAll('[data-sailfeed-drop]');\n"
             "    for (var g = 0; g < gone.length; g++) if (gone[g].parentNode) gone[g].parentNode.removeChild(gone[g]);\n"
-            "    var a = new Readability(doc).parse();\n"
+            // charThreshold: Readability's default 500 characters missed short
+            // articles (OSnews links: a quote and one sentence, ~400 characters)
+            // and fell back to the longest block, the site footer (23 Oct).
+            // 200 = our own minimum below.
+            "    var a = new Readability(doc, { charThreshold: 200 }).parse();\n"
             // Consent wall ("accept ads and tracking or subscribe", e.g. golem.de):
             // a short text with several consent words. Its buttons get lost in the
             // reader page, so QML shows the original page instead.

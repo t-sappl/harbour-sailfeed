@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Thomas Sappl
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "feedfinder.h"
+#include "htmlutils.h"
 
 #include <algorithm>
 
@@ -99,6 +100,7 @@ void FeedFinder::rebuildKnown()
 {
     m_knownKeys.clear();
     m_knownTitleSite.clear();
+    m_knownArticle.clear();
     for (const QString &u : m_knownUrls)
         m_knownKeys.insert(compareKey(u));
     for (const QVariant &v : m_knownFeeds) {
@@ -108,6 +110,11 @@ void FeedFinder::rebuildKnown()
         const QString ts = titleSiteKey(title, f.value(QStringLiteral("link")).toString());
         if (!ts.isEmpty())
             m_knownTitleSite.insert(ts, title);
+        for (const QVariant &t : f.value(QStringLiteral("articleTitles")).toList()) {
+            const QString k = articleKey(t.toString());
+            if (!k.isEmpty())
+                m_knownArticle.insert(k, title);
+        }
     }
     m_knownKeys.remove(QString());
     // results already shown: update the marks
@@ -142,7 +149,30 @@ void FeedFinder::markKnown(QVariantMap &feed) const
         likely = m_knownTitleSite.value(titleSiteKey(feed.value(QStringLiteral("title")).toString(),
                                                      feed.value(QStringLiteral("siteLink")).toString()));
     }
+    // Same articles as a subscribed feed (another address of the same feed,
+    // also when renamed): at least two of its newest titles, or its only one
+    if (!sub && likely.isEmpty()) {
+        QHash<QString, int> hits;
+        const QStringList titles = feed.value(QStringLiteral("itemTitles")).toStringList();
+        for (const QString &t : titles) {
+            const QString owner = m_knownArticle.value(articleKey(t));
+            if (!owner.isEmpty())
+                ++hits[owner];
+        }
+        for (auto it = hits.constBegin(); it != hits.constEnd(); ++it) {
+            if (it.value() >= 2 || (titles.size() == 1 && it.value() == 1)) {
+                likely = it.key();
+                break;
+            }
+        }
+    }
     feed.insert(QStringLiteral("likelySubscribedAs"), likely);
+}
+
+QString FeedFinder::articleKey(const QString &title)
+{
+    QString t = HtmlUtils::decodeEntities(title).toCaseFolded().simplified();
+    return t.size() >= 12 ? t : QString();      // too short to say anything
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +203,7 @@ QVariantMap FeedFinder::parseFeed(const QByteArray &data)
     const QString itemName = atom ? QStringLiteral("entry") : QStringLiteral("item");
     QString title, description, selfUrl, siteLink;
     QStringList recent;
+    QStringList itemTitles;                     // the newest 20, for markKnown
     QDateTime latest;
     int items = 0, media = 0;
     bool inItem = false;
@@ -239,6 +270,8 @@ QVariantMap FeedFinder::parseFeed(const QByteArray &data)
                     ++media;
                 if (recent.size() < 3 && !itemTitle.isEmpty())
                     recent << itemTitle;
+                if (itemTitles.size() < 20 && !itemTitle.isEmpty())
+                    itemTitles << itemTitle;
             }
         }
     }
@@ -258,6 +291,7 @@ QVariantMap FeedFinder::parseFeed(const QByteArray &data)
     out.insert(QStringLiteral("itemCount"), items);
     out.insert(QStringLiteral("latest"), latest);
     out.insert(QStringLiteral("recent"), recent);
+    out.insert(QStringLiteral("itemTitles"), itemTitles);
     out.insert(QStringLiteral("podcast"), items > 0 && media * 2 >= items);
     out.insert(QStringLiteral("selfUrl"), selfUrl);
     out.insert(QStringLiteral("siteLink"), siteLink);

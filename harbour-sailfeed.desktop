@@ -10,6 +10,16 @@ Comment=Nextcloud News client
 Comment[de]=Nextcloud-News-Client
 # App grid folders are named after common categories
 Categories=Network;News;
+# Share target (1.2.1, pattern of Sailcast 84/85): links from the browser
+# and text from other apps open "Subscribe to website" (harbour-sailfeed.qml,
+# receiveShare)
+X-Share-Methods=subscribe;
+
+[X-Share Method subscribe]
+Description=Subscribe to website
+Description[de]=Webseite abonnieren
+Capabilities=text/x-url;text/plain;
+SupportsMultipleFiles=false
 
 [X-Sailjail]
 # Do not change: data, settings and the Secrets collection live under
@@ -17,3 +27,5 @@ Categories=Network;News;
 OrganizationName=org.sappl
 ApplicationName=harbour-sailfeed
 Permissions=Internet;Secrets
+# Started over D-Bus when something is shared to it while closed
+ExecDBus=harbour-sailfeed

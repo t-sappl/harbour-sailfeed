@@ -296,6 +296,7 @@ QVariantMap FeedModel::feedInfo(int feedId) const
 
 QVariantList FeedModel::subscribedFeeds() const
 {
+    const QHash<qint64, QStringList> titles = recentArticleTitles();
     QVariantList out;
     for (int row = 0; row < rowCount(); ++row) {
         Fuoten::Feed *f = feedAt(row);
@@ -305,7 +306,39 @@ QVariantList FeedModel::subscribedFeeds() const
         m.insert(QStringLiteral("url"), f->url().toString());
         m.insert(QStringLiteral("link"), f->link().toString());
         m.insert(QStringLiteral("title"), f->title());
+        m.insert(QStringLiteral("articleTitles"), titles.value(f->id()));
         out << m;
+    }
+    return out;
+}
+
+// Titles of the newest articles per feed on the device (up to 40 each), for
+// "probably already subscribed" when the same articles come from another
+// address (engadget.com/feed vs /rss.xml, device test 24 Oct)
+QHash<qint64, QStringList> FeedModel::recentArticleTitles() const
+{
+    QHash<qint64, QStringList> out;
+    const QString path = !m_dbPath.isEmpty() ? m_dbPath
+        : QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/database.sqlite");
+    const QString conn = QStringLiteral("sailfeed-feedtitles");
+    {
+        QSqlDatabase db = QSqlDatabase::contains(conn) ? QSqlDatabase::database(conn, false)
+                                                         : QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        if (db.databaseName() != path) {
+            db.close();
+            db.setDatabaseName(path);
+            db.setConnectOptions(QStringLiteral("QSQLITE_OPEN_READONLY;QSQLITE_BUSY_TIMEOUT=500"));
+        }
+        if (!db.isOpen() && !db.open())
+            return out;
+        QSqlQuery q(db);
+        if (q.exec(QStringLiteral("SELECT feedId, title FROM items ORDER BY pubDate DESC"))) {
+            while (q.next()) {
+                QStringList &l = out[q.value(0).toLongLong()];
+                if (l.size() < 40)
+                    l << q.value(1).toString();
+            }
+        }
     }
     return out;
 }

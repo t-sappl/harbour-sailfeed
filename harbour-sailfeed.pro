@@ -5,10 +5,10 @@
 # Open this file in the Sailfish IDE (Qt Creator of the Sailfish SDK).
 
 TARGET = harbour-sailfeed
-VERSION = 1.2.0
+VERSION = 1.3.0
 
 CONFIG += sailfishapp c++14
-QT += network sql qml quick
+QT += network sql qml quick dbus
 
 # App password storage (Sailfish Secrets).
 # Do NOT add "CONFIG += link_pkgconfig" here: sailfishapp.prf adds it itself

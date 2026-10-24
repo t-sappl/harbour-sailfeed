@@ -23,7 +23,7 @@
 
 <p>I built Sailfeed for myself after moving partly from Android to Sailfish OS: my RSS feeds should be in the same state everywhere – read on the phone, read on the tablet. <a href="https://apps.nextcloud.com/apps/news">Nextcloud News</a> keeps them in sync, Sailfeed is the native reader for it, based on <a href="https://github.com/Huessenbergnetz/libfuoten">libfuoten</a>. I use it every day and share it for anyone who finds it useful.</p>
 
-<p><strong>New in 1.2:</strong> settings per feed, a compact list view, oldest first, swipe to the next article, better on slow connections, and old read articles are cleaned up.</p>
+<p><strong>New in 1.3:</strong> share links from the browser to Sailfeed to subscribe. <strong>1.2:</strong> settings per feed, a compact list view, oldest first, swipe to the next article, better on slow connections, and old read articles are cleaned up.</p>
 
 <p><strong>Feeds</strong></p>
 <ul>
@@ -100,6 +100,12 @@ Ein persönliches Projekt – für den eigenen Gebrauch und die Funktionen entwi
 Voraussetzung: ein Nextcloud-Server mit installierter App **Nextcloud News** – Sailfeed ist nur der Client und lädt selbst keine Feeds. Ist News noch nicht installiert: als Admin in der Nextcloud unter „Apps“ die App „News“ (Bereich Multimedia) aktivieren; bei gehosteten Nextclouds genauso, sofern der Anbieter Apps erlaubt. News braucht die Hintergrundjobs der Nextcloud per Cron, damit die Feeds aktualisiert werden. App-Seite: https://apps.nextcloud.com/apps/news – Installationsanleitung (englisch): https://nextcloud.github.io/news/install/
 
 Funktionen (kurz): Artikelliste mit Vorschaubild und seitenweisem Scrollen, Feedliste mit Ordnern, Lesezeichen und Favoriten, Feeds und Ordner verwalten, automatisch und einhändig als gelesen markieren, Lesemodus ohne Werbung und Cookie-Banner (Schrift, Größe, Farben einstellbar), Hoch- und Querformat, Anmeldung im Browser, offline nutzbar, Sicherung der Einstellungen in der eigenen Nextcloud. Deutsch und Englisch.
+
+## Changelog 1.3.0 (paste into the OpenRepos changelog field)
+
+- New: share a link from the browser to "Sailfeed – Subscribe to website" – Sailfeed finds the site's feeds
+- Subscribe to website: feeds with the same articles as a subscribed one are marked "Probably already subscribed"; addresses without https:// are taken from the clipboard
+- Reader mode: short articles are shown correctly instead of the site's footer
 
 ## Changelog 1.2.0 (paste into the OpenRepos changelog field)
 

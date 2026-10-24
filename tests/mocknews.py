@@ -99,6 +99,11 @@ FINDER_PAGES = {
                     '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Likely  News</title>'
                     '<link rel="alternate" href="https://likely.example.org/"/><link rel="self" href="https://likely.example.org/atom"/>'
                     '<entry><title>L1</title></entry></feed>'),
+    # same articles as a subscribed feed, other address and title (24 Oct)
+    "/same-items.xml": (200, "application/rss+xml",
+                        '<?xml version="1.0"?><rss version="2.0"><channel><title>Gadget Blog – all</title><link>https://gadget.example.com/</link>'
+                        '<item><title>The first gadget of the week</title></item><item><title>Another &amp; better gadget</title></item>'
+                        '<item><title>Something unrelated here</title></item></channel></rss>'),
 }
 
 USER_ID = "tsappl"

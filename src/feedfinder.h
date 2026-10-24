@@ -38,7 +38,10 @@ class QNetworkReply;
 // compared without scheme, "www.", trailing "/" and tracking parameters.
 // Same title and same website but another address only gives
 // "likelySubscribedAs" (the subscribed feed's title): the button stays, a
-// false "subscribed" would make subscribing impossible.
+// false "subscribed" would make subscribing impossible. Also "likely" (24
+// Oct, engadget.com/feed vs /rss.xml): at least two of the feed's newest
+// article titles are articles of a subscribed feed on the device
+// (knownFeeds[].articleTitles from FeedModel.subscribedFeeds()).
 class FeedFinder : public QObject
 {
     Q_OBJECT
@@ -125,4 +128,6 @@ private:
     QVariantList m_knownFeeds;
     QSet<QString> m_knownKeys;
     QHash<QString, QString> m_knownTitleSite;    // titleSiteKey -> title
+    QHash<QString, QString> m_knownArticle;      // article title key -> feed title
+    static QString articleKey(const QString &title);
 };

@@ -526,22 +526,22 @@
 <context>
     <name>FeedFinder</name>
     <message>
-        <location filename="../src/feedfinder.cpp" line="529"/>
+        <location filename="../src/feedfinder.cpp" line="563"/>
         <source>This is not a web address.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/feedfinder.cpp" line="590"/>
+        <location filename="../src/feedfinder.cpp" line="624"/>
         <source>The page answered with error %1.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/feedfinder.cpp" line="591"/>
+        <location filename="../src/feedfinder.cpp" line="625"/>
         <source>The page could not be loaded (%1).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/feedfinder.cpp" line="622"/>
+        <location filename="../src/feedfinder.cpp" line="656"/>
         <source>No feed found on this website.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2249,113 +2249,113 @@
 <context>
     <name>SubscribePage</name>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="82"/>
-        <location filename="../qml/pages/SubscribePage.qml" line="304"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="92"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="314"/>
         <source>Subscribed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="88"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="98"/>
         <source>The server rejected the feed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="107"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="117"/>
         <source>Subscribe to website</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="117"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="127"/>
         <source>Address of a website, article or feed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="116"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="126"/>
         <source>Address from the clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="116"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="126"/>
         <source>Address of the page shown</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="139"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="149"/>
         <source>Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="141"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="151"/>
         <source>No folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="159"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="169"/>
         <source>Looking for feeds …</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="169"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="179"/>
         <source>Enter the address of a website or of one of its articles. Sailfeed looks for its feeds and shows them with their newest articles.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="170"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="180"/>
         <source>Copied an address before? It is filled in when this page opens, or with the clipboard button next to the field.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="191"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="201"/>
         <source>Nextcloud News can still try the address itself.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="195"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="205"/>
         <source>Add anyway</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="204"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="214"/>
         <source>1 feed found</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="204"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="214"/>
         <source>%1 feeds found</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="242"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="252"/>
         <source>1 article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="242"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="252"/>
         <source>%1 articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="245"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="255"/>
         <source>newest %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="247"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="257"/>
         <source>Comments</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="260"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="270"/>
         <source>Probably already subscribed as &quot;%1&quot;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="269"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="279"/>
         <source>Podcast – its episodes are audio or video, made for a podcast app. Subscribing here shows them as articles.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/SubscribePage.qml" line="290"/>
+        <location filename="../qml/pages/SubscribePage.qml" line="300"/>
         <source>Subscribe</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2363,123 +2363,123 @@
 <context>
     <name>WebPage</name>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="91"/>
+        <location filename="../qml/pages/WebPage.qml" line="92"/>
         <source>Dark colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="91"/>
+        <location filename="../qml/pages/WebPage.qml" line="92"/>
         <source>Light colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="127"/>
+        <location filename="../qml/pages/WebPage.qml" line="128"/>
         <source>This site always opens in the original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="165"/>
+        <location filename="../qml/pages/WebPage.qml" line="166"/>
         <source>Please make your choice on the page, the reader mode follows automatically</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="218"/>
+        <location filename="../qml/pages/WebPage.qml" line="219"/>
         <source>Text from the feed – the website loads too slowly</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="223"/>
+        <location filename="../qml/pages/WebPage.qml" line="224"/>
         <source>Reader mode not available for this page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="233"/>
+        <location filename="../qml/pages/WebPage.qml" line="234"/>
         <source>Text size %1 for %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="234"/>
+        <location filename="../qml/pages/WebPage.qml" line="235"/>
         <source>Text size %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="268"/>
+        <location filename="../qml/pages/WebPage.qml" line="269"/>
         <source>Last article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="268"/>
+        <location filename="../qml/pages/WebPage.qml" line="269"/>
         <source>First article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="364"/>
+        <location filename="../qml/pages/WebPage.qml" line="365"/>
         <source>Share</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="368"/>
-        <location filename="../qml/pages/WebPage.qml" line="623"/>
+        <location filename="../qml/pages/WebPage.qml" line="369"/>
+        <location filename="../qml/pages/WebPage.qml" line="624"/>
         <source>Open in browser</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="612"/>
+        <location filename="../qml/pages/WebPage.qml" line="613"/>
         <source>This takes long – the connection or the website is slow.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="617"/>
+        <location filename="../qml/pages/WebPage.qml" line="618"/>
         <source>Read the text from the feed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="706"/>
+        <location filename="../qml/pages/WebPage.qml" line="707"/>
         <source>Pull down for more: subscribe to this website, share it, open it in the browser</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="717"/>
+        <location filename="../qml/pages/WebPage.qml" line="718"/>
         <source>Swipe left for the next article</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="335"/>
+        <location filename="../qml/pages/WebPage.qml" line="336"/>
         <source>Subscribe to website</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="357"/>
+        <location filename="../qml/pages/WebPage.qml" line="358"/>
         <source>Copy link</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="360"/>
+        <location filename="../qml/pages/WebPage.qml" line="361"/>
         <source>Link copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="340"/>
+        <location filename="../qml/pages/WebPage.qml" line="341"/>
         <source>Use reader mode for this site</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="340"/>
+        <location filename="../qml/pages/WebPage.qml" line="341"/>
         <source>Always open this site in the original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="350"/>
+        <location filename="../qml/pages/WebPage.qml" line="351"/>
         <source>%1 opens in the original from now on</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="602"/>
+        <location filename="../qml/pages/WebPage.qml" line="603"/>
         <source>Preparing reader mode …</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="602"/>
+        <location filename="../qml/pages/WebPage.qml" line="603"/>
         <source>Loading website …</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2487,59 +2487,69 @@
 <context>
     <name>harbour-sailfeed</name>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="64"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="66"/>
         <source>Could not open the link</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="226"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="228"/>
         <source>Rather the full article right away? Settings → Article preview → Skip the preview.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="227"/>
-        <location filename="../qml/harbour-sailfeed.qml" line="548"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="229"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="550"/>
         <source>Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="359"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="361"/>
         <source>Latest backup</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="369"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="371"/>
         <source>Settings restored</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="369"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="371"/>
         <source>Undo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="377"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="379"/>
         <source>Settings as before the restore</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="415"/>
-        <location filename="../qml/harbour-sailfeed.qml" line="429"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="417"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="431"/>
         <source>All articles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="453"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="455"/>
         <source>Bookmarks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="547"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="549"/>
         <source>New: Sailfeed can delete old read articles to save space.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/harbour-sailfeed.qml" line="584"/>
+        <location filename="../qml/harbour-sailfeed.qml" line="600"/>
+        <source>No web address in the shared content</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/harbour-sailfeed.qml" line="604"/>
+        <source>Sign in to your Nextcloud first, then share the link again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/harbour-sailfeed.qml" line="654"/>
         <source>Retry</source>
         <translation type="unfinished"></translation>
     </message>

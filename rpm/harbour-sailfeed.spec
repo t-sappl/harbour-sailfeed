@@ -5,7 +5,7 @@
 # QML imports; see DESIGN.md).
 Name:       harbour-sailfeed
 Summary:    Feed reader for Nextcloud News on Sailfish OS
-Version:    1.2.0
+Version:    1.3.0
 Release:    1
 # App GPL-3.0-or-later; bundled libfuoten LGPL-3.0-or-later (compiled in),
 # Readability.js Apache-2.0 (Qt resource)
@@ -28,6 +28,7 @@ BuildRequires: pkgconfig(Qt5Qml)
 BuildRequires: pkgconfig(Qt5Quick)
 BuildRequires: pkgconfig(Qt5Network)
 BuildRequires: pkgconfig(Qt5Sql)
+BuildRequires: pkgconfig(Qt5DBus)
 BuildRequires: pkgconfig(sailfishsecrets)
 BuildRequires: qt5-qttools-linguist
 BuildRequires: desktop-file-utils
