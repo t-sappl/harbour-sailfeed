@@ -4,7 +4,7 @@
 <context>
     <name>AboutPage</name>
     <message>
-        <location filename="../qml/pages/AboutPage.qml" line="+25"/>
+        <location filename="../qml/pages/AboutPage.qml" line="+24"/>
         <source>About Sailfeed</source>
         <translation>Über Sailfeed</translation>
     </message>
@@ -19,29 +19,34 @@
         <translation>Version %1</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+11"/>
         <source>Feed reader for Nextcloud News on Sailfish OS, with a clean reader mode.</source>
         <translation>Feedreader für Nextcloud News unter Sailfish OS, mit einem aufgeräumten Lesemodus.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+5"/>
+        <source>License and source code</source>
+        <translation>Lizenz und Quellcode</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Free software under the GNU General Public License, version 3 or later.</source>
+        <translation>Freie Software unter der GNU General Public License, Version 3 oder neuer.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>A personal project: developed for my own use and the features I need most. Shared on OpenRepos and GitHub; the source code is free for anyone to build and adapt.</source>
         <translation>Ein persönliches Projekt: entwickelt für den eigenen Gebrauch und die Funktionen, die ich am meisten brauche. Geteilt auf OpenRepos und GitHub; der Quellcode steht allen frei zum Bauen und Anpassen.</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>License</source>
-        <translation>Lizenz</translation>
-    </message>
-    <message>
-        <location line="+4"/>
+        <location line="+23"/>
         <source>Data and services</source>
         <translation>Daten und Dienste</translation>
     </message>
     <message>
         <location line="+8"/>
-        <source>Folders, feeds and articles come from your own Nextcloud server (News app). Images and the pages for the reader mode are loaded directly from the websites of the articles. The settings backup is stored in the folder &quot;Sailfeed&quot; of your Nextcloud files. No tracking, no ads; no data reaches the developer.</source>
-        <translation>Ordner, Feeds und Artikel kommen von deinem eigenen Nextcloud-Server (News-App). Bilder und die Seiten für den Lesemodus werden direkt von den Webseiten der Artikel geladen. Die Sicherung der Einstellungen liegt im Ordner „Sailfeed“ deiner Nextcloud-Dateien. Kein Tracking, keine Werbung; keine Daten gelangen zum Entwickler.</translation>
+        <source>Folders, feeds and articles come from your own Nextcloud server (News app). Images and the pages for the reader mode are loaded directly from the websites of the articles. The settings backup and feed lists you export there are stored in the folder &quot;Sailfeed&quot; of your Nextcloud files. No tracking, no ads; no data reaches the developer.</source>
+        <translation>Ordner, Feeds und Artikel kommen von deinem eigenen Nextcloud-Server (News-App). Bilder und die Seiten für den Lesemodus werden direkt von den Webseiten der Artikel geladen. Die Sicherung der Einstellungen und Feedlisten, die du dorthin exportierst, liegen im Ordner „Sailfeed“ deiner Nextcloud-Dateien. Kein Tracking, keine Werbung; keine Daten gelangen zum Entwickler.</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -64,17 +69,17 @@
         <translation>Entwickelt mit Unterstützung eines KI-Modells (Claude von Anthropic). Der Entwickler legt alle Funktionen fest, trifft alle Design- und technischen Entscheidungen, testet jede Änderung auf einem Jolla Phone (2026) und verwendet die App im Alltag.</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="-58"/>
         <source>Source code</source>
         <translation>Quellcode</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Privacy policy</source>
         <translation>Datenschutz</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+6"/>
         <source>Report a problem</source>
         <translation>Problem melden</translation>
     </message>
@@ -124,39 +129,6 @@
     </message>
 </context>
 <context>
-    <name>AddFeedDialog</name>
-    <message>
-        <location filename="../qml/pages/AddFeedDialog.qml" line="+39"/>
-        <source>Add feed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Add</source>
-        <translation type="unfinished">Hinzufügen</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Feed address</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>The address of the RSS or Atom feed. The address of a website often works too, if it announces its feed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Folder</source>
-        <translation type="unfinished">Ordner</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>No folder</source>
-        <translation type="unfinished">Kein Ordner</translation>
-    </message>
-</context>
-<context>
     <name>ArticleCleaner</name>
     <message>
         <location filename="../src/articlecleaner.cpp" line="+201"/>
@@ -192,7 +164,7 @@
 <context>
     <name>ArticleListPage</name>
     <message>
-        <location filename="../qml/pages/ArticleListPage.qml" line="+74"/>
+        <location filename="../qml/pages/ArticleListPage.qml" line="+75"/>
         <source>No older articles</source>
         <translation>Keine älteren Artikel</translation>
     </message>
@@ -212,7 +184,7 @@
         <translation>Ältere Artikel konnten nicht geladen werden</translation>
     </message>
     <message>
-        <location line="+52"/>
+        <location line="+96"/>
         <source>Updating …</source>
         <translation>Wird aktualisiert …</translation>
     </message>
@@ -227,28 +199,50 @@
         <translation>Inklusive gelesener Artikel</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+7"/>
+        <source>Newest first</source>
+        <translation>Neueste zuerst</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>newest first</source>
+        <translation>neueste zuerst</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Oldest first</source>
+        <translation>Älteste zuerst</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>oldest first</source>
+        <translation>älteste zuerst</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <location line="+216"/>
         <source>Show read articles</source>
         <translation>Gelesene anzeigen</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <location line="+124"/>
+        <location line="-215"/>
+        <location line="+105"/>
         <source>Older, read articles available</source>
         <translation>Ältere, gelesene Artikel vorhanden</translation>
     </message>
     <message>
-        <location line="-117"/>
+        <location line="-98"/>
+        <location line="+215"/>
         <source>Load older articles</source>
         <translation>Ältere Artikel laden</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-215"/>
         <source>Loading older articles …</source>
         <translation>Ältere Artikel werden geladen …</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+31"/>
         <source>Mark as read</source>
         <translation>Als gelesen markieren</translation>
     </message>
@@ -288,7 +282,8 @@
         <translation>Feed-Einstellungen</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="-105"/>
+        <location line="+108"/>
         <source>Feeds</source>
         <translation>Feeds</translation>
     </message>
@@ -298,7 +293,7 @@
         <translation>Suche</translation>
     </message>
     <message>
-        <location line="+166"/>
+        <location line="+218"/>
         <source>Push the round button up to mark all listed articles as read</source>
         <translation>Schieb den runden Knopf nach oben, um alle angezeigten Artikel als gelesen zu markieren</translation>
     </message>
@@ -308,7 +303,7 @@
         <translation>Halte einen Artikel gedrückt: Lesezeichen, als ungelesen markieren, alle darüber oder darunter als gelesen markieren</translation>
     </message>
     <message>
-        <location line="-178"/>
+        <location line="-230"/>
         <source>Mark all as read</source>
         <translation>Alle als gelesen markieren</translation>
     </message>
@@ -363,12 +358,12 @@
         <translation>Zum Aktualisieren nach unten ziehen</translation>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+138"/>
         <source>Marking all as read</source>
         <translation>Alle werden als gelesen markiert</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+12"/>
         <source>All articles are read</source>
         <translation>Alle Artikel sind gelesen</translation>
     </message>
@@ -386,7 +381,7 @@
 <context>
     <name>ArticleModel</name>
     <message>
-        <location filename="../src/articlemodel.cpp" line="+618"/>
+        <location filename="../src/articlemodel.cpp" line="+845"/>
         <source>now</source>
         <translation>jetzt</translation>
     </message>
@@ -419,7 +414,7 @@
 <context>
     <name>ArticlePage</name>
     <message>
-        <location filename="../qml/pages/ArticlePage.qml" line="+76"/>
+        <location filename="../qml/pages/ArticlePage.qml" line="+82"/>
         <source>Text size %1 % for %2</source>
         <translation>Textgröße %1 % für %2</translation>
     </message>
@@ -465,17 +460,17 @@
     </message>
     <message>
         <location line="+5"/>
-        <location line="+110"/>
+        <location line="+113"/>
         <source>Open in browser</source>
         <translation>Im Browser öffnen</translation>
     </message>
     <message>
-        <location line="-43"/>
+        <location line="-46"/>
         <source>The feed sends no text for this article.</source>
         <translation>Der Feed liefert für diesen Artikel keinen Text.</translation>
     </message>
     <message>
-        <location line="+44"/>
+        <location line="+47"/>
         <source>Show website</source>
         <translation>Webseite anzeigen</translation>
     </message>
@@ -526,7 +521,7 @@
 <context>
     <name>FeedFinder</name>
     <message>
-        <location filename="../src/feedfinder.cpp" line="+563"/>
+        <location filename="../src/feedfinder.cpp" line="+578"/>
         <source>This is not a web address.</source>
         <translation>Das ist keine Webadresse.</translation>
     </message>
@@ -549,7 +544,7 @@
 <context>
     <name>FeedModel</name>
     <message>
-        <location filename="../src/feedmodel.cpp" line="+70"/>
+        <location filename="../src/feedmodel.cpp" line="+71"/>
         <source>Other feeds</source>
         <translation>Weitere Feeds</translation>
     </message>
@@ -593,7 +588,7 @@
         <translation>Feed-Einstellungen</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+5"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
@@ -603,7 +598,7 @@
         <translation>Feed umbenennen</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Folder</source>
         <translation>Ordner</translation>
     </message>
@@ -613,7 +608,17 @@
         <translation>Kein Ordner</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
+        <source>Mute this feed</source>
+        <translation>Diesen Feed stumm schalten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Its articles stay out of &quot;All articles&quot; and the folders and are not counted as unread. Search and the feed itself still show them.</source>
+        <translation>Seine Artikel erscheinen nicht in „Alle Artikel“ und in den Ordnern und zählen nicht als ungelesen. Die Suche und der Feed selbst zeigen sie weiterhin.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Reading</source>
         <translation>Lesen</translation>
     </message>
@@ -754,20 +759,48 @@
     </message>
 </context>
 <context>
+    <name>FeedTransfer</name>
+    <message>
+        <location filename="../src/feedtransfer.cpp" line="+234"/>
+        <source>The Downloads folder is not available.</source>
+        <translation>Der Ordner „Downloads“ ist nicht verfügbar.</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Could not write the file: %1</source>
+        <translation>Die Datei konnte nicht geschrieben werden: %1</translation>
+    </message>
+    <message>
+        <location line="+85"/>
+        <source>The file is not in the Downloads folder.</source>
+        <translation>Die Datei liegt nicht im Ordner „Downloads“.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>The file is too big.</source>
+        <translation>Die Datei ist zu groß.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Could not read the file: %1</source>
+        <translation>Die Datei konnte nicht gelesen werden: %1</translation>
+    </message>
+    <message>
+        <location line="+142"/>
+        <source>Folder &quot;%1&quot;</source>
+        <translation>Ordner „%1“</translation>
+    </message>
+</context>
+<context>
     <name>FeedsPage</name>
     <message>
-        <location filename="../qml/pages/FeedsPage.qml" line="+88"/>
-        <location line="+211"/>
+        <location filename="../qml/pages/FeedsPage.qml" line="+125"/>
+        <location line="+370"/>
         <source>Add folder</source>
         <translation>Ordner hinzufügen</translation>
     </message>
     <message>
-        <location line="-211"/>
-        <source>Add</source>
-        <translation>Hinzufügen</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="-268"/>
         <source>Rename folder</source>
         <translation>Ordner umbenennen</translation>
     </message>
@@ -777,17 +810,72 @@
         <translation>Feed hinzugefügt</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+54"/>
         <source>The server rejected the change</source>
         <translation>Der Server hat die Änderung abgelehnt</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+15"/>
         <source>Feeds</source>
         <translation>Feeds</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+1"/>
+        <source>Articles</source>
+        <translation>Artikel</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Unread first</source>
+        <translation>Ungelesene zuerst</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>unread first</source>
+        <translation>ungelesene zuerst</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Alphabetical</source>
+        <translation>Alphabetisch</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>alphabetical</source>
+        <translation>alphabetisch</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Most active</source>
+        <translation>Aktivste zuerst</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>most active</source>
+        <translation>aktivste zuerst</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Most bookmarked</source>
+        <translation>Meiste Lesezeichen</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>most bookmarked</source>
+        <translation>meiste Lesezeichen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Unread first, then by activity</source>
+        <translation>Ungelesene zuerst, dann nach Aktivität</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>unread first, then activity</source>
+        <translation>ungelesene zuerst, dann Aktivität</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>All articles</source>
         <translation>Alle Artikel</translation>
     </message>
@@ -802,7 +890,7 @@
         <translation>Alle werden als gelesen markiert</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+58"/>
         <source>Mark folder as read</source>
         <translation>Ordner als gelesen markieren</translation>
     </message>
@@ -813,34 +901,63 @@
     </message>
     <message>
         <location line="+4"/>
-        <location line="+34"/>
-        <location line="+50"/>
+        <location line="+46"/>
+        <location line="+54"/>
         <source>Subscribe to website</source>
         <translation>Webseite abonnieren</translation>
     </message>
     <message>
-        <location line="-79"/>
+        <location line="-95"/>
+        <source>Choose feeds …</source>
+        <translation>Feeds auswählen …</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>Rename</source>
         <translation>Umbenennen</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <location line="+52"/>
+        <location line="+8"/>
         <source>Delete</source>
         <translation>Löschen</translation>
     </message>
     <message>
-        <location line="-47"/>
+        <location line="-246"/>
         <source>Deleting folder and its feeds</source>
         <translation>Ordner und seine Feeds werden gelöscht</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+5"/>
         <source>Deleting folder</source>
         <translation>Ordner wird gelöscht</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+32"/>
+        <source>1 feed moved</source>
+        <translation>1 Feed verschoben</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 feeds moved</source>
+        <translation>%1 Feeds verschoben</translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>Folder deleted, 1 feed kept</source>
+        <translation>Ordner gelöscht, 1 Feed behalten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Folder deleted, %1 feeds kept</source>
+        <translation>Ordner gelöscht, %1 Feeds behalten</translation>
+    </message>
+    <message>
+        <location line="+148"/>
+        <source>Delete folder …</source>
+        <translation>Ordner löschen …</translation>
+    </message>
+    <message>
+        <location line="+21"/>
         <source>Mark as read</source>
         <translation>Als gelesen markieren</translation>
     </message>
@@ -870,7 +987,22 @@
         <translation>Zu Favoriten hinzufügen</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+4"/>
+        <source>Unmute feed</source>
+        <translation>Stummschaltung aufheben</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Mute feed</source>
+        <translation>Feed stumm schalten</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Delete (unsubscribe)</source>
+        <translation>Löschen (abbestellen)</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>Deleting feed</source>
         <translation>Feed wird gelöscht</translation>
     </message>
@@ -885,27 +1017,37 @@
         <translation>Noch keine Feeds</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Pull down and choose &quot;Subscribe to website&quot;: Sailfeed finds the feeds of a website for you.</source>
-        <translation>Zieh nach unten und wähle „Webseite abonnieren“: Sailfeed findet die Feeds einer Webseite für dich.</translation>
-    </message>
-    <message>
-        <location line="-219"/>
+        <location line="-268"/>
+        <location line="+6"/>
         <source>Folder added</source>
         <translation>Ordner hinzugefügt</translation>
     </message>
     <message>
-        <location line="-49"/>
+        <location line="-190"/>
         <source>Pull down and choose &quot;Subscribe to website&quot;</source>
         <translation>Zieh nach unten und wähle „Webseite abonnieren“</translation>
     </message>
     <message>
-        <location line="+105"/>
+        <location line="+56"/>
+        <source>Next</source>
+        <translation>Weiter</translation>
+    </message>
+    <message>
+        <location line="+34"/>
+        <location line="+16"/>
+        <location line="+16"/>
+        <location line="+14"/>
+        <location line="+17"/>
+        <source>Busy – try again in a moment</source>
+        <translation>Beschäftigt – gleich noch einmal versuchen</translation>
+    </message>
+    <message>
+        <location line="+120"/>
         <source>Bookmarks</source>
         <translation>Lesezeichen</translation>
     </message>
     <message>
-        <location line="+116"/>
+        <location line="+133"/>
         <source>Feed settings …</source>
         <translation>Feed-Einstellungen …</translation>
     </message>
@@ -925,22 +1067,85 @@
         <translation>Keine Feeds</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+1"/>
+        <source>Pull down and choose &quot;Subscribe to website&quot;: Sailfeed finds the feeds of a website for you. Coming from another feed reader? Settings → Import and export feeds.</source>
+        <translation>Zieh nach unten und wähle „Webseite abonnieren“: Sailfeed findet die Feeds einer Webseite für dich. Du kommst von einem anderen Feedreader? Einstellungen → Feeds importieren und exportieren.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Sign in first</source>
         <translation>Zuerst anmelden</translation>
     </message>
 </context>
 <context>
-    <name>FolderPage</name>
+    <name>FolderDeleteDialog</name>
     <message>
-        <location filename="../qml/pages/FolderPage.qml" line="+32"/>
-        <source>Folders</source>
-        <translation type="unfinished"></translation>
+        <location filename="../qml/pages/FolderDeleteDialog.qml" line="+21"/>
+        <source>Delete folder %1?</source>
+        <translation>Ordner %1 löschen?</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>All articles</source>
-        <translation type="unfinished">Alle Artikel</translation>
+        <location line="+1"/>
+        <source>Delete</source>
+        <translation>Löschen</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Also unsubscribe its feed</source>
+        <translation>Auch seinen Feed abbestellen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Also unsubscribe its %1 feeds</source>
+        <translation>Auch seine %1 Feeds abbestellen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The feeds and their articles are removed.</source>
+        <translation>Die Feeds und ihre Artikel werden entfernt.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The feeds are kept and move to &quot;Other feeds&quot;.</source>
+        <translation>Die Feeds bleiben und kommen zu „Weitere Feeds“.</translation>
+    </message>
+</context>
+<context>
+    <name>FolderFeedsDialog</name>
+    <message>
+        <location filename="../qml/pages/FolderFeedsDialog.qml" line="+97"/>
+        <source>Save</source>
+        <translation>Speichern</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Create</source>
+        <translation>Anlegen</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Switched-on feeds are in this folder. Switch a feed off to move it out (to no folder).</source>
+        <translation>Eingeschaltete Feeds liegen in diesem Ordner. Ausschalten verschiebt den Feed aus dem Ordner (in „Kein Ordner“).</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Choose the feeds to move into the new folder. You can also create it empty.</source>
+        <translation>Wähle die Feeds, die in den neuen Ordner sollen. Du kannst ihn auch leer anlegen.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>All</source>
+        <translation>Alle</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>None</source>
+        <translation>Keine</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>No folder</source>
+        <translation>Kein Ordner</translation>
     </message>
 </context>
 <context>
@@ -964,7 +1169,7 @@
 <context>
     <name>LoginPage</name>
     <message>
-        <location filename="../qml/pages/LoginPage.qml" line="+44"/>
+        <location filename="../qml/pages/LoginPage.qml" line="+45"/>
         <source>Nextcloud account</source>
         <translation>Nextcloud-Konto</translation>
     </message>
@@ -989,12 +1194,12 @@
         <translation>Nur für den eigenen Server mit einem Zertifikat, dem du vertraust. Die Verbindung bleibt verschlüsselt, aber die Identität des Servers wird nicht geprüft.</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+23"/>
         <source>Sign in with the browser</source>
         <translation>Über den Browser anmelden</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+34"/>
         <source>Sign in to your Nextcloud in the browser and grant access. Sailfeed continues by itself.</source>
         <translation>Melde dich im Browser bei deiner Nextcloud an und erlaube den Zugriff. Sailfeed macht dann von selbst weiter.</translation>
     </message>
@@ -1004,7 +1209,7 @@
         <translation>Wartet noch %1 Min.</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+5"/>
         <source>Cancel</source>
         <translation>Abbrechen</translation>
     </message>
@@ -1014,7 +1219,7 @@
         <translation>Öffnet die Anmeldeseite deiner Nextcloud im Browser. Nachdem du dort den Zugriff erlaubt hast, erhält Sailfeed ein eigenes App-Passwort.</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+15"/>
         <source>Sign in with the browser instead</source>
         <translation>Stattdessen über den Browser anmelden</translation>
     </message>
@@ -1024,7 +1229,7 @@
         <translation>Stattdessen mit App-Passwort anmelden</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+11"/>
         <source>User name</source>
         <translation>Benutzername</translation>
     </message>
@@ -1034,7 +1239,7 @@
         <translation>App-Passwort</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+12"/>
         <source>Sign in</source>
         <translation>Anmelden</translation>
     </message>
@@ -1068,13 +1273,13 @@
     <name>MarkAllButton</name>
     <message>
         <location filename="../qml/components/MarkAllButton.qml" line="+53"/>
-        <source>Release: mark all as read</source>
-        <translation>Loslassen: alle als gelesen markieren</translation>
+        <source>Release: mark all in this list as read</source>
+        <translation>Loslassen: alle in dieser Liste als gelesen markieren</translation>
     </message>
     <message>
         <location line="+0"/>
-        <source>Mark all as read</source>
-        <translation>Alle als gelesen markieren</translation>
+        <source>Mark all in this list as read</source>
+        <translation>Alle in dieser Liste als gelesen markieren</translation>
     </message>
 </context>
 <context>
@@ -1114,9 +1319,360 @@
     </message>
 </context>
 <context>
+    <name>OpmlFile</name>
+    <message>
+        <location filename="../src/opmlfile.cpp" line="+142"/>
+        <location line="+68"/>
+        <source>This is not an OPML file.</source>
+        <translation>Das ist keine OPML-Datei.</translation>
+    </message>
+    <message>
+        <location line="-7"/>
+        <source>The file is damaged (line %1: %2).</source>
+        <translation>Die Datei ist beschädigt (Zeile %1: %2).</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>There are no feeds in this file.</source>
+        <translation>In dieser Datei sind keine Feeds.</translation>
+    </message>
+</context>
+<context>
+    <name>OpmlFilesPage</name>
+    <message>
+        <location filename="../qml/pages/OpmlFilesPage.qml" line="+32"/>
+        <source>Could not read %1: %2</source>
+        <translation>%1 konnte nicht gelesen werden: %2</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Could not load %1: %2</source>
+        <translation>%1 konnte nicht geladen werden: %2</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Import from your Nextcloud</source>
+        <translation>Aus deiner Nextcloud importieren</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Import from Downloads</source>
+        <translation>Aus „Downloads“ importieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Folder &quot;Sailfeed&quot;</source>
+        <translation>Ordner „Sailfeed“</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Downloads folder</source>
+        <translation>Ordner „Downloads“</translation>
+    </message>
+    <message>
+        <location line="+43"/>
+        <source>Refresh</source>
+        <translation>Aktualisieren</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Could not read the files</source>
+        <translation>Die Dateien konnten nicht gelesen werden</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No OPML files on your Nextcloud</source>
+        <translation>Keine OPML-Dateien in deiner Nextcloud</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>No OPML files in Downloads</source>
+        <translation>Keine OPML-Dateien in „Downloads“</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Put the OPML file of the other feed reader into the folder &quot;Sailfeed&quot; of your Nextcloud files, e.g. in the web interface.</source>
+        <translation>Leg die OPML-Datei des anderen Feedreaders in den Ordner „Sailfeed“ deiner Nextcloud-Dateien, zum Beispiel über die Weboberfläche.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Save the OPML file of the other feed reader in the Downloads folder, e.g. from an e-mail or the browser.</source>
+        <translation>Speichere die OPML-Datei des anderen Feedreaders im Ordner „Downloads“, zum Beispiel aus einer E-Mail oder dem Browser.</translation>
+    </message>
+</context>
+<context>
+    <name>OpmlImportDialog</name>
+    <message>
+        <location filename="../qml/pages/OpmlImportDialog.qml" line="+21"/>
+        <source>1 feed</source>
+        <translation>1 Feed</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 feeds</source>
+        <translation>%1 Feeds</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>The import could not be started.</source>
+        <translation>Der Import konnte nicht gestartet werden.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Import</source>
+        <translation>Importieren</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Title</source>
+        <translation>Titel</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Feeds in the file</source>
+        <translation>Feeds in der Datei</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <location line="+66"/>
+        <source>Subscribed already</source>
+        <translation>Schon abonniert</translation>
+    </message>
+    <message>
+        <location line="-62"/>
+        <source>New</source>
+        <translation>Neu</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>New folders</source>
+        <translation>Neue Ordner</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Keep the folders</source>
+        <translation>Ordner übernehmen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>On: missing folders are created and the new feeds go into their folders.</source>
+        <translation>An: fehlende Ordner werden angelegt, die neuen Feeds kommen in ihre Ordner.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Off: the new feeds go to &quot;Other feeds&quot;, no folder is created.</source>
+        <translation>Aus: Die neuen Feeds kommen zu „Weitere Feeds“, es wird kein Ordner angelegt.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Your Nextcloud reads every feed while subscribing, so this takes a moment per feed. You can leave the page meanwhile.</source>
+        <translation>Deine Nextcloud liest jeden Feed beim Abonnieren, das dauert pro Feed einen Moment. Du kannst die Seite währenddessen verlassen.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>All feeds of this file are subscribed already.</source>
+        <translation>Alle Feeds dieser Datei sind schon abonniert.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>New feeds</source>
+        <translation>Neue Feeds</translation>
+    </message>
+</context>
+<context>
+    <name>OpmlPage</name>
+    <message>
+        <location filename="../qml/pages/OpmlPage.qml" line="+22"/>
+        <source>1 feed</source>
+        <translation>1 Feed</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 feeds</source>
+        <translation>%1 Feeds</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 folder</source>
+        <translation>1 Ordner</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 folders</source>
+        <translation>%1 Ordner</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>1 feed subscribed</source>
+        <translation>1 Feed abonniert</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 feeds subscribed</source>
+        <translation>%1 Feeds abonniert</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 was subscribed already</source>
+        <translation>1 war schon abonniert</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 were subscribed already</source>
+        <translation>%1 waren schon abonniert</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>1 could not be added</source>
+        <translation>1 konnte nicht hinzugefügt werden</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 could not be added</source>
+        <translation>%1 konnten nicht hinzugefügt werden</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Saved on your Nextcloud: Sailfeed/%1</source>
+        <translation>In deiner Nextcloud gespeichert: Sailfeed/%1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <location line="+95"/>
+        <source>Export failed: %1</source>
+        <translation>Export fehlgeschlagen: %1</translation>
+    </message>
+    <message>
+        <location line="-88"/>
+        <source>Share feed list</source>
+        <translation>Feedliste teilen</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Import and export feeds</source>
+        <translation>Feeds importieren und exportieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>OPML file</source>
+        <translation>OPML-Datei</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>OPML is the usual file format for feed lists: other feed readers can import it, and Sailfeed can subscribe to the feeds of a file from another reader.</source>
+        <translation>OPML ist das übliche Dateiformat für Feedlisten: Andere Feedreader können es importieren, und Sailfeed kann die Feeds aus der Datei eines anderen Readers abonnieren.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <location line="+75"/>
+        <source>Import</source>
+        <translation>Import</translation>
+    </message>
+    <message>
+        <location line="-65"/>
+        <source>Subscribing %1 of %2 …</source>
+        <translation>Abonniere %1 von %2 …</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Stop the import</source>
+        <translation>Import anhalten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The feed being subscribed is finished first.</source>
+        <translation>Der Feed, der gerade abonniert wird, wird noch fertig.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Export</source>
+        <translation>Export</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>All your feeds and folders: %1, %2.</source>
+        <translation>Alle deine Feeds und Ordner: %1, %2.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>No feeds to export yet.</source>
+        <translation>Noch keine Feeds zum Exportieren.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Save in your Nextcloud</source>
+        <translation>In deiner Nextcloud speichern</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Folder &quot;Sailfeed&quot;, file %1. Replaces the previous export; Nextcloud keeps the older versions.</source>
+        <translation>Ordner „Sailfeed“, Datei %1. Ersetzt den letzten Export; Nextcloud behält die älteren Versionen.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Save in Downloads</source>
+        <translation>In „Downloads“ speichern</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>File %1 in the Downloads folder</source>
+        <translation>Datei %1 im Ordner „Downloads“</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Saved in Downloads: %1</source>
+        <translation>In „Downloads“ gespeichert: %1</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Share …</source>
+        <translation>Teilen …</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>By e-mail or to another app</source>
+        <translation>Per E-Mail oder an eine andere App</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Subscribes to the feeds of a file in your Nextcloud News. Feeds you have already are skipped, missing folders are created.</source>
+        <translation>Abonniert die Feeds einer Datei in deinem Nextcloud News. Feeds, die du schon hast, werden übersprungen, fehlende Ordner werden angelegt.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>From your Nextcloud</source>
+        <translation>Aus deiner Nextcloud</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>OPML files in the folder &quot;Sailfeed&quot; of your Nextcloud files</source>
+        <translation>OPML-Dateien im Ordner „Sailfeed“ deiner Nextcloud-Dateien</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>From Downloads</source>
+        <translation>Aus „Downloads“</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>OPML files in the Downloads folder</source>
+        <translation>OPML-Dateien im Ordner „Downloads“</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Last import</source>
+        <translation>Letzter Import</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Stopped before the end.</source>
+        <translation>Vor dem Ende angehalten.</translation>
+    </message>
+</context>
+<context>
     <name>Prefetcher</name>
     <message>
-        <location filename="../src/prefetcher.cpp" line="+87"/>
+        <location filename="../src/prefetcher.cpp" line="+118"/>
         <source>No browser cookies yet</source>
         <translation>Noch keine Browser-Cookies</translation>
     </message>
@@ -1258,7 +1814,7 @@
         <translation>Abbrechen</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Your Nextcloud has saved Sailfeed settings, from another device or an earlier installation. Use them on this device? If not, the settings of this device are backed up from now on.</source>
         <translation>Auf deiner Nextcloud sind Sailfeed-Einstellungen gespeichert, von einem anderen Gerät oder einer früheren Installation. Auf diesem Gerät übernehmen? Wenn nicht, werden ab jetzt die Einstellungen dieses Geräts gesichert.</translation>
     </message>
@@ -1395,7 +1951,7 @@
 <context>
     <name>SearchPage</name>
     <message>
-        <location filename="../qml/pages/SearchPage.qml" line="+75"/>
+        <location filename="../qml/pages/SearchPage.qml" line="+77"/>
         <source>Search</source>
         <translation>Suche</translation>
     </message>
@@ -1445,7 +2001,7 @@
         <translation>%1 Artikel</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+13"/>
         <source>Search your articles</source>
         <translation>Durchsuche deine Artikel</translation>
     </message>
@@ -1463,7 +2019,7 @@
 <context>
     <name>SettingsBackup</name>
     <message>
-        <location filename="../src/settingsbackup.cpp" line="+290"/>
+        <location filename="../src/settingsbackup.cpp" line="+291"/>
         <source>This is not a Sailfeed settings backup.</source>
         <translation>Das ist keine Sicherung der Sailfeed-Einstellungen.</translation>
     </message>
@@ -1476,7 +2032,7 @@
 <context>
     <name>SettingsListPage</name>
     <message>
-        <location filename="../qml/pages/SettingsListPage.qml" line="+32"/>
+        <location filename="../qml/pages/SettingsListPage.qml" line="+18"/>
         <source>Article list</source>
         <translation>Artikelliste</translation>
     </message>
@@ -1615,81 +2171,6 @@
         <source>Can also be changed at the top of the feed list.</source>
         <translation>Lässt sich auch oben in der Feedliste ändern.</translation>
     </message>
-    <message>
-        <location line="+5"/>
-        <source>Storage</source>
-        <translation>Speicher</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Delete read articles after</source>
-        <translation>Gelesene Artikel löschen</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Read articles stay on this device.</source>
-        <translation>Gelesene Artikel bleiben auf diesem Gerät.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Read articles older than this are deleted from this device when the app starts. Bookmarked and unread articles always stay. A change takes effect at the next start.</source>
-        <translation>Ältere gelesene Artikel werden beim Start der App von diesem Gerät gelöscht. Lesezeichen und ungelesene Artikel bleiben immer. Eine Änderung wirkt ab dem nächsten Start.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>Never</source>
-        <translation>Nie</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>1 month</source>
-        <translation>Nach 1 Monat</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>3 months</source>
-        <translation>Nach 3 Monaten</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>6 months</source>
-        <translation>Nach 6 Monaten</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>1 year</source>
-        <translation>Nach 1 Jahr</translation>
-    </message>
-    <message>
-        <location line="+18"/>
-        <source>Image cache</source>
-        <translation>Bildzwischenspeicher</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Images already loaded are not downloaded again. A new size applies at the next start.</source>
-        <translation>Bereits geladene Bilder werden nicht noch einmal heruntergeladen. Eine neue Größe gilt ab dem nächsten Start.</translation>
-    </message>
-    <message>
-        <location line="+12"/>
-        <source>%1 MB</source>
-        <translation>%1 MB</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Clear image cache</source>
-        <translation>Bildzwischenspeicher leeren</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Now %1 MB</source>
-        <translation>Derzeit %1 MB</translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Image cache cleared (%1 MB)</source>
-        <translation>Bildzwischenspeicher geleert (%1 MB)</translation>
-    </message>
 </context>
 <context>
     <name>SettingsNextcloudPage</name>
@@ -1734,7 +2215,7 @@
         <translation>Nur für den eigenen Server mit einem Zertifikat, dem du vertraust.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+13"/>
         <source>Change account</source>
         <translation>Konto wechseln</translation>
     </message>
@@ -1744,7 +2225,7 @@
         <translation>Anmelden</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+7"/>
         <source>Sign out</source>
         <translation>Abmelden</translation>
     </message>
@@ -1789,12 +2270,12 @@
         <translation>Aus: Jedes Gerät behält seine eigenen Textgrößen (z. B. Handy und Tablet).</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+8"/>
         <source>Last backup</source>
         <translation>Letzte Sicherung</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>Saving …</source>
         <translation>Wird gespeichert …</translation>
     </message>
@@ -1809,12 +2290,12 @@
         <translation>Letzter Versuch fehlgeschlagen: %1</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+11"/>
         <source>Back up now</source>
         <translation>Jetzt sichern</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>Restore …</source>
         <translation>Wiederherstellen …</translation>
     </message>
@@ -1842,18 +2323,18 @@
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+32"/>
         <source>not signed in</source>
         <translation>nicht angemeldet</translation>
     </message>
     <message>
-        <location line="-40"/>
-        <location line="+30"/>
+        <location line="-45"/>
+        <location line="+35"/>
         <source>Reader mode</source>
         <translation>Lesemodus</translation>
     </message>
     <message>
-        <location line="-30"/>
+        <location line="-35"/>
         <source>Original website</source>
         <translation>Original-Webseite</translation>
     </message>
@@ -1863,12 +2344,12 @@
         <translation>Externer Browser</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+29"/>
         <source>Article preview</source>
         <translation>Artikelvorschau</translation>
     </message>
     <message>
-        <location line="-21"/>
+        <location line="-26"/>
         <source>Like the ambience</source>
         <translation>Wie die Ambience</translation>
     </message>
@@ -1913,6 +2394,16 @@
         <translation>kompakt</translation>
     </message>
     <message>
+        <location line="+4"/>
+        <source>Storage</source>
+        <translation>Speicher</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Image cache, old read articles</source>
+        <translation>Bildzwischenspeicher, alte gelesene Artikel</translation>
+    </message>
+    <message>
         <location line="+5"/>
         <source>Skipped</source>
         <translation>Wird übersprungen</translation>
@@ -1954,6 +2445,16 @@
     </message>
     <message>
         <location line="+5"/>
+        <source>Import and export feeds</source>
+        <translation>Feeds importieren und exportieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>OPML file: your Nextcloud, Downloads, share</source>
+        <translation>OPML-Datei: deine Nextcloud, Downloads, Teilen</translation>
+    </message>
+    <message>
+        <location line="+5"/>
         <source>Browser cookies for the reader mode</source>
         <translation>Browser-Cookies für den Lesemodus</translation>
     </message>
@@ -1973,7 +2474,7 @@
         <translation>Datenschutz</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+19"/>
         <source>About Sailfeed</source>
         <translation>Über Sailfeed</translation>
     </message>
@@ -2206,19 +2707,24 @@
     </message>
     <message>
         <location line="+1"/>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>External browser</source>
         <translation>Externer Browser</translation>
     </message>
     <message>
-        <location line="-5"/>
+        <location line="-6"/>
         <source>Links in articles</source>
         <translation>Links in Artikeln</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>A long press on a link opens it the other way.</source>
-        <translation>Langes Drücken auf einen Link öffnet ihn auf die andere Art.</translation>
+        <source>A long press on a link opens it in the external browser.</source>
+        <translation>Langes Drücken auf einen Link öffnet ihn im externen Browser.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>A long press on a link opens it as reader mode in the app.</source>
+        <translation>Langes Drücken auf einen Link öffnet ihn als Lesemodus in der App.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -2247,15 +2753,106 @@
     </message>
 </context>
 <context>
+    <name>SettingsStoragePage</name>
+    <message>
+        <location filename="../qml/pages/SettingsStoragePage.qml" line="+33"/>
+        <source>Storage</source>
+        <translation>Speicher</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Delete read articles after</source>
+        <translation>Gelesene Artikel löschen</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Read articles stay on this device.</source>
+        <translation>Gelesene Artikel bleiben auf diesem Gerät.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Read articles older than this are deleted from this device when the app starts. Bookmarked and unread articles always stay. A change takes effect at the next start.</source>
+        <translation>Ältere gelesene Artikel werden beim Start der App von diesem Gerät gelöscht. Lesezeichen und ungelesene Artikel bleiben immer. Eine Änderung wirkt ab dem nächsten Start.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Never</source>
+        <translation>Nie</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 month</source>
+        <translation>Nach 1 Monat</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>3 months</source>
+        <translation>Nach 3 Monaten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>6 months</source>
+        <translation>Nach 6 Monaten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>1 year</source>
+        <translation>Nach 1 Jahr</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Image cache</source>
+        <translation>Bildzwischenspeicher</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Images already loaded are not downloaded again. A new size applies at the next start.</source>
+        <translation>Bereits geladene Bilder werden nicht noch einmal heruntergeladen. Eine neue Größe gilt ab dem nächsten Start.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>%1 MB</source>
+        <translation>%1 MB</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Clear image cache</source>
+        <translation>Bildzwischenspeicher leeren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Now %1 MB</source>
+        <translation>Derzeit %1 MB</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Clearing the image cache</source>
+        <translation>Bildspeicher wird geleert</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Image cache cleared (%1 MB)</source>
+        <translation>Bildzwischenspeicher geleert (%1 MB)</translation>
+    </message>
+</context>
+<context>
+    <name>SortLine</name>
+    <message>
+        <location filename="../qml/components/SortLine.qml" line="+31"/>
+        <source>Sorted: %1</source>
+        <translation>Sortiert: %1</translation>
+    </message>
+</context>
+<context>
     <name>SubscribePage</name>
     <message>
         <location filename="../qml/pages/SubscribePage.qml" line="+92"/>
-        <location line="+222"/>
+        <location line="+223"/>
         <source>Subscribed</source>
         <translation>Abonniert</translation>
     </message>
     <message>
-        <location line="-216"/>
+        <location line="-217"/>
         <source>The server rejected the feed</source>
         <translation>Der Server hat den Feed abgelehnt</translation>
     </message>
@@ -2310,7 +2907,7 @@
         <translation>Nextcloud News kann die Adresse trotzdem selbst versuchen.</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+5"/>
         <source>Add anyway</source>
         <translation>Trotzdem hinzufügen</translation>
     </message>
@@ -2359,11 +2956,16 @@
         <source>Subscribe</source>
         <translation>Abonnieren</translation>
     </message>
+    <message>
+        <location line="+0"/>
+        <source>Subscribe anyway</source>
+        <translation>Trotzdem abonnieren</translation>
+    </message>
 </context>
 <context>
     <name>WebPage</name>
     <message>
-        <location filename="../qml/pages/WebPage.qml" line="+92"/>
+        <location filename="../qml/pages/WebPage.qml" line="+98"/>
         <source>Dark colors</source>
         <translation>Dunkle Farben</translation>
     </message>
@@ -2378,12 +2980,12 @@
         <translation>Diese Seite öffnet sich immer im Original</translation>
     </message>
     <message>
-        <location line="+38"/>
+        <location line="+85"/>
         <source>Please make your choice on the page, the reader mode follows automatically</source>
         <translation>Bitte auf der Seite eine Auswahl treffen, der Lesemodus folgt automatisch</translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+112"/>
         <source>Text from the feed – the website loads too slowly</source>
         <translation>Text aus dem Feed – die Webseite lädt zu langsam</translation>
     </message>
@@ -2413,28 +3015,28 @@
         <translation>Erster Artikel</translation>
     </message>
     <message>
-        <location line="+96"/>
+        <location line="+120"/>
         <source>Share</source>
         <translation>Teilen</translation>
     </message>
     <message>
         <location line="+4"/>
-        <location line="+255"/>
+        <location line="+257"/>
         <source>Open in browser</source>
         <translation>Im Browser öffnen</translation>
     </message>
     <message>
-        <location line="-11"/>
+        <location line="-13"/>
         <source>This takes long – the connection or the website is slow.</source>
         <translation>Das dauert lange – die Verbindung oder die Webseite ist langsam.</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Read the text from the feed</source>
         <translation>Text aus dem Feed lesen</translation>
     </message>
     <message>
-        <location line="+89"/>
+        <location line="+90"/>
         <source>Pull down for more: subscribe to this website, share it, open it in the browser</source>
         <translation>Zieh nach unten für mehr: diese Webseite abonnieren, teilen, im Browser öffnen</translation>
     </message>
@@ -2444,7 +3046,7 @@
         <translation>Wische nach links für den nächsten Artikel</translation>
     </message>
     <message>
-        <location line="-382"/>
+        <location line="-384"/>
         <source>Subscribe to website</source>
         <translation>Webseite abonnieren</translation>
     </message>
@@ -2492,18 +3094,18 @@
         <translation>Der Link konnte nicht geöffnet werden</translation>
     </message>
     <message>
-        <location line="+162"/>
+        <location line="+198"/>
         <source>Rather the full article right away? Settings → Article preview → Skip the preview.</source>
         <translation>Lieber gleich den ganzen Artikel? Einstellungen → Artikelvorschau → Vorschau überspringen.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <location line="+321"/>
+        <location line="+327"/>
         <source>Settings</source>
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location line="-189"/>
+        <location line="-195"/>
         <source>Latest backup</source>
         <translation>Neueste Sicherung</translation>
     </message>
@@ -2534,22 +3136,57 @@
         <translation>Lesezeichen</translation>
     </message>
     <message>
-        <location line="+94"/>
+        <location line="+100"/>
         <source>New: Sailfeed can delete old read articles to save space.</source>
         <translation>Neu: Sailfeed kann alte gelesene Artikel löschen, um Platz zu sparen.</translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+70"/>
         <source>No web address in the shared content</source>
         <translation>Im geteilten Inhalt ist keine Webadresse</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+1"/>
         <source>Sign in to your Nextcloud first, then share the link again</source>
         <translation>Melde dich zuerst bei deiner Nextcloud an und teile den Link dann noch einmal</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+5"/>
+        <source>This feed link has no usable address</source>
+        <translation>Dieser Feed-Link hat keine brauchbare Adresse</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sign in to your Nextcloud first, then open the link again</source>
+        <translation>Melde dich zuerst bei deiner Nextcloud an und öffne den Link dann noch einmal</translation>
+    </message>
+    <message>
+        <location line="+46"/>
+        <source>Import stopped after %1 of %2 feeds</source>
+        <translation>Import nach %1 von %2 Feeds angehalten</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Import finished: 1 feed subscribed</source>
+        <translation>Import fertig: 1 Feed abonniert</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Import finished: %1 feeds subscribed</source>
+        <translation>Import fertig: %1 Feeds abonniert</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>1 could not be added</source>
+        <translation>1 konnte nicht hinzugefügt werden</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>%1 could not be added</source>
+        <translation>%1 konnten nicht hinzugefügt werden</translation>
+    </message>
+    <message>
+        <location line="+44"/>
         <source>Retry</source>
         <translation>Erneut versuchen</translation>
     </message>

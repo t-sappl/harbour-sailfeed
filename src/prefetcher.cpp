@@ -3,8 +3,10 @@
 #include "prefetcher.h"
 #include "geckocookiejar.h"
 #include "configuration.h"
+#include "htmlutils.h"
 
 #include <QDateTime>
+#include <QRunnable>
 #include <QSettings>
 
 #include <QNetworkAccessManager>
@@ -19,6 +21,35 @@ Prefetcher::Prefetcher(QObject *parent)
 {
     m_nam->setCookieJar(m_jar);             // the NAM takes ownership
     m_jar->setShareGeckoCookies(shareBrowserCookies());
+    m_pool.setMaxThreadCount(1);
+}
+
+Prefetcher::~Prefetcher()
+{
+    m_pool.clear();
+    m_pool.waitForDone();       // a running job posts to this object
+}
+
+namespace {
+// Makes the lean copy (HtmlUtils::leanPage) off the GUI thread
+class LeanJob : public QRunnable
+{
+public:
+    LeanJob(Prefetcher *target, const QString &key, const QUrl &url, const QString &html)
+        : m_target(target), m_key(key), m_url(url), m_html(html) {}
+    void run() override
+    {
+        const QString lean = HtmlUtils::leanPage(m_html, m_url);
+        QMetaObject::invokeMethod(m_target, "leanReady", Qt::QueuedConnection,
+                                  Q_ARG(QString, m_key), Q_ARG(QUrl, m_url),
+                                  Q_ARG(QString, m_html), Q_ARG(QString, lean));
+    }
+private:
+    Prefetcher *m_target;
+    QString m_key;
+    QUrl m_url;
+    QString m_html;
+};
 }
 
 namespace {
@@ -97,7 +128,11 @@ QString Prefetcher::cookieInfo() const
 void Prefetcher::clear()
 {
     m_cache.clear();
+    m_lean.clear();
+    m_leaning.clear();          // results still being made are dropped
     m_order.clear();
+    m_articles.clear();
+    m_articleOrder.clear();
 }
 
 QString Prefetcher::key(const QUrl &url)
@@ -111,7 +146,7 @@ void Prefetcher::prefetch(const QUrl &url)
     if (scheme != QLatin1String("http") && scheme != QLatin1String("https"))
         return;
     const QString k = key(url);
-    if (m_cache.contains(k) || m_pending.contains(k))
+    if (m_cache.contains(k) || m_pending.contains(k) || m_leaning.contains(k))
         return;
 
     QNetworkRequest req(url);
@@ -173,11 +208,23 @@ void Prefetcher::onFinished(QNetworkReply *reply, const QUrl &url)
         return;
     }
 
+    m_leaning.insert(k);
+    m_pool.start(new LeanJob(this, k, url, html));
+}
+
+void Prefetcher::leanReady(const QString &k, const QUrl &url, const QString &html, const QString &lean)
+{
+    if (!m_leaning.remove(k))
+        return;                 // cancelled or cleared meanwhile
     m_cache.insert(k, html);
+    m_lean.insert(k, lean);
     m_order.removeAll(k);
     m_order.append(k);
-    while (m_order.size() > maxEntries)
-        m_cache.remove(m_order.takeFirst());
+    while (m_order.size() > maxEntries) {
+        const QString old = m_order.takeFirst();
+        m_cache.remove(old);
+        m_lean.remove(old);
+    }
     Q_EMIT finished(url, true);
 }
 
@@ -186,14 +233,47 @@ QString Prefetcher::html(const QUrl &url) const
     return m_cache.value(key(url));
 }
 
+QString Prefetcher::leanHtml(const QUrl &url) const
+{
+    return m_lean.value(key(url));
+}
+
+void Prefetcher::setArticle(const QUrl &url, const QString &json)
+{
+    const QString k = key(url);
+    if (k.isEmpty() || json.isEmpty())
+        return;
+    m_articles.insert(k, json);
+    m_articleOrder.removeAll(k);
+    m_articleOrder.append(k);
+    while (m_articleOrder.size() > 2 * maxEntries)
+        m_articles.remove(m_articleOrder.takeFirst());
+}
+
+QString Prefetcher::article(const QUrl &url) const
+{
+    return m_articles.value(key(url));
+}
+
 bool Prefetcher::isPending(const QUrl &url) const
 {
-    return m_pending.contains(key(url));
+    const QString k = key(url);
+    return m_pending.contains(k) || m_leaning.contains(k);
+}
+
+void Prefetcher::cancel(const QUrl &url)
+{
+    const QString k = key(url);
+    m_leaning.remove(k);
+    if (QNetworkReply *reply = m_pending.value(k))
+        reply->abort();         // finished(url, false) through onFinished()
 }
 
 int Prefetcher::idleMs(const QUrl &url) const
 {
     const QString k = key(url);
+    if (m_leaning.contains(k))
+        return 0;               // downloaded, almost ready
     if (!m_pending.contains(k))
         return -1;
     return static_cast<int>(qMin<qint64>(QDateTime::currentMSecsSinceEpoch() - m_lastData.value(k), 1 << 30));

@@ -23,7 +23,9 @@ Page {
     // reachable by id from the page (the search never ran – found 14 Oct)
     property string typed: ""
     property bool titlesOnly: false
-    property bool inSelection: false
+    // From an article list of a feed / folder / the bookmarks the search starts
+    // in that selection, not in all feeds (12 Nov); "All feeds" is one tap away
+    property bool inSelection: hasSelection
     readonly property var matchingFeeds: query.trim().length >= 2 ? app.feeds.feedsMatching(query).slice(0, 5) : []
 
     function applyScope() {
@@ -98,7 +100,7 @@ Page {
                 width: parent.width
                 visible: page.hasSelection
                 label: qsTr("Articles of")
-                currentIndex: 0
+                currentIndex: page.inSelection ? 1 : 0
                 menu: ContextMenu {
                     MenuItem { text: qsTr("All feeds"); onClicked: { page.inSelection = false; page.applyScope() } }
                     MenuItem { text: app.currentSelectionName; onClicked: { page.inSelection = true; page.applyScope() } }
@@ -142,8 +144,7 @@ Page {
         delegate: ArticleDelegate {
             onClicked: {
                 results.markRead(index)
-                pageStack.push(Qt.resolvedUrl("ArticlePage.qml"),
-                               { articleData: results.get(index), articleModel: results })
+                app.openArticleAt(results, index)
             }
         }
 

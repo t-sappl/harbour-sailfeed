@@ -87,6 +87,14 @@ public:
 
     // Favorite feeds: kept on this device (settings file), re-sorts at once.
     Q_INVOKABLE bool isFavorite(int feedId) const { return m_favorites.contains(feedId); }
+    // Muted feeds: not counted in "All articles", the folders and the cover
+    Q_INVOKABLE void setMutedFeeds(const QVariantList &ids);
+    Q_INVOKABLE bool isMuted(int feedId) const { return m_muted.contains(feedId); }
+    Q_PROPERTY(int mutedUnread READ mutedUnread NOTIFY mutedUnreadChanged)
+    int mutedUnread() const;
+private:
+    void updateMutedUnread();
+public:
     Q_INVOKABLE void setFavorite(int feedId, bool favorite);
     // Favorites for the settings backup: [{ id, title }] (title empty for a
     // feed that is not in the list), and replacing them all at once.
@@ -98,6 +106,10 @@ public:
     // One feed for the feed settings page: id, title, url, link, folderId,
     // folderName, favicon; empty map if unknown
     Q_INVOKABLE QVariantMap feedInfo(int feedId) const;
+    // All feeds for choosing feeds of a folder (1.4, new folder): feeds
+    // without a folder first, then by folder name, inside alphabetically.
+    // [{ id, title, folderId, folderName, favicon }]
+    Q_INVOKABLE QVariantList feedsByFolder() const;
     // Feeds whose title contains every word of text (search, 1.1):
     // [{ id, title, unread, favicon, folderName }], in list order
     Q_INVOKABLE QVariantList feedsMatching(const QString &text) const;
@@ -134,6 +146,8 @@ Q_SIGNALS:
     void loadedChanged(bool loaded);
     void countChanged(int count);
     void revisionChanged(int revision);
+    void mutedUnreadChanged();
+    void mutedChanged();
     void sortModeChanged(int sortMode);
     // Favorites changed (for the automatic settings backup)
     void favoritesChanged();
@@ -157,10 +171,18 @@ private:
     QString m_dbPath;
     QHash<qint64, QStringList> recentArticleTitles() const;
     QSet<qint64> m_favorites;
+    QSet<qint64> m_muted;
+    int m_mutedUnread = 0;
     QHash<QString, int> m_folderFavorites;  // favorite feeds per folder
     void applyFavorites(const QSet<qint64> &favorites);
     bool favoritesFirst() const { return m_sortMode == MostActive || m_sortMode == UnreadThenActivity; }
     QHash<qint64, int> loadCounts() const;
+    // The counts change with new articles, stars and the time window only
+    // (1.4: they were read anew at every return to the feed list)
+    bool m_countsDirty = true;
+    qint64 m_countsAt = 0;                  // ms since epoch
+    int m_countsMode = -1;
+    QMetaObject::Connection m_countsConn[3];
     bool whenStorageIdle(const std::function<bool()> &action);
     int feedMetric(Fuoten::Feed *f) const;
 };

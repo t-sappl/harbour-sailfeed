@@ -89,6 +89,11 @@ public:
     // For comparing addresses: without scheme, "www.", trailing "/",
     // fragment and tracking parameters (utm_*, wt_mc, at_*, fbclid …)
     static QString compareKey(const QString &url);
+    // The "feed:" scheme of feed links and some OPML files (1.4):
+    // "feed://example.org/rss" -> "https://example.org/rss",
+    // "feed:https://…" and "feed://https://…" -> "https://…"; anything else
+    // is returned unchanged (trimmed)
+    static QString fromFeedScheme(const QString &url);
     // For "likely subscribed": "title|site host" (lower case, simplified)
     static QString titleSiteKey(const QString &title, const QString &siteLink);
     // "comments" feed by address or title

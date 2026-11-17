@@ -40,6 +40,9 @@ public:
 
     // "example.org/feed" -> "https://example.org/feed"; "" if not usable.
     Q_INVOKABLE static QString normalizeUrl(const QString &input);
+    // A link to subscribe to (1.4: feed:// links, shares): "feed:" forms
+    // become https (FeedFinder::fromFeedScheme), then as normalizeUrl
+    Q_INVOKABLE static QString linkToFeedUrl(const QString &link);
 
     // For tests: storage to read folders from (default: Component's default).
     void setStorage(Fuoten::AbstractStorage *storage) { m_storage = storage; }

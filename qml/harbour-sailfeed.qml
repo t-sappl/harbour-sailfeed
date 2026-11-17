@@ -136,7 +136,7 @@ ApplicationWindow {
     // -1 = "like the general setting". Read through these functions, so
     // bindings follow changes (the map property is read inside).
     readonly property var _perFeedKeys: ["previewFontPerFeed", "readerFontPerFeed",
-                                         "feedListView", "feedSkipPreview", "feedOpenMode"]
+                                         "feedListView", "feedSkipPreview", "feedOpenMode", "feedMuted"]
     function feedSetting(name, feedId) {
         if (!(feedId > 0))
             return -1
@@ -153,6 +153,15 @@ ApplicationWindow {
             m[feedId] = value
         settings[name] = JSON.stringify(m)
     }
+    function isMuted(feedId) { return feedSetting("feedMuted", feedId) === 1 }
+    readonly property var mutedIds: {
+        var m = _sizeMap(settings.feedMuted), out = []
+        for (var k in m)
+            if (m[k] === 1)
+                out.push(parseInt(k))
+        return out
+    }
+    onMutedIdsChanged: { articleModel.setMutedFeeds(mutedIds); feedModel.setMutedFeeds(mutedIds) }
     function listViewFor(feedId) {
         var v = feedSetting("feedListView", feedId)
         return v >= 0 ? v : settings.listView
@@ -160,6 +169,33 @@ ApplicationWindow {
     function skipPreviewFor(feedId) {
         var v = feedSetting("feedSkipPreview", feedId)
         return v >= 0 ? v === 1 : settings.skipPreview
+    }
+    // Opens the article at "index" of a model as the settings say: preview, or
+    // straight to the full article ("skip preview", nothing to preview, own
+    // feed settings). One place for the article list and the search (12 Nov:
+    // the search always opened the preview).
+    function openArticleAt(model, index) {
+        var d = model.info(index)
+        var mode = openModeFor(d.feedId || -1)
+        if ((skipPreviewFor(d.feedId || -1) || d.hasContent === false)
+                && (d.url || "").toString() !== "") {
+            lastOpenedItemId = d.itemId
+            if (mode === 2) {
+                Qt.openUrlExternally(d.url)
+                return
+            }
+            // Download starts now, not when the page has slid in (1.4)
+            if (mode === 0)
+                Prefetch.prefetch(d.url)
+            pageStack.push(Qt.resolvedUrl("pages/WebPage.qml"),
+                           { url: d.url, readerMode: mode === 0, itemId: d.itemId,
+                             feedId: d.feedId || -1, feedTitle: d.feedTitle || "",
+                             articleModel: model, starred: d.starred === true,
+                             articleTitle: d.title || "" })
+            return
+        }
+        pageStack.push(Qt.resolvedUrl("pages/ArticlePage.qml"),
+                       { articleData: model.get(index), articleModel: model })
     }
     function openModeFor(feedId) {
         var v = feedSetting("feedOpenMode", feedId)
@@ -459,7 +495,7 @@ ApplicationWindow {
     ConfigurationGroup {
         id: settings
         path: "/apps/harbour-sailfeed"
-        property int autoReadDelay: 4          // seconds, 0 = off
+        property int autoReadDelay: 0          // seconds, 0 = off (default off since 1.4: nothing is marked by itself)
         property int autoReadMode: 1           // 0 at once, 1 when scrolling on
         property bool showMarkAllButton: true  // slide-up button on the article list
         property int feedSortMode: 0           // FeedModel.SortMode
@@ -469,6 +505,7 @@ ApplicationWindow {
         property int listView: 0               // 0 detailed, 1 compact (title and source only)
         property string feedListView: "{}"     // JSON { feedId: 0|1 }  feed settings: list view
         property string feedSkipPreview: "{}"  // JSON { feedId: 0|1 }  … skip the preview
+        property string feedMuted: "{}"        // JSON { feedId: 1 }    … muted
         property string feedOpenMode: "{}"     // JSON { feedId: 0..2 } … full article
         property bool linksInApp: true         // links in articles: app (reader mode) or browser
         property bool unreadOnly: false
@@ -517,6 +554,8 @@ ApplicationWindow {
         onReadyChanged: if (localstorage.ready) app.loadModels()
     }
     Component.onCompleted: {
+        articleModel.setMutedFeeds(mutedIds)
+        feedModel.setMutedFeeds(mutedIds)
         // v1: default delay 5 s -> 4 s (only if it was never changed)
         if (settings.settingsVersion < 1) {
             if (settings.autoReadDelay === 5)
@@ -532,6 +571,9 @@ ApplicationWindow {
         cloudBackup.noteSettings(settingsFingerprint)
         if (config.isAccountValid)
             cloudBackup.checkLink()
+        // Started with a feed link as argument (main(): startLink)
+        if (startLink !== "")
+            receiveLink(startLink)
     }
 
     // Deleting old read articles is off after an update ("Never"): one hint
@@ -564,11 +606,34 @@ ApplicationWindow {
         iface: "org.sailfishos.share"
         function share(shareConfiguration) { app.receiveShare(shareConfiguration) }
     }
+    // --- Feed links (1.4, as Sailcast's links) ---------------------------
+    // feed://… and feed:https://… links (MimeType x-scheme-handler/feed in
+    // the .desktop file): the system calls openUrl with the link, also while
+    // the app runs; a closed app is started over D-Bus (ExecDBus). Started
+    // with the link as argument instead, main() passes it as startLink.
+    DBusAdaptor {
+        service: "org.sappl.harbour-sailfeed"
+        path: "/link"
+        iface: "org.sappl.sailfeed"
+        function openUrl(urls) {
+            var list = (typeof urls === "string") ? [urls] : (urls || [])
+            var link = list.length > 0 ? ("" + list[0]).trim() : ""
+            // The launcher also starts the app over this method, with no
+            // link (758: "This feed link has no usable address" at every
+            // start from the app grid): then just come to the front
+            if (link === "") {
+                app.activate()
+                return
+            }
+            app.receiveLink(link)
+        }
+    }
     ShareAction { id: shareReader }      // only to read a share configuration
     property string _sharedUrl: ""
 
     // The first web address of the first resource: a link ({status}), raw
-    // data ({data}) or text; a bare domain ("cre.fm") gets https://
+    // data ({data}) or text; a bare domain ("cre.fm") gets https://, feed:
+    // links become https (FeedManager.linkToFeedUrl)
     function sharedUrlOf(configuration) {
         var resources = []
         try {
@@ -583,25 +648,35 @@ ApplicationWindow {
             return ""
         var r = resources[0]
         var text = ("" + (typeof r === "string" ? r : (r.status || r.data || r.linkTitle || ""))).trim()
-        var url = text.match(/(https?|feed):\/\/[^\s"'<>]+/i)
+        var url = text.match(/(feed:(\/\/)?)?https?:\/\/[^\s"'<>]+|feed:\/\/[^\s"'<>]+/i)
         if (url)
-            return url[0].replace(/[.,;:!?)\]]+$/, "").replace(/^feed:\/\/(https?:\/\/)?/i, function(all, inner) {
-                return inner ? inner : "https://"
-            })
+            return FeedManager.linkToFeedUrl(url[0].replace(/[.,;:!?)\]]+$/, ""))
         if (/^[a-z0-9.-]+\.[a-z]{2,}(\/\S*)?$/i.test(text))
             return "https://" + text
         return ""
     }
     function receiveShare(configuration) {
-        var url = sharedUrlOf(configuration)
         // Without this the sharing menu keeps waiting and the app stays behind
         app.activate()
-        if (url === "") {
-            showMessage(qsTr("No web address in the shared content"))
+        openSubscribe(sharedUrlOf(configuration), qsTr("No web address in the shared content"),
+                      qsTr("Sign in to your Nextcloud first, then share the link again"))
+    }
+    function receiveLink(link) {
+        console.log("Sailfeed: feed link " + link)
+        app.activate()
+        openSubscribe(FeedManager.linkToFeedUrl(link), qsTr("This feed link has no usable address"),
+                      qsTr("Sign in to your Nextcloud first, then open the link again"))
+    }
+    // "Subscribe to website" with url, once the page stack is ready
+    function openSubscribe(url, noUrlText, signInText) {
+        // Not signed in: that first (the sign-in page showed "no usable
+        // address" for a link it could not use anyway, blind test 11 Nov)
+        if (!config.isAccountValid) {
+            showMessage(signInText)
             return
         }
-        if (!config.isAccountValid) {
-            showMessage(qsTr("Sign in to your Nextcloud first, then share the link again"))
+        if (url === "") {
+            showMessage(noUrlText)
             return
         }
         _sharedUrl = url
@@ -618,6 +693,39 @@ ApplicationWindow {
             var url = app._sharedUrl
             app._sharedUrl = ""
             pageStack.push(Qt.resolvedUrl("pages/SubscribePage.qml"), { initialUrl: url })
+        }
+    }
+
+    // --- OPML import (1.4) -----------------------------------------------
+    // The import goes on when its page is left: the new feeds are in the
+    // database already (CreateFeed); a sync brings their articles, after the
+    // running one if there is one.
+    property bool _syncAfterImport: false
+    Connections {
+        target: feedTransfer
+        onImportFinished: {
+            if (added > 0) {
+                feedModel.reload()
+                if (synchronizer.inOperation)
+                    app._syncAfterImport = true
+                else
+                    synchronizer.sync()
+            }
+            var text = cancelled ? qsTr("Import stopped after %1 of %2 feeds").arg(feedTransfer.importDone).arg(feedTransfer.importTotal)
+                     : (added === 1 ? qsTr("Import finished: 1 feed subscribed")
+                                    : qsTr("Import finished: %1 feeds subscribed").arg(added))
+            if (failed > 0)
+                text += " · " + (failed === 1 ? qsTr("1 could not be added") : qsTr("%1 could not be added").arg(failed))
+            app.showMessage(text, failed > 0)
+        }
+    }
+    Connections {
+        target: synchronizer
+        onInOperationChanged: {
+            if (!synchronizer.inOperation && app._syncAfterImport) {
+                app._syncAfterImport = false
+                synchronizer.sync()
+            }
         }
     }
 

@@ -36,6 +36,12 @@ Page {
         if (page.openMode === 0 && articleData.url)
             Prefetch.prefetch(articleData.url)
     }
+    // Preview left (back to the list, or the next preview): the download is
+    // not needed any more (1.4; a finished one stays in memory)
+    Component.onDestruction: {
+        if (articleData && articleData.url)
+            Prefetch.cancel(articleData.url)
+    }
 
     // The web view (reader mode or original) is attached: swipe left to open it.
     onStatusChanged: {
@@ -260,8 +266,11 @@ Page {
             // (device test 15 Oct: dominant and redundant – the full article is
             // also a swipe to the left, sharing is in the pulley). Says what it
             // does, so it is not mixed up with "Open in browser" in the pulley.
+            Item { width: 1; height: Theme.paddingLarge }
             ListActionItem {
                 width: parent.width
+                framed: true
+                iconSource: page.openMode === 2 ? "image://theme/icon-m-website" : "image://theme/icon-m-right"
                 visible: (articleData.url || "").toString() !== ""
                 text: page.openMode === 2 ? qsTr("Open in browser")
                     : page.openMode === 1 ? qsTr("Show website")

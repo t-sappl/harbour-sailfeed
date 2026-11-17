@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.6
 import Sailfish.Silica 1.0
+import harbour.sailfeed 1.0
 import "../components"
 
 Page {
@@ -93,9 +94,16 @@ Page {
         if (status === PageStatus.Active && app.lastOpenedItemId >= 0) {
             var row = articles.rowOfId(app.lastOpenedItemId)
             app.lastOpenedItemId = -1
-            if (row >= 0)
-                list.positionViewAtIndex(row, ListView.Contain)
+            if (row >= 0) {
+                backRow = row
+                backFix.restart()
+            }
         }
+        // Auto-read: the timer may have fired while the page was covered
+        // (reader, feed list) and is not restarted by itself – short lists
+        // without scrolling stayed unread (13 Nov, review 16 Nov)
+        if (status === PageStatus.Active)
+            page.restartAutoRead()
         // First-run tips (one per visit, see showNextTip)
         if (status === PageStatus.Active && config.isAccountValid)
             feedsTipTimer.restart()
@@ -106,6 +114,33 @@ Page {
         }
     }
     property bool loginShown: false
+    Connections {
+        target: Qt.application
+        onActiveChanged: if (Qt.application.active && page.status === PageStatus.Active) page.restartAutoRead()
+    }
+
+    // Back from the reader: keep the opened article in view. Done after the
+    // layout has settled and clamped to the valid range – directly in
+    // onStatusChanged the view ended up ~1300 px above its origin (blank
+    // area, 22 Oct device screenshot "KDE Blogs").
+    property int backRow: -1
+    Timer {
+        id: backFix
+        interval: 50
+        onTriggered: {
+            var r = page.backRow
+            page.backRow = -1
+            if (r < 0 || r >= list.count || list.moving)
+                return
+            pageAnim.stop()
+            var minY = list.originY
+            var maxY = Math.max(minY, minY + list.contentHeight - list.height)
+            list.positionViewAtIndex(r, ListView.Contain)
+            list.contentY = Math.max(minY, Math.min(maxY, list.contentY))
+            if (list.contentHeight <= list.height)
+                list.contentY = minY
+        }
+    }
 
     // The action rows in the footer: with articles always, in an empty list
     // once loading is over (and signed in)
@@ -124,7 +159,17 @@ Page {
         property real dragStartY: 0
         readonly property real pageHeight: height - (headerItem ? headerItem.height : 0)
 
-        header: PageHeader {
+        // ListHeaderColumn: the sort menu in the header opens downwards
+        header: ListHeaderColumn {
+          flickable: list
+          limitToMenus: true
+          menuOpen: sortLine.menuOpen
+          // The header changes its height ("Updating …" comes and goes, the
+          // hint row): at the top, stay at the very top instead of showing it
+          // cut off (device test 11 Nov, header half out after a refresh).
+          // Not while the sort menu opens (the compensation does that).
+          onHeightChanged: if (!list.moving && !list.dragging && !sortLine.menuOpen) topFix.restart()
+          PageHeader {
             id: listHeader
             // No search button here: the top left corner belongs to Silica's
             // navigation (the glow of the attached feed list, tap = back) and
@@ -135,6 +180,17 @@ Page {
                          ? qsTr("Updating …")
                          : (synchronizer.error ? qsTr("Refresh failed – pull down to try again")
                                                : (articles.showRead ? qsTr("Including read articles") : ""))
+          }
+          PageEdgeHints { leftText: qsTr("Feeds"); visible: config.isAccountValid; onLeftClicked: pageStack.navigateBack() }
+          // Order on the list itself (was only in the settings), as Sailcast
+          SortLine {
+            id: sortLine
+            visible: config.isAccountValid
+            options: [ { name: qsTr("Newest first"), short: qsTr("newest first") },
+                       { name: qsTr("Oldest first"), short: qsTr("oldest first") } ]
+            currentIndex: app.oldestFirst ? 1 : 0
+            onChosen: app.oldestFirst = index === 1
+          }
         }
 
         // "Show read articles" / "Load older articles" (read ones the first
@@ -158,7 +214,7 @@ Page {
             ListActionItem {
                 id: readRow
                 visible: page.readOffer && page.actionsShown
-                iconSource: "image://theme/icon-m-acknowledge"
+                iconSource: "image://theme/icon-m-clock"
                 text: qsTr("Show read articles")
                 description: qsTr("Older, read articles available")
                 onClicked: page.showReadArticles()
@@ -173,7 +229,7 @@ Page {
             }
             Item {
                 width: parent.width
-                height: app.showMarkAllButton ? Theme.itemSizeMedium + Theme.paddingLarge * 2 : Theme.paddingLarge
+                height: app.showMarkAllButton && !app.currentStarred ? Theme.itemSizeMedium + Theme.paddingLarge * 2 : Theme.paddingLarge
             }
         }
 
@@ -192,27 +248,8 @@ Page {
             readonly property bool firstInSection: ListView.previousSection !== ListView.section
             onClicked: {
                 articles.markRead(index)
-                var d = articles.get(index)
-                // General settings or the feed's own (feed settings)
-                var mode = app.openModeFor(d.feedId || -1)
-                // Setting "Skip the preview", or nothing to preview (1.2: the
-                // feed sends no text, e.g. news.orf.at): straight to the full article
-                if ((app.skipPreviewFor(d.feedId || -1) || d.hasContent === false)
-                        && (d.url || "").toString() !== "") {
-                    app.lastOpenedItemId = d.itemId
-                    if (mode === 2) {
-                        Qt.openUrlExternally(d.url)
-                        return
-                    }
-                    pageStack.push(Qt.resolvedUrl("WebPage.qml"),
-                                   { url: d.url, readerMode: mode === 0, itemId: d.itemId,
-                                     feedId: d.feedId || -1, feedTitle: d.feedTitle || "",
-                                     articleModel: articles, starred: d.starred === true,
-                                     articleTitle: d.title || "" })
-                    return
-                }
-                pageStack.push(Qt.resolvedUrl("ArticlePage.qml"),
-                               { articleData: d, articleModel: articles })
+                // Preview or straight to the full article, see app.openArticleAt
+                app.openArticleAt(articles, index)
             }
             menu: Component {
                 ContextMenu {
@@ -343,6 +380,27 @@ Page {
             pageAnim.restart()
         }
 
+        // Another feed/folder chosen, or the list rebuilt: start at the very
+        // top, page header included
+        Connections {
+            target: app
+            onCurrentSelectionNameChanged: topReset.restart()
+        }
+        Timer {
+            id: topReset
+            interval: 0
+            onTriggered: { pageAnim.stop(); list.contentY = list.originY }
+        }
+        Timer {
+            id: topFix
+            interval: 0
+            onTriggered: {
+                if (list.headerItem && !list.moving && !pageAnim.running
+                        && list.contentY - list.originY < list.headerItem.height)
+                    list.contentY = list.originY
+            }
+        }
+
         NumberAnimation {
             id: pageAnim
             target: list
@@ -359,11 +417,38 @@ Page {
         VerticalScrollDecorator { }
     }
 
+    // Empty list with more to load: the same actions as in the footer rows,
+    // as buttons below the hint (12 Nov: "older articles available" without
+    // anything to tap – the footer rows are not visible on an empty list)
+    Column {
+        visible: list.count === 0 && page.actionsShown && !app.noFeeds
+                 && (page.readOffer || page.olderAvailable)
+        x: Theme.horizontalPageMargin
+        width: parent.width - 2 * x
+        y: parent.height * 0.5 + Theme.itemSizeLarge * 1.3
+        spacing: Theme.paddingSmall
+        ActionPill {
+            visible: page.readOffer
+            kind: "primary"
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: qsTr("Show read articles")
+            onClicked: page.showReadArticles()
+        }
+        ActionPill {
+            visible: page.olderAvailable && !articles.fetchingOlder
+            kind: "secondary"
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: qsTr("Load older articles")
+            onClicked: page.loadOlder()
+        }
+    }
+
     Timer {
         id: autoReadTimer
         interval: Math.max(1, app.autoReadDelay) * 1000
         onTriggered: {
-            if (page.status === PageStatus.Active && Qt.application.active && !list.moving)
+            var go = page.status === PageStatus.Active && Qt.application.active && !list.moving
+            if (go)
                 page.markVisibleRead(app.autoReadMode === 1)
         }
     }
@@ -379,6 +464,7 @@ Page {
         id: markAllButton
         anchors { right: parent.right; rightMargin: Theme.horizontalPageMargin; bottom: parent.bottom; bottomMargin: Theme.paddingLarge * 2 }
         visible: app.showMarkAllButton && list.count > 0 && config.isAccountValid && !pulley.active
+                 && !app.currentStarred
         dimmed: list.moving
         allRead: articles.unreadCount === 0
         onTriggered: page.markAllWithRemorse()

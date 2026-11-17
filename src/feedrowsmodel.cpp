@@ -48,6 +48,11 @@ void FeedRowsModel::setFeeds(FeedModel *feeds)
     if (m_feeds) {
         connect(m_feeds, &QAbstractItemModel::dataChanged, this, &FeedRowsModel::onSourceDataChanged);
         connect(m_feeds, &QAbstractItemModel::modelReset, this, &FeedRowsModel::rebuild);
+        // Muting changes the folder sums without changing any row
+        connect(m_feeds, &FeedModel::mutedChanged, this, [this]() {
+            if (!m_rows.isEmpty())
+                Q_EMIT dataChanged(index(0), index(m_rows.size() - 1));
+        });
         connect(m_feeds, &QAbstractItemModel::layoutChanged, this, &FeedRowsModel::rebuild);
         connect(m_feeds, &QAbstractItemModel::rowsInserted, this, &FeedRowsModel::rebuild);
         connect(m_feeds, &QAbstractItemModel::rowsRemoved, this, &FeedRowsModel::rebuild);
@@ -197,8 +202,12 @@ QVariant FeedRowsModel::data(const QModelIndex &index, int role) const
         case TitleRole:     return r.name;
         case UnreadCountRole: {
             int sum = 0;
-            for (int i = 0; i < r.sourceCount; ++i)
-                sum += m_feeds->index(r.firstSource + i, 0).data(FeedModel::UnreadCountRole).toInt();
+            for (int i = 0; i < r.sourceCount; ++i) {
+                const QModelIndex fi = m_feeds->index(r.firstSource + i, 0);
+                if (m_feeds->isMuted(fi.data(FeedModel::FeedIdRole).toInt()))
+                    continue;                   // muted feeds are not counted
+                sum += fi.data(FeedModel::UnreadCountRole).toInt();
+            }
             return sum;
         }
         case FaviconRole:   return QString();

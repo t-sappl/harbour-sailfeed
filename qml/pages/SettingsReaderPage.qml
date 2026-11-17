@@ -106,7 +106,8 @@ Page {
             ComboBox {
                 width: parent.width
                 label: qsTr("Links in articles")
-                description: qsTr("A long press on a link opens it the other way.")
+                description: app.linksInApp ? qsTr("A long press on a link opens it in the external browser.")
+                                            : qsTr("A long press on a link opens it as reader mode in the app.")
                 currentIndex: app.linksInApp ? 0 : 1
                 menu: ContextMenu {
                     MenuItem { text: qsTr("Reader mode in the app"); onClicked: app.linksInApp = true }

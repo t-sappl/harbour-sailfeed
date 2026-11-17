@@ -67,8 +67,9 @@ Rectangle {
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.primaryColor
         }
-        Button {
+        ActionPill {
             id: actionButton
+            kind: "secondary"
             visible: banner.actionText !== ""
             anchors.verticalCenter: parent.verticalCenter
             text: banner.actionText

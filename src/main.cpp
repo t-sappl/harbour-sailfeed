@@ -36,6 +36,7 @@
 #include "cloudbackup.h"
 #include "feedmanager.h"
 #include "feedfinder.h"
+#include "feedtransfer.h"
 #include "feedmodel.h"
 #include "feedrowsmodel.h"
 #include "configuration.h"
@@ -106,6 +107,17 @@ int main(int argc, char *argv[])
 
     loadTranslations(app.data());
 
+    // A feed link the app was started with (1.4, "Exec=harbour-sailfeed %u"
+    // in the .desktop file): opened in "Subscribe to website" once the QML is
+    // up. A link opened while the app runs comes over D-Bus (X-Maemo-Method).
+    QString startLink;
+    for (const QString &arg : app->arguments().mid(1)) {
+        if (arg.startsWith(QLatin1String("feed:"), Qt::CaseInsensitive)) {
+            startLink = arg;
+            break;
+        }
+    }
+
     qRegisterMetaType<Fuoten::IdList>("Fuoten::IdList");
     qRegisterMetaType<Fuoten::ArticleList>("Fuoten::ArticleList");
 
@@ -146,6 +158,8 @@ int main(int argc, char *argv[])
     auto *account = new AccountManager(config, storage, synchronizer, app.data());
     // Settings backup in the user's Nextcloud files (WebDAV)
     auto *cloudBackup = new CloudBackup(config, nullptr, app.data());
+    // Import and export of the feed list as OPML (Nextcloud, Downloads, share)
+    auto *feedTransfer = new FeedTransfer(config, nullptr, app.data());
 
     // Sync once at start, as soon as the database is open.
     QObject::connect(storage, &Fuoten::AbstractStorage::readyChanged, synchronizer, [config, synchronizer](bool ready) {
@@ -212,12 +226,14 @@ int main(int argc, char *argv[])
     ctx->setContextProperty(QStringLiteral("synchronizer"), synchronizer);
     ctx->setContextProperty(QStringLiteral("account"), account);
     ctx->setContextProperty(QStringLiteral("cloudBackup"), cloudBackup);
+    ctx->setContextProperty(QStringLiteral("feedTransfer"), feedTransfer);
+    ctx->setContextProperty(QStringLiteral("startLink"), startLink);
 
     view->setSource(SailfishApp::pathToMainQml());
 
-    // Share target (1.2.1): the D-Bus name is OrganizationName.ApplicationName
+    // Share target (1.2.1) and feed links (1.4): the D-Bus name is OrganizationName.ApplicationName
     // of the .desktop file's [X-Sailjail] section. Registered after the QML
-    // has created its adaptor (/share/subscribe), as the Sailfish.Share
+    // has created its adaptors (/share/subscribe, /link), as the Sailfish.Share
     // documentation asks (no race between name and objects); with ExecDBus a
     // share also starts the app. Same as Sailcast.
     QDBusConnection bus = QDBusConnection::sessionBus();

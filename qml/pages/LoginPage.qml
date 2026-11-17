@@ -5,6 +5,7 @@
 // Settings > Security > Devices & sessions.
 import QtQuick 2.6
 import Sailfish.Silica 1.0
+import "../components"
 
 Page {
     id: page
@@ -49,8 +50,8 @@ Page {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 wrapMode: Text.Wrap
-                color: Theme.highlightColor
-                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
                 text: qsTr("Sailfeed shows the feeds of the News app on your Nextcloud. Enter your server's address and sign in.")
             }
             Item { width: 1; height: Theme.paddingLarge }
@@ -88,42 +89,58 @@ Page {
             // --- Sign in with the browser (recommended) ---------------------
             Item { width: 1; height: Theme.paddingLarge }
 
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
+            ActionPill {
+                kind: "primary"
+                x: Theme.horizontalPageMargin
                 visible: !page.manual && !account.browserLoginActive
                 text: qsTr("Sign in with the browser")
-                enabled: server.text.length > 0 && !account.busy
-                onClicked: page.signInWithBrowser()
+                // Always enabled (blind test 11 Nov: greyed out before the
+                // address was typed, it looked broken); without an address it
+                // leads to the address field
+                enabled: !account.busy
+                onClicked: {
+                    if (server.text.trim().length === 0)
+                        server.forceActiveFocus()
+                    else
+                        page.signInWithBrowser()
+                }
             }
 
             Column {
                 width: parent.width
                 visible: account.browserLoginActive
-                spacing: Theme.paddingMedium
-                BusyIndicator {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    size: BusyIndicatorSize.Medium
-                    running: account.browserLoginActive
+                spacing: Theme.paddingSmall
+                // As Sailcast: small busy indicator and the text beside it
+                Row {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * x
+                    spacing: Theme.paddingMedium
+                    BusyIndicator {
+                        id: browserBusy
+                        anchors.verticalCenter: parent.verticalCenter
+                        size: BusyIndicatorSize.Small
+                        running: account.browserLoginActive
+                    }
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - browserBusy.width - parent.spacing
+                        wrapMode: Text.Wrap
+                        color: Theme.secondaryHighlightColor
+                        font.pixelSize: Theme.fontSizeSmall
+                        text: qsTr("Sign in to your Nextcloud in the browser and grant access. Sailfeed continues by itself.")
+                    }
                 }
                 Label {
                     x: Theme.horizontalPageMargin
                     width: parent.width - 2 * x
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.Wrap
-                    color: Theme.highlightColor
-                    text: qsTr("Sign in to your Nextcloud in the browser and grant access. Sailfeed continues by itself.")
-                }
-                Label {
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * x
-                    horizontalAlignment: Text.AlignHCenter
                     visible: account.browserLoginSecondsLeft > 0
                     font.pixelSize: Theme.fontSizeExtraSmall
                     color: Theme.secondaryHighlightColor
                     text: qsTr("Waiting another %1 min").arg(Math.ceil(account.browserLoginSecondsLeft / 60))
                 }
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
+                ActionPill {
+                    kind: "secondary"
+                    x: Theme.horizontalPageMargin
                     text: qsTr("Cancel")
                     onClicked: account.cancelBrowserLogin()
                 }
@@ -136,26 +153,21 @@ Page {
                 topPadding: Theme.paddingMedium
                 text: qsTr("Opens your Nextcloud's sign-in page in the browser. After you grant access there, Sailfeed receives its own app password.")
                 wrapMode: Text.Wrap
-                color: Theme.secondaryColor
+                color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeExtraSmall
             }
 
             Item { width: 1; height: Theme.paddingLarge }
 
             // --- Alternative: app password ----------------------------------
-            BackgroundItem {
-                width: parent.width
+            // A side action like on Sailcast's pages (blind test: the
+            // underlined text before read as body text)
+            ActionPill {
+                kind: "secondary"
+                x: Theme.horizontalPageMargin
                 visible: !account.browserLoginActive
+                text: page.manual ? qsTr("Sign in with the browser instead") : qsTr("Sign in with an app password instead")
                 onClicked: page.manual = !page.manual
-                Label {
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * x
-                    horizontalAlignment: Text.AlignHCenter
-                    text: page.manual ? qsTr("Sign in with the browser instead") : qsTr("Sign in with an app password instead")
-                    color: parent.highlighted ? Theme.highlightColor : Theme.secondaryHighlightColor
-                    font.pixelSize: Theme.fontSizeSmall
-                }
             }
 
             Column {
@@ -184,8 +196,9 @@ Page {
 
                 Item { width: 1; height: Theme.paddingLarge }
 
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
+                ActionPill {
+                    kind: "primary"
+                    x: Theme.horizontalPageMargin
                     text: qsTr("Sign in")
                     enabled: page.canSignIn
                     onClicked: page.signIn()
@@ -198,7 +211,7 @@ Page {
                     width: parent.width - 2 * x
                     text: qsTr("Use an app password, created in Nextcloud under Settings › Security › Devices & sessions.")
                     wrapMode: Text.Wrap
-                    color: Theme.secondaryColor
+                    color: Theme.secondaryHighlightColor
                     font.pixelSize: Theme.fontSizeExtraSmall
                 }
             }

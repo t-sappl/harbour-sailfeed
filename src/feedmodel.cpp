@@ -53,10 +53,11 @@ FeedModel::FeedModel(QObject *parent)
             if (pidx.isValid())
                 Q_EMIT dataChanged(pidx, pidx);
         }
+        updateMutedUnread();    // read/unread changes in muted feeds (review 16 Nov)
         bump();
     });
 
-    auto changed = [this]() { Q_EMIT countChanged(rowCount()); bump(); };
+    auto changed = [this]() { Q_EMIT countChanged(rowCount()); updateMutedUnread(); bump(); };
     connect(this, &QAbstractItemModel::rowsInserted, this, changed);
     connect(this, &QAbstractItemModel::rowsRemoved, this, changed);
     connect(this, &QAbstractItemModel::modelReset, this, changed);
@@ -123,6 +124,15 @@ Fuoten::AbstractStorage *FeedModel::storage() const
 void FeedModel::setStorage(Fuoten::AbstractStorage *storage)
 {
     m_source->setStorage(storage);
+    for (auto &c : m_countsConn)
+        disconnect(c);
+    m_countsDirty = true;
+    if (storage) {
+        auto dirty = [this]() { m_countsDirty = true; };
+        m_countsConn[0] = connect(storage, &Fuoten::AbstractStorage::requestedItems, this, dirty);
+        m_countsConn[1] = connect(storage, &Fuoten::AbstractStorage::starredItem, this, dirty);
+        m_countsConn[2] = connect(storage, &Fuoten::AbstractStorage::starredItems, this, dirty);
+    }
 }
 
 bool FeedModel::loaded() const
@@ -144,6 +154,7 @@ void FeedModel::reload()
         m_source->reload();
     else
         m_source->load();
+    m_countsDirty = true;   // feeds may have come or gone
     resort();       // libfuoten reloads synchronously from the database
 }
 
@@ -155,7 +166,7 @@ int FeedModel::folderUnread(const QString &folderName) const
         Fuoten::Feed *f = feedAt(row);
         if (!f)
             continue;
-        if (folderDisplayName(f) == folderName)
+        if (folderDisplayName(f) == folderName && !m_muted.contains(f->id()))
             sum += static_cast<int>(f->unreadCount());
     }
     return sum;
@@ -216,7 +227,7 @@ int FeedModel::folderUnreadForKey(const QString &key) const
     const int n = rowCount();
     for (int row = 0; row < n; ++row) {
         Fuoten::Feed *f = feedAt(row);
-        if (f && folderKey(f) == key)
+        if (f && folderKey(f) == key && !m_muted.contains(f->id()))
             sum += static_cast<int>(f->unreadCount());
     }
     return sum;
@@ -292,6 +303,40 @@ QVariantMap FeedModel::feedInfo(int feedId) const
         return m;
     }
     return QVariantMap();
+}
+
+QVariantList FeedModel::feedsByFolder() const
+{
+    struct Row { int id; QString title; int folderId; QString folderName; QString favicon; };
+    QList<Row> rows;
+    for (int row = 0; row < rowCount(); ++row) {
+        Fuoten::Feed *f = feedAt(row);
+        if (!f)
+            continue;
+        rows.append({ static_cast<int>(f->id()), f->title(), static_cast<int>(f->folderId()),
+                      f->folderId() > 0 ? f->folderName() : QString(), f->faviconLink().toString() });
+    }
+    std::stable_sort(rows.begin(), rows.end(), [](const Row &a, const Row &b) {
+        const bool aNone = a.folderId <= 0, bNone = b.folderId <= 0;
+        if (aNone != bNone)
+            return aNone;                       // without a folder first
+        if (!aNone && a.folderId != b.folderId) {
+            const int c = QString::localeAwareCompare(a.folderName.toLower(), b.folderName.toLower());
+            return c != 0 ? c < 0 : a.folderId < b.folderId;
+        }
+        return QString::localeAwareCompare(a.title.toLower(), b.title.toLower()) < 0;
+    });
+    QVariantList out;
+    for (const Row &r : rows) {
+        QVariantMap m;
+        m.insert(QStringLiteral("id"), r.id);
+        m.insert(QStringLiteral("title"), r.title);
+        m.insert(QStringLiteral("folderId"), r.folderId > 0 ? r.folderId : 0);
+        m.insert(QStringLiteral("folderName"), r.folderName);
+        m.insert(QStringLiteral("favicon"), r.favicon);
+        out << m;
+    }
+    return out;
 }
 
 QVariantList FeedModel::subscribedFeeds() const
@@ -463,9 +508,53 @@ int FeedModel::feedMetric(Fuoten::Feed *f) const
     }
 }
 
+int FeedModel::mutedUnread() const
+{
+    return m_mutedUnread;
+}
+
+void FeedModel::updateMutedUnread()
+{
+    int sum = 0;
+    if (!m_muted.isEmpty()) {
+        const int n = m_source->rowCount();
+        for (int row = 0; row < n; ++row) {
+            auto *f = m_source->data(m_source->index(row, 0), Qt::DisplayRole).value<Fuoten::Feed *>();
+            if (f && m_muted.contains(f->id()))
+                sum += static_cast<int>(f->unreadCount());
+        }
+    }
+    if (sum != m_mutedUnread) {
+        m_mutedUnread = sum;
+        Q_EMIT mutedUnreadChanged();
+    }
+}
+
+void FeedModel::setMutedFeeds(const QVariantList &ids)
+{
+    QSet<qint64> set;
+    for (const QVariant &v : ids)
+        set.insert(v.toLongLong());
+    if (set == m_muted)
+        return;
+    m_muted = set;
+    if (rowCount() > 0)
+        resort();
+    updateMutedUnread();
+    Q_EMIT mutedChanged();
+    bump();
+}
+
 void FeedModel::resort()
 {
-    m_feedMetric = loadCounts();
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_countsDirty || m_countsMode != m_sortMode || now - m_countsAt > 3600 * 1000LL) {
+        m_feedMetric = loadCounts();
+        m_countsDirty = false;
+        m_countsAt = now;
+        m_countsMode = m_sortMode;
+    }
+    int mutedSum = 0;
     m_folderUnread.clear();
     m_folderMetric.clear();
     m_folderFavorites.clear();
@@ -474,10 +563,17 @@ void FeedModel::resort()
         auto *f = m_source->data(m_source->index(row, 0), Qt::DisplayRole).value<Fuoten::Feed *>();
         if (!f)
             continue;
-        m_folderUnread[folderKey(f)] += static_cast<int>(f->unreadCount());
+        if (m_muted.contains(f->id()))
+            mutedSum += static_cast<int>(f->unreadCount());
+        else
+            m_folderUnread[folderKey(f)] += static_cast<int>(f->unreadCount());
         m_folderMetric[folderKey(f)] += feedMetric(f);
         if (m_favorites.contains(f->id()))
             m_folderFavorites[folderKey(f)] += 1;
+    }
+    if (mutedSum != m_mutedUnread) {
+        m_mutedUnread = mutedSum;
+        Q_EMIT mutedUnreadChanged();
     }
     invalidate();
     sort(0, Qt::AscendingOrder);
@@ -587,7 +683,17 @@ bool FeedModel::markFolderRead(int folderId)
         bool any = false;
         for (int row = 0; row < rowCount(); ++row) {
             Fuoten::Feed *f = feedAt(row);
-            if (f && !hasFolder(f) && f->unreadCount() > 0)
+            if (f && !hasFolder(f) && !m_muted.contains(f->id()) && f->unreadCount() > 0)
+                any = markFeedRead(static_cast<int>(f->id())) || any;
+        }
+        return any;
+    }
+    if (!m_muted.isEmpty()) {
+        // Muted feeds of the folder stay unread: feed by feed
+        bool any = false;
+        for (int row = 0; row < rowCount(); ++row) {
+            Fuoten::Feed *f = feedAt(row);
+            if (f && f->folderId() == folderId && !m_muted.contains(f->id()) && f->unreadCount() > 0)
                 any = markFeedRead(static_cast<int>(f->id())) || any;
         }
         return any;
@@ -603,6 +709,15 @@ bool FeedModel::markAllRead()
     Fuoten::AbstractStorage *s = storage();
     if (!s)
         return false;
+    if (!m_muted.isEmpty()) {
+        bool any = false;
+        for (int row = 0; row < rowCount(); ++row) {
+            Fuoten::Feed *f = feedAt(row);
+            if (f && !m_muted.contains(f->id()) && f->unreadCount() > 0)
+                any = markFeedRead(static_cast<int>(f->id())) || any;
+        }
+        return any;
+    }
     return whenStorageIdle([s]() { return s->enqueueMarkAllItemsRead(); });
 }
 

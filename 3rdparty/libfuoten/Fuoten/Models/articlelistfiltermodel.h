@@ -1,6 +1,9 @@
 /*
  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
  * SPDX-License-Identifier: LGPL-3.0-or-later
+ *
+ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
+ * of harbour-sailfeed and patches-libfuoten.diff.
  */
 
 #ifndef FUOTENARTICLELISTFILTERMODEL_H
@@ -109,6 +112,14 @@ public:
      * \brief Reloads the complete underlying ArticleListModel.
      */
     Q_INVOKABLE void reload(const QString &locale = QString()) override;
+
+    /*!
+     * \brief Applies sortOrder() to the loaded articles (sailfeed patch, 1.4).
+     *
+     * This model does not sort; the source model keeps its articles in
+     * order by date, so new articles can be inserted at their place.
+     */
+    void applySortOrder();
 
     /*!
      * \brief Getter function for the \link ArticleListFilterModel::parentIdType parentIdType \endlink property.

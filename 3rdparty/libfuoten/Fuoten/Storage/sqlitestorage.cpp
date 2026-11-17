@@ -64,6 +64,13 @@ void SQLiteStorageManager::run()
     result = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
     Q_ASSERT_X(result, "init database", "failed to activate foreign keys");
 
+    // sailfeed patch (1.4): write-ahead log. Readers (the article list's
+    // worker, the app's own read-only connections) and the writer (sync,
+    // marking) no longer wait for each other, and a commit needs no journal
+    // file of its own. Stays set in the database file.
+    if (!q.exec(QStringLiteral("PRAGMA journal_mode = WAL")))
+        qWarning("Could not switch the database to WAL: %s", qUtf8Printable(q.lastError().text()));
+
     result = q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS system "
                                    "(id INTEGER PRIMARY KEY NOT NULL, "
                                    "key TEXT NOT NULL, "
@@ -129,6 +136,20 @@ void SQLiteStorageManager::run()
 
     result = q.exec(QStringLiteral("CREATE INDEX IF NOT EXISTS items_feed_id_index ON items (feedId)"));
     Q_ASSERT_X(result, "init database", "failed to create items_feed_id_index");
+
+    // sailfeed patch (1.4): unread, starred and lastModified come after the
+    // body in the rows, so counting them read every article's text from
+    // disk. Covering indexes answer those queries without the rows:
+    // unread counts (total_unread, per feed), the sync's id/lastModified
+    // scan, the per-feed activity and starred counts, the order by date.
+    for (const QString &index : {
+            QStringLiteral("CREATE INDEX IF NOT EXISTS items_unread_feed ON items (unread, feedId)"),
+            QStringLiteral("CREATE INDEX IF NOT EXISTS items_lastmod ON items (lastModified)"),
+            QStringLiteral("CREATE INDEX IF NOT EXISTS items_feed_pub_star ON items (feedId, pubDate, starred)"),
+            QStringLiteral("CREATE INDEX IF NOT EXISTS items_pubdate ON items (pubDate)") }) {
+        result = q.exec(index);
+        Q_ASSERT_X(result, "init database", "failed to create an items index");
+    }
 
     for (const QString &trigger : {QStringLiteral("feeds_unreadCount_update_item"), QStringLiteral("feeds_unreadCount_delete_item"), QStringLiteral("feeds_unreadCount_insert_item"), QStringLiteral("folders_unreadCount_update_feed"), QStringLiteral("folders_counts_delete_feed"), QStringLiteral("folders_counts_insert_feed"), QStringLiteral("folders_counts_move_feed")}) {
         result = q.exec(QStringLiteral("DROP TRIGGER IF EXISTS %1").arg(trigger));
@@ -255,6 +276,11 @@ void SQLiteStorage::init()
 
         result = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
         Q_ASSERT_X(result, "init databse", "failed to enable foreign keys support");
+
+        // sailfeed patch (1.4): with WAL, NORMAL syncs at checkpoints only;
+        // the -wal file is cut back to 8 MB after a checkpoint
+        q.exec(QStringLiteral("PRAGMA synchronous = NORMAL"));
+        q.exec(QStringLiteral("PRAGMA journal_size_limit = 8388608"));
 
         result = (q.exec(QStringLiteral(SEL_TOTAL_UNREAD)) && q.next());
         Q_ASSERT_X(result, "init database", "failed to query unread items from database");
@@ -1628,14 +1654,15 @@ Article *SQLiteStorage::getArticle(qint64 id, int bodyLimit)
 
     QString body;
 
-    if (bodyLimit == 0) {
-        body = q.value(9).toString();
-    } else if (bodyLimit > 0) {
-        body = limitBody(q.value(9).toString(), bodyLimit);
-    }
-
-
     if (Q_LIKELY(q.next())) {
+        // sailfeed patch (1.4): the body was read before q.next(), so it
+        // was always empty
+        if (bodyLimit == 0) {
+            body = q.value(9).toString();
+        } else if (bodyLimit > 0) {
+            body = limitBody(q.value(9).toString(), bodyLimit);
+        }
+
         Article *a = new Article(q.value(0).toLongLong(),
                                  q.value(1).toLongLong(),
                                  q.value(2).toString(),
@@ -1690,13 +1717,16 @@ QList<Article*> SQLiteStorage::getArticles(const QueryArgs &args)
 
     Q_D(SQLiteStorage);
 
-    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, it.body, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId");
+    // sailfeed patch (1.4): without a body (bodyLimit < 0) the column is not
+    // read at all – the list loads every article, the text is fetched when
+    // one is opened (getArticleBody)
+    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, %1, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId")
+            .arg(args.bodyLimit < 0 ? QStringLiteral("''") : QStringLiteral("it.body"));
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch())));
-#else
-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toTime_t())));
-#endif
+    // sailfeed patch (1.4): articles dated in the future (wrong time zone
+    // in the feed) were hidden but counted as unread: a feed with a count
+    // and an empty list. Listed now, at the top.
+    qs.append(QStringLiteral(" WHERE 1 = 1"));
 
     if (args.parentId > -1) {
         if (args.parentIdType == FuotenEnums::Feed) {
@@ -1848,13 +1878,16 @@ void GetArticlesAsyncWorker::run()
     bool qresult = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
     Q_ASSERT_X(qresult, "get articles async", "failed to enable foreign keys support");
 
-    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, it.body, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId");
+    // sailfeed patch (1.4): without a body (bodyLimit < 0) the column is not
+    // read at all – the list loads every article, the text is fetched when
+    // one is opened (getArticleBody)
+    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, %1, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId")
+            .arg(m_args.bodyLimit < 0 ? QStringLiteral("''") : QStringLiteral("it.body"));
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch())));
-#else
-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toTime_t())));
-#endif
+    // sailfeed patch (1.4): articles dated in the future (wrong time zone
+    // in the feed) were hidden but counted as unread: a feed with a count
+    // and an empty list. Listed now, at the top.
+    qs.append(QStringLiteral(" WHERE 1 = 1"));
 
     if (m_args.parentId > -1) {
         if (m_args.parentIdType == FuotenEnums::Feed) {
@@ -2012,6 +2045,10 @@ void SQLiteStorage::getArticlesAsync(const QueryArgs &args)
         if (requestId == 0) {
             Q_EMIT gotArticlesAsync(articles);
         }
+        // sailfeed patch (1.4): receivers copy what they take; the results
+        // of a model that is gone (search page closed while loading) stayed
+        // in memory with all bodies
+        qDeleteAll(articles);
     });
     connect(worker, &GetArticlesAsyncWorker::failed, this, [=] (Error *e) {setError(e);});
     connect(worker, &QThread::finished, worker, &QObject::deleteLater);
@@ -2634,6 +2671,35 @@ void SQLiteStorage::allItemsMarkedRead(qint64 newestItemId)
     Q_EMIT markedAllItemsRead(newestItemId);
 }
 
+
+
+QString SQLiteStorage::databasePath() const
+{
+    Q_D(const SQLiteStorage);
+    return d->db.databaseName();
+}
+
+
+void SQLiteStorage::beginBatch()
+{
+    Q_D(SQLiteStorage);
+    if (d->batchDepth++ == 0 && ready()) {
+        d->batchOpen = d->db.transaction();
+    }
+}
+
+
+void SQLiteStorage::endBatch()
+{
+    Q_D(SQLiteStorage);
+    if (d->batchDepth > 0 && --d->batchDepth == 0 && d->batchOpen) {
+        d->batchOpen = false;
+        if (!d->db.commit()) {
+            qWarning("Could not commit the batch: %s", qUtf8Printable(d->db.lastError().text()));
+            d->db.rollback();
+        }
+    }
+}
 
 
 QString SQLiteStorage::getArticleBody(qint64 id)

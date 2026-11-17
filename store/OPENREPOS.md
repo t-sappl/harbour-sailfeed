@@ -14,7 +14,7 @@
 
 **License:** GPL-3.0-or-later
 
-## Description for the OpenRepos page (HTML, 1.2)
+## Description for the OpenRepos page (HTML, 1.4)
 
 > **Note for the author – do not paste this note.** The line "New in 1.2" is replaced with every version. Paste only the HTML inside the code block below into the description field. Reworked 15 Oct (bold label per line and slashes looked unsettled; clipboard → "Subscribe to website", search added, only the text size is per feed); order and wording as the author put it on the page. Also upload the 512 px icon (`design/harbour-sailfeed-512.png`) and screenshots (see below).
 
@@ -23,7 +23,7 @@
 
 <p>I built Sailfeed for myself after moving partly from Android to Sailfish OS: my RSS feeds should be in the same state everywhere – read on the phone, read on the tablet. <a href="https://apps.nextcloud.com/apps/news">Nextcloud News</a> keeps them in sync, Sailfeed is the native reader for it, based on <a href="https://github.com/Huessenbergnetz/libfuoten">libfuoten</a>. I use it every day and share it for anyone who finds it useful.</p>
 
-<p><strong>New in 1.3:</strong> share links from the browser to Sailfeed to subscribe. <strong>1.2:</strong> settings per feed, a compact list view, oldest first, swipe to the next article, better on slow connections, and old read articles are cleaned up.</p>
+<p><strong>New in 1.4:</strong> import and export your feeds as an OPML file (Nextcloud, Downloads or share) – e.g. to move from another feed reader –, feed:// links open Sailfeed, a faster reader mode, muting feeds, choosing the feeds of a new folder and a sort field on the lists. <strong>1.3:</strong> share links from the browser to Sailfeed to subscribe.</p>
 
 <p><strong>Feeds</strong></p>
 <ul>
@@ -31,6 +31,7 @@
 <li>Search in the articles on your device and in feed titles</li>
 <li>Folders, favorite feeds, bookmarks, several sort orders; rename, move, delete</li>
 <li>Settings per feed: list view, preview, how the full article opens</li>
+<li>Import and export of your feeds as an OPML file – in your Nextcloud, in Downloads or shared; feed:// links open Sailfeed</li>
 </ul>
 
 <p><strong>Reading</strong></p>
@@ -66,6 +67,7 @@ Features:
 - Subscribe to website: finds the feeds of a website or article (also from the web view), shows them with their newest articles; comment feeds and podcasts marked
 - Search: articles on the device (titles and text, also read ones) and feed titles
 - Feed management: folders, rename, move, delete
+- Import and export feeds: your feeds and folders as an OPML file in your Nextcloud files, in Downloads or shared; import an OPML file of another reader, with its folders; feed:// links open "Subscribe to website"
 - Feed settings: per feed list view, preview (show or skip) and full article mode; feeds without text open the full article directly
 - Mark as read automatically (when scrolling on, or at once), with a push-up button for one hand, by long press (read/unread, bookmark, all above/below) or per feed and folder – all with undo
 - Reader mode without ads, cookie banners and overlays (Mozilla Readability), preloaded for quick opening; font, text size (also per feed), line spacing, margins, colors (light/dark/sepia, quick light/dark toggle), images; sites that always open in the original; links in an article open in reader mode or in the browser (long press: the other way)
@@ -100,6 +102,18 @@ Ein persönliches Projekt – für den eigenen Gebrauch und die Funktionen entwi
 Voraussetzung: ein Nextcloud-Server mit installierter App **Nextcloud News** – Sailfeed ist nur der Client und lädt selbst keine Feeds. Ist News noch nicht installiert: als Admin in der Nextcloud unter „Apps“ die App „News“ (Bereich Multimedia) aktivieren; bei gehosteten Nextclouds genauso, sofern der Anbieter Apps erlaubt. News braucht die Hintergrundjobs der Nextcloud per Cron, damit die Feeds aktualisiert werden. App-Seite: https://apps.nextcloud.com/apps/news – Installationsanleitung (englisch): https://nextcloud.github.io/news/install/
 
 Funktionen (kurz): Artikelliste mit Vorschaubild und seitenweisem Scrollen, Feedliste mit Ordnern, Lesezeichen und Favoriten, Feeds und Ordner verwalten, automatisch und einhändig als gelesen markieren, Lesemodus ohne Werbung und Cookie-Banner (Schrift, Größe, Farben einstellbar), Hoch- und Querformat, Anmeldung im Browser, offline nutzbar, Sicherung der Einstellungen in der eigenen Nextcloud. Deutsch und Englisch.
+
+## Changelog 1.4.0 (paste into the OpenRepos changelog field)
+
+- New: import and export your feeds as an OPML file (Settings → Import and export feeds) – in your Nextcloud files, in Downloads or shared; import a file of another feed reader with its folders, feeds you have already are skipped
+- New: feed:// links open "Subscribe to website" with the feed
+- Faster reader mode: the article is read from a lean copy of the page, going back shows it at once, the next and the previous article are loaded in advance
+- Faster lists and search, smaller thumbnails, a quicker database; new articles of a sync appear at their place in the list
+- New: mute a feed – its articles stay out of "All articles" and the folders and are not counted as unread
+- New: choose the feeds of a new folder; deleting a folder with feeds asks whether to unsubscribe them or keep them under "Other feeds"
+- New: sort field under the header of the article list and the feed list
+- Tidier buttons and settings pages; search results open as set in the settings; several fixes in the article and feed lists
+- New permission: Downloads (only for the OPML files there)
 
 ## Changelog 1.3.0 (paste into the OpenRepos changelog field)
 
@@ -139,6 +153,6 @@ First public release.
 - Settings backup in your own Nextcloud files
 - Portrait and landscape; English and German
 
-## Screenshots (in `screenshots/`, taken 19 Oct for 1.2; also shown in the README)
+## Screenshots (in `screenshots/`, retaken 17 Nov for 1.4.0, 1080 × 2378 px; also shown in the README)
 
-Upload in this order (as in the README): `article-list.png`, `feeds.png`, `preview.png`, `reader.png`, `original.png`, `search.png`, `bookmarks.png`, `subscribe.png`, `feed-settings.png`, `settings-list.png`.
+Upload in this order (as in the README): `article-list.png`, `feeds.png`, `preview.png`, `reader.png`, `original.png`, `search.png`, `bookmarks.png`, `subscribe.png`, `feed-settings.png`, `settings-list.png`, `opml.png`.

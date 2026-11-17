@@ -3,13 +3,22 @@
 Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=harbour-sailfeed
-Exec=harbour-sailfeed
+# %u: a feed link when started for one (1.4, see MimeType below)
+Exec=harbour-sailfeed %u
 Name=Sailfeed
 Name[de]=Sailfeed
 Comment=Nextcloud News client
 Comment[de]=Nextcloud-News-Client
 # App grid folders are named after common categories
 Categories=Network;News;
+# Feed links (1.4, as Sailcast's links): feed://… and feed:https://… open
+# "Subscribe to website". Delivered over D-Bus (method openUrl, string list),
+# so a running app gets the link too; ExecDBus below starts a closed one.
+# harbour-sailfeed.qml, DBusAdaptor at /link
+MimeType=x-scheme-handler/feed;
+X-Maemo-Service=org.sappl.harbour-sailfeed
+X-Maemo-Object-Path=/link
+X-Maemo-Method=org.sappl.sailfeed.openUrl
 # Share target (1.2.1, pattern of Sailcast 84/85): links from the browser
 # and text from other apps open "Subscribe to website" (harbour-sailfeed.qml,
 # receiveShare)
@@ -26,6 +35,8 @@ SupportsMultipleFiles=false
 # org.sappl/harbour-sailfeed
 OrganizationName=org.sappl
 ApplicationName=harbour-sailfeed
-Permissions=Internet;Secrets
-# Started over D-Bus when something is shared to it while closed
+# Downloads (1.4): OPML export to and import from the Downloads folder
+Permissions=Internet;Secrets;Downloads
+# Started over D-Bus when something is shared to it or a feed link is
+# opened while it is closed
 ExecDBus=harbour-sailfeed

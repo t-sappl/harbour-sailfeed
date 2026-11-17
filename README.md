@@ -37,7 +37,10 @@ Reads the feeds of your own Nextcloud server in a native Silica interface.
   <img src="screenshots/bookmarks.png" width="19%" alt="Bookmarks">
   <img src="screenshots/subscribe.png" width="19%" alt="Subscribe to website">
   <img src="screenshots/feed-settings.png" width="19%" alt="Feed settings">
-  <img src="screenshots/settings-list.png" width="19%" alt="Article list settings">
+  <img src="screenshots/settings-list.png" width="19%" alt="Settings">
+</p>
+<p align="center">
+  <img src="screenshots/opml.png" width="19%" alt="Import and export feeds (OPML)">
 </p>
 
 ## Features
@@ -46,15 +49,18 @@ Reads the feeds of your own Nextcloud server in a native Silica interface.
 - **Reader mode** – using Mozilla's Readability.js: the article's website without ads, cookie banners and overlays; text size, font, line spacing, margins, justified text, colors (ambience, light, dark, sepia) and images adjustable; sites that should always open in the original; pages are preloaded while the preview is displayed, so it opens quickly; consent walls (e.g. "with ads or subscription") are shown once for your choice, which is then remembered; links in an article open in reader mode in the app or in the browser (setting; a long press opens them the other way)
 - **Article Preview** - a preview of each article with the option to swipe left to read the article in Reader mode or Full article mode - can be switched off in the Settings
 - **Full article** – in reader mode, as the original website in the app (Sailfish WebView) or in the external browser
-- **Feed list** – swipe right from the article list: all articles, bookmarks, folders (also empty ones) and feeds with favicons and unread counts, "Other feeds" for feeds without a folder; sorted by unread, name or activity, favorite feeds first in the activity orders
+- **Feed list** – swipe right from the article list: all articles, bookmarks, folders (also empty ones) and feeds with favicons and unread counts, "Other feeds" for feeds without a folder; sorted by unread, name or activity (sort field under the header), favorite feeds first in the activity orders
 - **Subscribe to website** – enter or paste the address of a website, an article or a feed: Sailfeed finds the site's feeds (announced in the page, linked, in parent pages, at the usual addresses of blog systems), checks them and shows each with its newest articles to subscribe; also from the pulley of the web view, e.g. for a blog linked in an article. Comment feeds and podcasts are marked
 - **Search** – "Search" in the pulley of the article list and the feed list: searches the articles on the device (titles, or titles and text; all feeds or the current selection; read ones too) and the feed titles
-- **Feed management** – folders, rename, move and delete feeds and folders
+- **Feed management** – folders (choose their feeds when creating, delete with or without their feeds), rename, move and delete feeds
+- **Muted feeds** – feeds you read only now and then: kept out of "All articles", the folders and the unread counts, but still there when you open them and in the search
 - **Feed settings** – long press a feed (or the pulley of its article list): name, folder and the feed's own list view, preview and full article mode, each "like the general setting" until changed; feeds that send no text open the full article directly
 - **Mark as read** – automatically for articles you have seen for a few seconds (greyed out when you scroll on, or at once); one-handed with a push-up button at the bottom right (like Nextcloud News app on Android); long press for mark as read/unread, bookmark, mark all above or below as read; mark a whole feed or folder from the feed list – all with undo
 - **Navigation** – swipe left from the preview into reader mode and right straight back to the list; a one-handed bar in preview and reader mode (previous/next article, text size, bookmark, open in browser); swipe left in reader mode for the next article; the preview can be skipped; the list keeps its position
 - **Portrait and Landscape** - Landscape mode will be refined in future versions (e.g. 2 columns / Article List and Article side-by-side)
 - **Settings backup** – settings, favorite feeds and sites in the original (optionally the text sizes) saved in Nextcloud files, automatically after changes, earlier states kept; restore them on another device or after a new installation (offered after signing in), replacing or only adding what is missing, with undo
+- **Import and export feeds** – your feeds and folders as an OPML file, the usual format of feed readers: saved in your Nextcloud files (folder `Sailfeed`), in Downloads or shared; an OPML file of another reader imported from the same places, with its folders, skipping the feeds you have already
+- **Feed links** – a `feed://` link (e.g. on a website) opens "Subscribe to website" with that feed; a link shared from the browser does the same
 - **Storage** – read articles older than a chosen time are deleted (bookmarks and unread ones always stay); adjustable image cache that can be cleared
 - **Slow connections** – the reader mode waits for a page that is still arriving and offers the feed's own text or the browser when it takes long
 - **Languages** – English, German
@@ -88,12 +94,13 @@ Sailfeed runs sandboxed (Sailjail) and only asks for:
 |---|---|
 | Internet | Your Nextcloud server, article websites and images |
 | Secrets | Storing the app password encrypted in the system's secure storage (Sailfish Secrets) |
+| Downloads | Exporting the feed list to the Downloads folder and importing OPML files from there – only when you choose it |
 
 ## Privacy
 
 Sailfeed has no tracking and no ads, and the developer runs no server – no data from the app reaches the developer. The app contacts directly from your device:
 
-- **Your Nextcloud server** – user name and app password, folders, feeds, articles, read and bookmark status; the settings backup in the folder `Sailfeed` of your Nextcloud files (WebDAV).
+- **Your Nextcloud server** – user name and app password, folders, feeds, articles, read and bookmark status; the settings backup and exported feed lists in the folder `Sailfeed` of your Nextcloud files (WebDAV).
 - **The websites of the articles** – thumbnails, images and favicons; in reader mode the article's web page (loaded in advance while the preview is open). The in-app browser keeps its cookies (e.g. a consent choice), which are also used for these downloads.
 
 Articles, the image cache and the in-app browser's data stay on the device. Details: [`PRIVACY.md`](PRIVACY.md).

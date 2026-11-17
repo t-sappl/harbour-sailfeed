@@ -62,6 +62,7 @@ Page {
             }
 
             ValueButton {
+                PageArrow {}
                 label: qsTr("Name")
                 value: page.info.title || ""
                 enabled: !FeedManager.busy
@@ -73,6 +74,7 @@ Page {
                 }
             }
             ValueButton {
+                PageArrow {}
                 label: qsTr("Folder")
                 value: (page.info.folderId || 0) > 0 ? (page.info.folderName || "") : qsTr("No folder")
                 enabled: !FeedManager.busy
@@ -82,6 +84,14 @@ Page {
                                            { feedTitle: page.info.title || "", currentFolderId: Math.max(0, page.info.folderId || 0) })
                     d.accepted.connect(function() { FeedManager.moveFeed(feedId, d.folderId) })
                 }
+            }
+
+            TextSwitch {
+                text: qsTr("Mute this feed")
+                description: qsTr("Its articles stay out of \"All articles\" and the folders and are not counted as unread. Search and the feed itself still show them.")
+                checked: app.isMuted(page.feedId)
+                automaticCheck: false
+                onClicked: app.setFeedSetting("feedMuted", page.feedId, checked ? -1 : 1)
             }
 
             SectionHeader { text: qsTr("Reading") }

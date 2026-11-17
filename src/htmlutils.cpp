@@ -49,6 +49,168 @@ bool isTrackingPixel(const QString &imgTag)
     return trackerRe.match(imgTag).hasMatch();
 }
 
+
+// --- leanPage() helpers ---------------------------------------------------
+
+struct Attr {
+    QString name;       // lower case
+    QString raw;        // as written, without the leading whitespace
+    QString value;      // raw value (entities not decoded)
+    bool hasValue = false;
+};
+
+bool isAsciiLetter(QChar c)
+{
+    const ushort u = c.unicode();
+    return (u >= 'a' && u <= 'z') || (u >= 'A' && u <= 'Z');
+}
+
+// Index after the end of the tag that starts at i ('<'), quote aware; -1 if
+// the tag does not end.
+int tagEnd(const QString &s, int i)
+{
+    QChar quote;
+    for (int j = i + 1; j < s.size(); ++j) {
+        const QChar c = s.at(j);
+        if (!quote.isNull()) {
+            if (c == quote)
+                quote = QChar();
+        } else if (c == QLatin1Char('"') || c == QLatin1Char('\'')) {
+            // only a quote right after '=' (spaces allowed) starts a value
+            int k = j - 1;
+            while (k > i && s.at(k).isSpace())
+                --k;
+            if (s.at(k) == QLatin1Char('='))
+                quote = c;
+        } else if (c == QLatin1Char('>')) {
+            return j + 1;
+        }
+    }
+    return -1;
+}
+
+// Splits the inside of a start tag ("img src=… alt") into name and attributes.
+void parseTag(const QString &tag, QString *name, QList<Attr> *attrs, bool *selfClosing)
+{
+    // tag: "<name ...>" complete
+    int i = 1;
+    const int end = tag.size() - 1;     // the '>'
+    while (i < end && !tag.at(i).isSpace() && tag.at(i) != QLatin1Char('/') && tag.at(i) != QLatin1Char('>'))
+        ++i;
+    *name = tag.mid(1, i - 1).toLower();
+    *selfClosing = end > 0 && tag.at(end - 1) == QLatin1Char('/');
+    while (i < end) {
+        while (i < end && (tag.at(i).isSpace() || tag.at(i) == QLatin1Char('/')))
+            ++i;
+        if (i >= end)
+            break;
+        const int start = i;
+        while (i < end && !tag.at(i).isSpace() && tag.at(i) != QLatin1Char('=')
+               && tag.at(i) != QLatin1Char('>') && !(tag.at(i) == QLatin1Char('/') && i + 1 == end))
+            ++i;
+        Attr a;
+        a.name = tag.mid(start, i - start).toLower();
+        int k = i;
+        while (k < end && tag.at(k).isSpace())
+            ++k;
+        if (k < end && tag.at(k) == QLatin1Char('=')) {
+            ++k;
+            while (k < end && tag.at(k).isSpace())
+                ++k;
+            a.hasValue = true;
+            if (k < end && (tag.at(k) == QLatin1Char('"') || tag.at(k) == QLatin1Char('\''))) {
+                const QChar q = tag.at(k);
+                const int close = tag.indexOf(q, k + 1);
+                const int stop = close < 0 || close > end ? end : close;
+                a.value = tag.mid(k + 1, stop - k - 1);
+                i = stop < end ? stop + 1 : end;
+            } else {
+                const int vstart = k;
+                while (k < end && !tag.at(k).isSpace() && !(tag.at(k) == QLatin1Char('/') && k + 1 == end))
+                    ++k;
+                a.value = tag.mid(vstart, k - vstart);
+                i = k;
+            }
+        }
+        a.raw = tag.mid(start, i - start);
+        if (!a.name.isEmpty())
+            attrs->append(a);
+        if (i == start)     // no progress: skip one character
+            ++i;
+    }
+}
+
+// Absolute address for an attribute value (entities decoded first);
+// absolute and data: values are returned unchanged.
+QString absolute(const QString &value, const QUrl &base)
+{
+    const QString v = value.trimmed();
+    if (v.isEmpty() || v.startsWith(QLatin1String("data:"), Qt::CaseInsensitive)
+            || v.startsWith(QLatin1Char('#')))
+        return value;
+    static const QRegularExpression schemeRe(QStringLiteral("^[a-zA-Z][a-zA-Z0-9+.-]*:"));
+    if (schemeRe.match(v).hasMatch() || !base.isValid())
+        return value;
+    const QUrl rel(HtmlUtils::decodeEntities(v));
+    if (!rel.isValid())
+        return value;
+    return HtmlUtils::escapeHtml(base.resolved(rel).toString(QUrl::FullyEncoded));
+}
+
+// srcset: "a.jpg 1x, b.jpg 2x" – every address made absolute
+QString absoluteSrcset(const QString &value, const QUrl &base)
+{
+    QString out;
+    int i = 0;
+    const int n = value.size();
+    while (i < n) {
+        const int start = i;
+        while (i < n && (value.at(i).isSpace() || value.at(i) == QLatin1Char(',')))
+            ++i;
+        out += value.mid(start, i - start);
+        if (i >= n)
+            break;
+        const int ustart = i;
+        while (i < n && !value.at(i).isSpace())
+            ++i;
+        QString url = value.mid(ustart, i - ustart);
+        QString trailing;
+        while (url.endsWith(QLatin1Char(','))) {     // "a.jpg," without a descriptor
+            url.chop(1);
+            trailing += QLatin1Char(',');
+        }
+        out += absolute(url, base) + trailing;
+        if (!trailing.isEmpty())
+            continue;
+        const int dstart = i;
+        int depth = 0;
+        while (i < n && (depth > 0 || value.at(i) != QLatin1Char(','))) {
+            if (value.at(i) == QLatin1Char('('))
+                ++depth;
+            else if (value.at(i) == QLatin1Char(')') && depth > 0)
+                --depth;
+            ++i;
+        }
+        out += value.mid(dstart, i - dstart);
+    }
+    return out;
+}
+
+// Index of the closing tag "</name" (case insensitive) from i, -1 if none
+int closingTag(const QString &s, const QString &name, int from)
+{
+    const QString needle = QStringLiteral("</") + name;
+    int i = from;
+    while ((i = s.indexOf(needle, i, Qt::CaseInsensitive)) >= 0) {
+        const int after = i + needle.size();
+        if (after >= s.size() || s.at(after).isSpace() || s.at(after) == QLatin1Char('>')
+                || s.at(after) == QLatin1Char('/'))
+            return i;
+        i = after;
+    }
+    return -1;
+}
+
 } // namespace
 
 namespace HtmlUtils {
@@ -95,6 +257,132 @@ QUrl thumbnail(const QUrl &enclosureLink, const QString &enclosureMime,
     }
 
     return QUrl();
+}
+
+namespace {
+// Cut as plainExcerpt() does
+QString cutText(QString text, int maxChars)
+{
+    if (maxChars > 0 && text.size() > maxChars) {
+        int cut = text.lastIndexOf(QLatin1Char(' '), maxChars);
+        if (cut < maxChars * 2 / 3)
+            cut = maxChars;
+        text = text.left(cut).trimmed() + QChar(0x2026);
+    }
+    return text;
+}
+
+QString attrValue(const QString &tag, const QString &name)
+{
+    const QRegularExpression re(QStringLiteral("\\b") + name
+                                + QStringLiteral("\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))"),
+                                QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch m = re.match(tag);
+    if (!m.hasMatch())
+        return QString();
+    for (int i = 1; i <= 3; ++i)
+        if (!m.captured(i).isEmpty())
+            return m.captured(i);
+    return QString();
+}
+
+// Smallest srcset candidate with a width descriptor >= minWidth, else the
+// widest; "" without width descriptors
+QString pickSrcset(const QString &srcset, int minWidth)
+{
+    QString best, widest;
+    int bestW = 0, widestW = 0;
+    // Candidates as the HTML spec splits them: the address runs up to the
+    // next whitespace (it may contain commas: Cloudinary "w_400,c_fill",
+    // WordPress "?fit=1024,683"), the descriptor up to the next comma
+    const QString v = HtmlUtils::decodeEntities(srcset);
+    const int n = v.size();
+    int i = 0;
+    while (i < n) {
+        while (i < n && (v.at(i).isSpace() || v.at(i) == QLatin1Char(',')))
+            ++i;
+        const int ustart = i;
+        while (i < n && !v.at(i).isSpace())
+            ++i;
+        QString url = v.mid(ustart, i - ustart);
+        bool noDescriptor = false;
+        while (url.endsWith(QLatin1Char(','))) {
+            url.chop(1);
+            noDescriptor = true;
+        }
+        QString descriptor;
+        if (!noDescriptor) {
+            const int dstart = i;
+            while (i < n && v.at(i) != QLatin1Char(','))
+                ++i;
+            descriptor = v.mid(dstart, i - dstart).trimmed();
+        }
+        if (url.isEmpty() || !descriptor.endsWith(QLatin1Char('w')))
+            continue;
+        bool ok = false;
+        const int w = descriptor.left(descriptor.size() - 1).trimmed().toInt(&ok);
+        if (!ok || w <= 0)
+            continue;
+        if (w >= minWidth && (bestW == 0 || w < bestW)) {
+            best = url;
+            bestW = w;
+        }
+        if (w > widestW) {
+            widest = url;
+            widestW = w;
+        }
+    }
+    return !best.isEmpty() ? best : widest;
+}
+} // namespace
+
+QUrl listThumbnail(const QUrl &enclosureLink, const QString &enclosureMime,
+                   const QString &body, const QUrl &mediaThumbnail,
+                   const QUrl &articleUrl, int minWidth)
+{
+    if (!mediaThumbnail.isEmpty()) {
+        const QUrl u = resolve(mediaThumbnail.toString(), articleUrl);
+        if (u.isValid())
+            return u;
+    }
+    if (!enclosureLink.isEmpty() && enclosureMime.startsWith(QLatin1String("image/"), Qt::CaseInsensitive)) {
+        const QUrl u = resolve(enclosureLink.toString(), articleUrl);
+        if (u.isValid())
+            return u;
+    }
+    static const QRegularExpression imgRe(
+        QStringLiteral("<img\\b[^>]*>"), QRegularExpression::CaseInsensitiveOption);
+    QRegularExpressionMatchIterator it = imgRe.globalMatch(body);
+    while (it.hasNext()) {
+        const QString tag = it.next().captured(0);
+        if (isTrackingPixel(tag))
+            continue;
+        const QString small = pickSrcset(attrValue(tag, QStringLiteral("srcset")), minWidth);
+        if (!small.isEmpty()) {
+            const QUrl u = resolve(small, articleUrl);
+            if (u.isValid())
+                return u;
+        }
+        const QUrl u = resolve(attrValue(tag, QStringLiteral("src")), articleUrl);
+        if (u.isValid())
+            return u;
+    }
+    return QUrl();
+}
+
+ArticleExtra articleExtra(const QString &title, const QString &body, const QUrl &enclosureLink,
+                          const QString &enclosureMime, const QUrl &mediaThumbnail,
+                          const QUrl &articleUrl)
+{
+    ArticleExtra e;
+    const QString plain = plainExcerpt(body, 0);
+    e.excerpt = cutText(plain, 220);
+    e.thumb = listThumbnail(enclosureLink, enclosureMime, body, mediaThumbnail, articleUrl).toString();
+    // as hasContent(), with the plain text made once
+    e.hasContent = !enclosureLink.isEmpty() || plain.size() >= 25
+            || !thumbnail(QUrl(), QString(), body, QUrl(), QUrl(QStringLiteral("https://localhost/"))).isEmpty();
+    e.search = QString(decodeEntities(title) + QLatin1Char('\n') + plain).toCaseFolded();
+    return e;
 }
 
 bool hasContent(const QString &body, const QUrl &enclosureLink, int minTextChars)
@@ -356,7 +644,8 @@ QString readerHtml(const QString &articleJson, const ReaderStyle &style)
     if (!doc.isObject())
         return QString();
     const QJsonObject o = doc.object();
-    const QString content = o.value(QStringLiteral("content")).toString();
+    // Article from a lean page (leanPage): addresses back to normal
+    const QString content = restoreLeanResources(o.value(QStringLiteral("content")).toString(), style.images);
     if (content.trimmed().isEmpty())
         return QString();
 
@@ -416,6 +705,229 @@ QString readerHtml(const QString &articleJson, const ReaderStyle &style)
     html += QStringLiteral("<article>") + content + QStringLiteral("</article></main>")
          + readerLinkScript() + QStringLiteral("</body></html>");
     return html;
+}
+
+QString leanPage(const QString &html, const QUrl &pageUrl)
+{
+    QString out;
+    out.reserve(html.size() / 2);
+    QUrl base = pageUrl.adjusted(QUrl::RemoveFragment);
+    // Marker, so WebPage.qml can tell the lean page from the one before or after it
+    const QString leanMarker = QStringLiteral("<meta name=\"sailfeed-lean\" content=\"1\">");
+    bool marked = false;
+    const int n = html.size();
+    int i = 0;
+    while (i < n) {
+        const int lt = html.indexOf(QLatin1Char('<'), i);
+        if (lt < 0) {
+            out += html.midRef(i);
+            break;
+        }
+        out += html.midRef(i, lt - i);
+        i = lt;
+        // Comments (also conditional comments)
+        if (html.midRef(i, 4) == QLatin1String("<!--")) {
+            const int close = html.indexOf(QLatin1String("-->"), i + 4);
+            i = close < 0 ? n : close + 3;
+            continue;
+        }
+        const bool isStart = i + 1 < n && isAsciiLetter(html.at(i + 1));
+        if (!isStart) {
+            // End tags, <!DOCTYPE>, <?…>, a lone '<': unchanged
+            const int end = (i + 1 < n && (html.at(i + 1) == QLatin1Char('/') || html.at(i + 1) == QLatin1Char('!')
+                                           || html.at(i + 1) == QLatin1Char('?')))
+                    ? html.indexOf(QLatin1Char('>'), i) : -1;
+            if (end < 0) {
+                out += html.at(i);
+                ++i;
+            } else {
+                out += html.midRef(i, end + 1 - i);
+                i = end + 1;
+            }
+            continue;
+        }
+        const int end = tagEnd(html, i);
+        if (end < 0) {      // broken tail
+            out += html.midRef(i);
+            break;
+        }
+        const QString tag = html.mid(i, end - i);
+        i = end;
+        QString name;
+        QList<Attr> attrs;
+        bool selfClosing = false;
+        parseTag(tag, &name, &attrs, &selfClosing);
+        auto attrValue = [&attrs](const QString &n) {
+            for (const Attr &a : attrs)
+                if (a.name == n)
+                    return a.value;
+            return QString();
+        };
+
+        if (name == QLatin1String("script")) {
+            const int close = closingTag(html, name, i);
+            const int stop = close < 0 ? n : close;
+            const int after = close < 0 ? n : qMax(stop, html.indexOf(QLatin1Char('>'), stop) + 1);
+            if (attrValue(QStringLiteral("type")).contains(QLatin1String("ld+json"), Qt::CaseInsensitive))
+            {
+                out += tag;                                 // data only, does not run
+                out += html.midRef(i, after - i);
+            }
+            i = after;
+            continue;
+        }
+        if (name == QLatin1String("iframe") || name == QLatin1String("frame")) {
+            const int close = closingTag(html, name, i);
+            if (close >= 0) {
+                const int gt = html.indexOf(QLatin1Char('>'), close);
+                i = gt < 0 ? n : gt + 1;
+            }
+            continue;
+        }
+        if (name == QLatin1String("style") || name == QLatin1String("textarea") || name == QLatin1String("title")
+                || name == QLatin1String("xmp")) {
+            // Raw text: copied up to its end tag without looking inside
+            const int close = closingTag(html, name, i);
+            const int stop = close < 0 ? n : close;
+            out += tag;
+            out += html.midRef(i, stop - i);
+            i = stop;
+            continue;
+        }
+        if (name == QLatin1String("link") || name == QLatin1String("embed"))
+            continue;
+        if (name == QLatin1String("meta")
+                && attrValue(QStringLiteral("http-equiv")).trimmed().compare(QLatin1String("refresh"), Qt::CaseInsensitive) == 0)
+            continue;
+        if (name == QLatin1String("head") && !marked) {
+            out += tag;
+            out += leanMarker;
+            marked = true;
+            continue;
+        }
+        if (name == QLatin1String("base")) {
+            const QString href = attrValue(QStringLiteral("href")).trimmed();
+            if (!href.isEmpty()) {
+                const QUrl b(HtmlUtils::decodeEntities(href));
+                if (b.isValid())
+                    base = base.resolved(b);
+            }
+            out += tag;
+            continue;
+        }
+
+        bool changed = false;
+        bool hadImageAddress = false;
+        QString rebuilt = QLatin1Char('<') + tag.mid(1, name.size());
+        for (const Attr &a : attrs) {
+            // Inline event handlers (onload, onerror …) would still run: the
+            // placeholder images below fire onerror
+            if (a.name.size() > 2 && a.name.startsWith(QLatin1String("on"))) {
+                changed = true;
+                continue;
+            }
+            // data: addresses load nothing (placeholders of lazy images): kept,
+            // so Readability still sees the placeholder and takes data-src
+            const bool resource = a.hasValue
+                    && !a.value.trimmed().startsWith(QLatin1String("data:"), Qt::CaseInsensitive)
+                    && (a.name == QLatin1String("src") || a.name == QLatin1String("srcset")
+                        || a.name == QLatin1String("poster") || a.name == QLatin1String("background")
+                        || (a.name == QLatin1String("data") && name == QLatin1String("object")));
+            if (!resource) {
+                rebuilt += QLatin1Char(' ') + a.raw;
+                continue;
+            }
+            changed = true;
+            if (name == QLatin1String("img") && (a.name == QLatin1String("src") || a.name == QLatin1String("srcset"))
+                    && !a.value.trimmed().isEmpty())
+                hadImageAddress = true;
+            const QString v = a.name == QLatin1String("srcset") ? absoluteSrcset(a.value, base)
+                                                                 : absolute(a.value, base);
+            // Values are written in double quotes: a raw '"' (from a
+            // single-quoted value) is escaped
+            QString quoted = v;
+            quoted.replace(QLatin1Char('"'), QLatin1String("&quot;"));
+            rebuilt += QStringLiteral(" data-sf-") + a.name + QStringLiteral("=\"") + quoted + QLatin1Char('"');
+        }
+        if (!changed) {
+            out += tag;
+            continue;
+        }
+        if (hadImageAddress)
+            rebuilt += QStringLiteral(" src=\"data:,\"");
+        rebuilt += selfClosing ? QStringLiteral(" />") : QStringLiteral(">");
+        out += rebuilt;
+    }
+    if (!marked)
+        out.prepend(leanMarker);
+    return out;
+}
+
+QString restoreLeanResources(const QString &content, bool images)
+{
+    QString out;
+    if (images && content.contains(QLatin1String("data-sf-"))) {
+        // Tag by tag: Readability may have set src itself (lazy images: it
+        // copies data-src into src) – then that address wins and the renamed
+        // one (often the page's placeholder) goes; otherwise the renamed one
+        // comes back. The placeholder src="data:," always goes.
+        out.reserve(content.size());
+        int i = 0;
+        const int n = content.size();
+        while (i < n) {
+            const int lt = content.indexOf(QLatin1Char('<'), i);
+            if (lt < 0) {
+                out += content.midRef(i);
+                break;
+            }
+            out += content.midRef(i, lt - i);
+            const int end = (lt + 1 < n && isAsciiLetter(content.at(lt + 1))) ? tagEnd(content, lt) : -1;
+            if (end < 0) {
+                out += content.at(lt);
+                i = lt + 1;
+                continue;
+            }
+            const QString tag = content.mid(lt, end - lt);
+            i = end;
+            if (!tag.contains(QLatin1String("data-sf-"))) {
+                out += tag;
+                continue;
+            }
+            QString name;
+            QList<Attr> attrs;
+            bool selfClosing = false;
+            parseTag(tag, &name, &attrs, &selfClosing);
+            auto real = [&attrs](const QString &n) {
+                for (const Attr &a : attrs)
+                    if (a.name == n && a.value.trimmed() != QLatin1String("data:,"))
+                        return true;
+                return false;
+            };
+            QString rebuilt = QLatin1Char('<') + tag.mid(1, name.size());
+            for (const Attr &a : attrs) {
+                if ((a.name == QLatin1String("src") || a.name == QLatin1String("srcset"))
+                        && a.value.trimmed() == QLatin1String("data:,"))
+                    continue;
+                if (a.name.startsWith(QLatin1String("data-sf-"))) {
+                    const QString orig = a.name.mid(8);
+                    if (orig == QLatin1String("src") || orig == QLatin1String("srcset") || orig == QLatin1String("poster")) {
+                        if (!real(orig))
+                            rebuilt += QLatin1Char(' ') + orig + QStringLiteral("=\"") + a.value + QLatin1Char('"');
+                        continue;
+                    }
+                }
+                rebuilt += QLatin1Char(' ') + a.raw;
+            }
+            rebuilt += selfClosing ? QStringLiteral(" />") : QStringLiteral(">");
+            out += rebuilt;
+        }
+    } else {
+        out = content;
+    }
+    static const QRegularExpression imgRe(QStringLiteral("<img\\b(?![^>]*\\sloading=)"),
+                                          QRegularExpression::CaseInsensitiveOption);
+    out.replace(imgRe, QStringLiteral("<img loading=\"lazy\""));
+    return out;
 }
 
 } // namespace HtmlUtils

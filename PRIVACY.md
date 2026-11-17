@@ -19,7 +19,7 @@ Files are inside the app's own sandbox folders (`~/.config`, `~/.local/share` an
 |---|---|---|
 | Server address, user name, your internal user ID on the server, time of the last sync and backup | Sign-in to your Nextcloud, settings backup | Settings → Nextcloud → "Sign out", or uninstalling |
 | App password | Sign-in to your Nextcloud | Stored encrypted in the system's secure storage (Sailfish Secrets), only readable by this app; removed with "Sign out" |
-| Folders, feeds and articles (SQLite database), including read and bookmark changes not yet sent | Reading, also offline | Read articles (not bookmarks) older than the chosen time are deleted at the start (Settings → Article list → "Delete read articles after"); "Sign out" empties the database; uninstalling removes it |
+| Folders, feeds and articles (SQLite database), including read and bookmark changes not yet sent, and per article an excerpt, the list image address and the plain text for the search (prepared once, 1.4) | Reading, also offline; a fast list and search | Read articles (not bookmarks) older than the chosen time are deleted at the start (Settings → Article list → "Delete read articles after"); "Sign out" empties the database; uninstalling removes it |
 | Settings (dconf and the settings file), favorite feeds | Your choices in the app | The settings file goes with uninstalling; the dconf values with `dconf reset -f /apps/harbour-sailfeed/` in a terminal |
 | Settings before the last restore (`settings-before-restore.json`) | Undoing a restore of the settings backup | Uninstalling |
 | Image cache (thumbnails, article images, favicons; max. 100 MB, adjustable 50–500 MB) | Faster display, less data traffic | Settings → Article list → "Clear image cache"; uninstalling |
@@ -38,6 +38,12 @@ Files are inside the app's own sandbox folders (`~/.config`, `~/.local/share` an
 - **Where:** the folder `Sailfeed` in your own Nextcloud files (WebDAV, `remote.php/dav/files/<your user ID>/Sailfeed/`): `sailfeed-settings.json` (the latest backup) and copies of earlier states (`sailfeed-settings-YYYY-MM-DD_HHMMSS.json`: before a backup replaces the latest one, the previous state is kept, at most one copy per hour, the newest 10). To find the WebDAV path, the app asks your server once for your internal user ID (`ocs/v2.php/cloud/user`). The same user name and app password as for the News app are used.
 - **What:** your settings in the app (mark as read, sort order, how articles open, reader mode look, privacy switches), the IDs and titles of your favorite feeds, the sites you open in the original, optionally the text sizes (also per feed, by feed ID), the time of the backup, the app version and the device model (e.g. "Jolla C2"). No articles, no account data, no password.
 - **How to delete:** delete the folder `Sailfeed` in your Nextcloud; turn off "Back up automatically" to stop further backups.
+
+### Feed lists (OPML) in your Nextcloud files and in Downloads
+- **When:** only when you choose it in Settings → Import and export feeds.
+- **Export:** the titles, feed addresses and website addresses of your feeds, and the names of your folders, as an OPML file – in the folder `Sailfeed` of your Nextcloud files (`sailfeed-feeds.opml`, WebDAV, the same access as the settings backup; the next export replaces it), in the Downloads folder of the device (`sailfeed-feeds-<date>.opml`), or handed to the sharing target you pick.
+- **Import:** the app lists and reads the OPML files in the folder `Sailfeed` of your Nextcloud files, or in the Downloads folder of the device. The feeds you choose to import are subscribed on your Nextcloud News, which then loads them from their websites – the app itself does not contact them for the import.
+- **How to delete:** delete the files in your Nextcloud or in Downloads.
 
 ### The websites of the articles and their image servers
 - **Thumbnails, images and favicons:** loaded from the addresses stored in the articles and feeds when the article list, the feed list or an article is shown.

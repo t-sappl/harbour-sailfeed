@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Backend test for harbour-sailfeed: HtmlUtils, ArticleModel, AccountManager,
 // Synchronizer + queue against a mock News API server (mocknews.py).
+#include <QRegularExpression>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QElapsedTimer>
@@ -24,13 +25,18 @@
 
 #include "accountmanager.h"
 #include "articlemodel.h"
+#include "articleindex.h"
 #include "feedmanager.h"
 #include "feedmodel.h"
 #include "feedrowsmodel.h"
 #include <Fuoten/Feed>
+#include <Fuoten/Folder>
 #include "prefetcher.h"
 #include <QSqlQuery>
 #include <QSqlDatabase>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "configuration.h"
 #include "htmlutils.h"
 #include "nextcloudfiles.h"
@@ -38,6 +44,8 @@
 #include "cloudbackup.h"
 #include "feedfinder.h"
 #include "articlecleaner.h"
+#include "opmlfile.h"
+#include "feedtransfer.h"
 #include <QTemporaryDir>
 #include <QFileInfo>
 
@@ -122,6 +130,127 @@ static void testHtml()
         const QString clamped = readerHtml(json, st);
         CHECK(clamped.contains(QStringLiteral("line-height:2.20")));
         CHECK(clamped.contains(QStringLiteral("padding:1.2em 0.6em 3em 0.6em")));
+    }
+    {
+        // Lean page for the extraction (1.4): nothing that loads or runs
+        const QUrl pageUrl(QStringLiteral("https://news.example/2026/a/artikel.html#top"));
+        const QString page = QStringLiteral(
+            "<!DOCTYPE html><html><HEAD><title>T <img src=x></title>"
+            "<meta http-equiv=\"Refresh\" content=\"0; url=/nojs\"><meta charset=\"utf-8\">"
+            "<link rel=\"stylesheet\" href=\"/s.css\"><link rel=preload href=/f.woff2 as=font>"
+            "<script src=\"/app.js\"></script><script>var s = '</div><img src=a>';</script >"
+            "<SCRIPT type=\"application/ld+json\">{\"author\":\"Eva\"}</SCRIPT>"
+            "<style>.x{position:fixed}</style></HEAD>"
+            "<body background=\"bg.png\"><!-- <script>evil()</script> -->"
+            "<p class=a>Text &amp; mehr <b>fett</b> a < b</p>"
+            "<img src=\"bild.jpg\" alt=\"Bild\" width=600>"
+            "<img data-src=\"lazy.jpg\" class=\"lazy\">"
+            "<IMG SRC='//cdn.example/x?w=1&amp;h=2' srcset=\"k.jpg 1x, /g.jpg 2x\">"
+            "<picture><source srcset=\"/a.webp\" type=\"image/webp\"><img src=\"https://cdn.example/abs.png\"/></picture>"
+            "<video poster=\"p.jpg\" src=\"v.mp4\" controls></video>"
+            "<iframe src=\"https://www.youtube.com/embed/x\"><p>inner</p></iframe><embed src=\"x.swf\">"
+            "<object data=\"o.svg\"></object>"
+            "<textarea><img src=\"keep.png\"></textarea>"
+            "<a href=\"rel.html\">Link</a></body></html>");
+        const QString lean = leanPage(page, pageUrl);
+        CHECK(lean.startsWith(QStringLiteral("<!DOCTYPE html><html><HEAD><meta name=\"sailfeed-lean\" content=\"1\"><title>T <img src=x></title>")));
+        CHECK(!lean.contains(QStringLiteral("app.js")) && !lean.contains(QStringLiteral("var s")));
+        CHECK(lean.contains(QStringLiteral("<SCRIPT type=\"application/ld+json\">{\"author\":\"Eva\"}</SCRIPT>")));
+        CHECK(!lean.contains(QStringLiteral("<link")) && !lean.contains(QStringLiteral("Refresh")));
+        CHECK(lean.contains(QStringLiteral("<meta charset=\"utf-8\">")));
+        CHECK(lean.contains(QStringLiteral("<style>.x{position:fixed}</style>")));
+        CHECK(!lean.contains(QStringLiteral("evil")));
+        CHECK(lean.contains(QStringLiteral("<body data-sf-background=\"https://news.example/2026/a/bg.png\">")));
+        CHECK(lean.contains(QStringLiteral("<p class=a>Text &amp; mehr <b>fett</b> a < b</p>")));
+        CHECK(lean.contains(QStringLiteral("<img data-sf-src=\"https://news.example/2026/a/bild.jpg\" alt=\"Bild\" width=600 src=\"data:,\">")));
+        CHECK(lean.contains(QStringLiteral("<img data-src=\"lazy.jpg\" class=\"lazy\">")));      // Readability fixes lazy images itself
+        // A placeholder (data:) stays, the image does not get a second one
+        CHECK_EQ(leanPage(QStringLiteral("<img class=lazyload src=\"data:image/gif;base64,R0l=\" data-src=\"/d.jpg\">"), pageUrl),
+                 QStringLiteral("<meta name=\"sailfeed-lean\" content=\"1\"><img class=lazyload src=\"data:image/gif;base64,R0l=\" data-src=\"/d.jpg\">"));
+        CHECK(lean.contains(QStringLiteral("<IMG data-sf-src=\"https://cdn.example/x?w=1&amp;h=2\" "
+                                           "data-sf-srcset=\"https://news.example/2026/a/k.jpg 1x, https://news.example/g.jpg 2x\" src=\"data:,\">")));
+        CHECK(lean.contains(QStringLiteral("<source data-sf-srcset=\"https://news.example/a.webp\" type=\"image/webp\">")));
+        CHECK(lean.contains(QStringLiteral("<img data-sf-src=\"https://cdn.example/abs.png\" src=\"data:,\" />")));
+        CHECK(lean.contains(QStringLiteral("<video data-sf-poster=\"https://news.example/2026/a/p.jpg\" data-sf-src=\"https://news.example/2026/a/v.mp4\" controls>")));
+        CHECK(!lean.contains(QStringLiteral("youtube")) && !lean.contains(QStringLiteral("inner")) && !lean.contains(QStringLiteral("x.swf")));
+        CHECK(lean.contains(QStringLiteral("<object data-sf-data=")));
+        CHECK(lean.contains(QStringLiteral("<textarea><img src=\"keep.png\"></textarea>")));
+        CHECK(lean.contains(QStringLiteral("<a href=\"rel.html\">Link</a></body></html>")));
+        // Nothing in the lean page loads: no src/srcset/poster attribute but the placeholder
+        {
+            static const QRegularExpression loads(QStringLiteral("\\s(src|srcset|poster)=\"(?!data:,)"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+            const QString body = lean.mid(lean.indexOf(QStringLiteral("<body")));
+            const QString outsideTextarea = body.left(body.indexOf(QStringLiteral("<textarea")));
+            CHECK(!loads.match(outsideTextarea).hasMatch());
+        }
+        // <base href> changes how addresses resolve; no <head>: marker in front
+        const QString based = leanPage(QStringLiteral("<base href=\"https://cdn.example/m/\"><img src=\"i.png\">"), pageUrl);
+        CHECK(based.startsWith(QStringLiteral("<meta name=\"sailfeed-lean\" content=\"1\"><base href=")));
+        CHECK(based.contains(QStringLiteral("data-sf-src=\"https://cdn.example/m/i.png\"")));
+        // Broken markup does not hang or lose the rest
+        CHECK_EQ(leanPage(QStringLiteral("<p>a</p><img src=\"x"), pageUrl), QStringLiteral("<meta name=\"sailfeed-lean\" content=\"1\"><p>a</p><img src=\"x"));
+        CHECK(leanPage(QStringLiteral("<script>never closed"), pageUrl).endsWith(QStringLiteral("content=\"1\">")));
+        CHECK(leanPage(QStringLiteral("x <!-- open"), pageUrl).endsWith(QStringLiteral("x ")));
+        // Back to normal in Readability's output
+        const QString art = QStringLiteral("<p><img data-sf-src=\"https://e/a.jpg\" alt=\"\" src=\"data:,\"></p>"
+                                           "<img data-sf-srcset=\"https://e/b.jpg 2x\" src=\"data:,\" loading=\"eager\">"
+                                           "<video data-sf-poster=\"https://e/p.jpg\"></video>");
+        CHECK_EQ(restoreLeanResources(art, true),
+                 QStringLiteral("<p><img loading=\"lazy\" src=\"https://e/a.jpg\" alt=\"\"></p>"
+                                "<img srcset=\"https://e/b.jpg 2x\" loading=\"eager\">"
+                                "<video poster=\"https://e/p.jpg\"></video>"));
+        CHECK(!restoreLeanResources(art, false).contains(QStringLiteral(" src=\"https")));          // hidden images stay unloaded
+        // Readability set src itself (lazy image: data-src copied into src):
+        // that one wins, the renamed placeholder goes
+        CHECK_EQ(restoreLeanResources(QStringLiteral("<img class=\"lazyload\" data-sf-src=\"https://e/blank.gif\" data-src=\"/real.jpg\" src=\"https://e/real.jpg\">"), true),
+                 QStringLiteral("<img loading=\"lazy\" class=\"lazyload\" data-src=\"/real.jpg\" src=\"https://e/real.jpg\">"));
+        CHECK_EQ(restoreLeanResources(QStringLiteral("<p>a &lt; b</p><img data-sf-src=\"https://e/x.jpg\" src=\"data:,\"/>"), true),
+                 QStringLiteral("<p>a &lt; b</p><img loading=\"lazy\" src=\"https://e/x.jpg\" />"));
+        // Inline event handlers are gone (the placeholders would fire onerror)
+        CHECK_EQ(leanPage(QStringLiteral("<img src=\"a.png\" onerror=\"go()\" ONLOAD='x()'><body onload=\"y()\" class=c>"), pageUrl),
+                 QStringLiteral("<meta name=\"sailfeed-lean\" content=\"1\"><img data-sf-src=\"https://news.example/2026/a/a.png\" src=\"data:,\"><body class=c>"));
+        CHECK(readerHtml(QStringLiteral("{\"content\":\"<img data-sf-src=\\\"https://e/a.jpg\\\" src=\\\"data:,\\\">\"}"), ReaderStyle())
+              .contains(QStringLiteral("<img loading=\"lazy\" src=\"https://e/a.jpg\">")));
+        // Feed text (showFeedText) has normal addresses: kept, made lazy
+        CHECK(readerHtml(QStringLiteral("{\"content\":\"<img src=\\\"https://e/f.jpg\\\">\"}"), ReaderStyle())
+              .contains(QStringLiteral("<img loading=\"lazy\" src=\"https://e/f.jpg\">")));
+    }
+    {
+        // List thumbnails (1.4): small images first
+        const QUrl art(QStringLiteral("https://news.example/a/1.html"));
+        CHECK_EQ(listThumbnail(QUrl(QStringLiteral("https://e/big.jpg")), QStringLiteral("image/jpeg"), QString(),
+                               QUrl(QStringLiteral("https://e/small.jpg")), art).toString(), QStringLiteral("https://e/small.jpg"));
+        CHECK_EQ(listThumbnail(QUrl(QStringLiteral("https://e/big.jpg")), QStringLiteral("image/jpeg"), QString(), QUrl(), art).toString(),
+                 QStringLiteral("https://e/big.jpg"));
+        const QString body = QStringLiteral("<img src=\"/t.gif\" width=\"1\" height=\"1\">"
+                                            "<img src=\"/full.jpg\" srcset=\"/w200.jpg 200w, /w400.jpg 400w, /w1600.jpg 1600w\">");
+        CHECK_EQ(listThumbnail(QUrl(), QString(), body, QUrl(), art).toString(), QStringLiteral("https://news.example/w400.jpg"));
+        CHECK_EQ(listThumbnail(QUrl(), QString(), body, QUrl(), art, 2000).toString(), QStringLiteral("https://news.example/w1600.jpg"));
+        CHECK_EQ(listThumbnail(QUrl(), QString(), QStringLiteral("<img src='/only.png' srcset='/x.png 2x'>"), QUrl(), art).toString(),
+                 QStringLiteral("https://news.example/only.png"));                     // no widths: src
+        CHECK_EQ(thumbnail(QUrl(), QString(), body, QUrl(), art).toString(), QStringLiteral("https://news.example/full.jpg"));   // preview: big
+        CHECK(listThumbnail(QUrl(), QString(), QStringLiteral("<p>x</p>"), QUrl(), art).isEmpty());
+        // Commas inside the addresses (Cloudinary, WordPress)
+        CHECK_EQ(listThumbnail(QUrl(), QString(), QStringLiteral("<img src=\"/f.jpg\" srcset=\"https://res.cloudinary.com/d/upload/w_200,c_fill/a.jpg 200w, "
+                                                                 "https://res.cloudinary.com/d/upload/w_400,c_fill/a.jpg 400w\">"), QUrl(), art).toString(),
+                 QStringLiteral("https://res.cloudinary.com/d/upload/w_400,c_fill/a.jpg"));
+        CHECK_EQ(listThumbnail(QUrl(), QString(), QStringLiteral("<img src=\"/f.jpg\" srcset=\"https://wp.example/i.jpg?fit=1024%2C683&amp;w=1024 1024w,https://wp.example/i.jpg?fit=300,200 300w\">"),
+                               QUrl(), art).toString(), QStringLiteral("https://wp.example/i.jpg?fit=1024%2C683&w=1024"));
+        // Everything for the list and the search, the plain text made once
+        const ArticleExtra e = articleExtra(QStringLiteral("Fünf &amp; Kameras"), QStringLiteral("<p>Ring erweitert <b>das</b> Sortiment.</p>"),
+                                            QUrl(), QString(), QUrl(), art);
+        CHECK_EQ(e.excerpt, QStringLiteral("Ring erweitert das Sortiment."));
+        CHECK_EQ(e.excerpt, plainExcerpt(QStringLiteral("<p>Ring erweitert <b>das</b> Sortiment.</p>")));
+        CHECK(e.hasContent);
+        CHECK(e.thumb.isEmpty());
+        CHECK_EQ(e.search, QString::fromUtf8("fünf & kameras\nring erweitert das sortiment."));
+        const QString longText = QStringLiteral("<p>") + QStringLiteral("wort ").repeated(100) + QStringLiteral("</p>");
+        CHECK_EQ(articleExtra(QString(), longText, QUrl(), QString(), QUrl(), art).excerpt, plainExcerpt(longText, 220));
+        CHECK(!articleExtra(QString(), QStringLiteral("<a href=x>Mehr</a>"), QUrl(), QString(), QUrl(), art).hasContent);
+        CHECK(articleExtra(QString(), QString(), QUrl(QStringLiteral("https://p/e.mp3")), QStringLiteral("audio/mpeg"), QUrl(), art).hasContent);
+        CHECK_EQ(articleExtra(QString(), QStringLiteral("<a href=x>Mehr</a>"), QUrl(), QString(), QUrl(), art).hasContent,
+                 hasContent(QStringLiteral("<a href=x>Mehr</a>"), QUrl()));
     }
     // "Always open in the original" sites
     CHECK_EQ(siteKey(QStringLiteral("https://www.Golem.de/news/x.html")), QStringLiteral("golem.de"));
@@ -1054,6 +1183,311 @@ static void testCleaner()
     CHECK_EQ(ArticleCleaner::runIfDue(dir.path() + QStringLiteral("/none.sqlite"), ini, now.addDays(1)), -1);
 }
 
+
+// OPML file format and feed: links (1.4), without the server
+static void testOpml()
+{
+    // feed: scheme
+    CHECK_EQ(FeedFinder::fromFeedScheme(QStringLiteral("feed://example.org/rss")), QStringLiteral("https://example.org/rss"));
+    CHECK_EQ(FeedFinder::fromFeedScheme(QStringLiteral("feed:https://example.org/rss")), QStringLiteral("https://example.org/rss"));
+    CHECK_EQ(FeedFinder::fromFeedScheme(QStringLiteral("feed://http://example.org/rss")), QStringLiteral("http://example.org/rss"));
+    CHECK_EQ(FeedFinder::fromFeedScheme(QStringLiteral(" FEED://Example.org/a?b=1 ")), QStringLiteral("https://Example.org/a?b=1"));
+    CHECK_EQ(FeedFinder::fromFeedScheme(QStringLiteral("https://example.org/rss")), QStringLiteral("https://example.org/rss"));
+    CHECK_EQ(FeedManager::linkToFeedUrl(QStringLiteral("feed://example.org/rss")), QStringLiteral("https://example.org/rss"));
+    CHECK_EQ(FeedManager::linkToFeedUrl(QStringLiteral("feed:example.org/feed/")), QStringLiteral("https://example.org/feed/"));
+    CHECK(FeedManager::linkToFeedUrl(QStringLiteral("feed://")).isEmpty());
+    CHECK(FeedManager::linkToFeedUrl(QStringLiteral("feed:ftp://example.org/rss")).isEmpty());
+
+    // Writing and reading back: folders, an empty folder, a feed without folder,
+    // characters that need escaping
+    QList<OpmlFile::Feed> feeds;
+    feeds << OpmlFile::Feed{ QString::fromUtf8("Golem & Co <Tech>"), QStringLiteral("https://www.golem.de/rss"), QStringLiteral("https://www.golem.de"), QStringLiteral("high-tech") }
+          << OpmlFile::Feed{ QStringLiteral("Android Police"), QStringLiteral("https://www.androidpolice.com/feed"), QString(), QStringLiteral("Android") }
+          << OpmlFile::Feed{ QString::fromUtf8("Österreich"), QStringLiteral("https://rss.orf.at/news.xml?x=1&y=2"), QStringLiteral("https://orf.at"), QString() };
+    const QByteArray written = OpmlFile::write(feeds, QStringList() << QStringLiteral("Leer") << QStringLiteral("Android"),
+                                               QDateTime(QDate(2026, 10, 27), QTime(15, 0), Qt::UTC));
+    CHECK(written.startsWith("<?xml version=\"1.0\""));
+    CHECK(written.contains("<opml version=\"2.0\">"));
+    CHECK(written.contains("<dateCreated>Tue, 27 Oct 2026 15:00:00 GMT</dateCreated>"));
+    CHECK(written.contains("Golem &amp; Co &lt;Tech"));
+    CHECK(written.contains("xmlUrl=\"https://rss.orf.at/news.xml?x=1&amp;y=2\""));
+    CHECK(written.indexOf("high-tech") < written.indexOf("Leer"));       // folders, then empty ones, then the rest
+    CHECK(written.indexOf("Leer") < written.indexOf(QString::fromUtf8("Österreich").toUtf8()));
+    CHECK(OpmlFile::looksLikeOpml(written.left(200)));
+    const OpmlFile::Parsed back = OpmlFile::parse(written);
+    CHECK(back.ok);
+    CHECK_EQ(back.title, QStringLiteral("Sailfeed"));
+    CHECK_EQ(back.feeds.size(), 3);
+    if (back.feeds.size() == 3) {
+        CHECK_EQ(back.feeds.at(0).title, QString::fromUtf8("Golem & Co <Tech>"));
+        CHECK_EQ(back.feeds.at(0).folder, QStringLiteral("high-tech"));
+        CHECK_EQ(back.feeds.at(0).link, QStringLiteral("https://www.golem.de"));
+        CHECK_EQ(back.feeds.at(1).folder, QStringLiteral("Android"));
+        CHECK(back.feeds.at(1).link.isEmpty());
+        CHECK_EQ(back.feeds.at(2).url, QStringLiteral("https://rss.orf.at/news.xml?x=1&y=2"));
+        CHECK(back.feeds.at(2).folder.isEmpty());
+    }
+    CHECK_EQ(back.folders.join(QLatin1Char(',')), QStringLiteral("high-tech,Android,Leer"));
+
+    // A file of another reader: nested folders (the innermost counts),
+    // attribute case, feed:// addresses, duplicates, unusable addresses, no
+    // title, an empty folder, a wrapper with only sub-folders
+    const QByteArray other =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<OPML version=\"1.0\"><head><title> Feedly  export </title></head><body>\n"
+        "<outline text=\"Tech\">\n"
+        "  <outline text=\"Linux\">\n"
+        "    <outline type=\"rss\" text=\"LWN\" xmlurl=\"https://lwn.net/headlines/rss\" htmlurl=\"https://lwn.net\"/>\n"
+        "    <outline type=\"rss\" title=\"Phoronix\" text=\"x\" xmlUrl=\"feed://www.phoronix.com/rss.php\"/>\n"
+        "  </outline>\n"
+        "  <outline type=\"rss\" text=\"Golem again\" xmlUrl=\"http://golem.de/rss/\"/>\n"
+        "</outline>\n"
+        "<outline text=\"Wrapper\"><outline text=\"Empty\"/></outline>\n"
+        "<outline type=\"rss\" xmlUrl=\"https://blog.example.org/feed\"/>\n"
+        "<outline type=\"rss\" text=\"Broken\" xmlUrl=\"javascript:alert(1)\"/>\n"
+        "<outline type=\"rss\" text=\"LWN twice\" xmlUrl=\"https://lwn.net/headlines/rss#x\"/>\n"
+        "</body></OPML>\n";
+    const OpmlFile::Parsed o = OpmlFile::parse(other);
+    CHECK(o.ok);
+    CHECK_EQ(o.title, QStringLiteral("Feedly export"));
+    CHECK_EQ(o.feeds.size(), 4);
+    if (o.feeds.size() == 4) {
+        CHECK_EQ(o.feeds.at(0).title, QStringLiteral("LWN"));
+        CHECK_EQ(o.feeds.at(0).folder, QStringLiteral("Linux"));
+        CHECK_EQ(o.feeds.at(0).link, QStringLiteral("https://lwn.net"));
+        CHECK_EQ(o.feeds.at(1).title, QStringLiteral("Phoronix"));           // title before text
+        CHECK_EQ(o.feeds.at(1).url, QStringLiteral("https://www.phoronix.com/rss.php"));
+        CHECK_EQ(o.feeds.at(2).folder, QStringLiteral("Tech"));
+        CHECK_EQ(o.feeds.at(3).title, QStringLiteral("blog.example.org"));   // no title: the host
+        CHECK(o.feeds.at(3).folder.isEmpty());
+    }
+    CHECK(o.folders.contains(QStringLiteral("Empty")));
+    CHECK(!o.folders.contains(QStringLiteral("Wrapper")));
+
+    // Errors
+    CHECK(!OpmlFile::parse("<rss version=\"2.0\"><channel/></rss>").ok);
+    CHECK_EQ(OpmlFile::parse("<rss version=\"2.0\"><channel/></rss>").error, QStringLiteral("This is not an OPML file."));
+    CHECK(OpmlFile::parse("<opml><body><outline text=\"a\"").error.startsWith(QStringLiteral("The file is damaged")));
+    CHECK_EQ(OpmlFile::parse("<opml><body><outline text=\"Folder\"/></body></opml>").error, QStringLiteral("There are no feeds in this file."));
+    CHECK(!OpmlFile::parse(QByteArray()).ok);
+    CHECK(!OpmlFile::looksLikeOpml("<rss><channel>"));
+    CHECK(!OpmlFile::looksLikeOpml("{\"format\": \"sailfeed-settings\"}"));
+    CHECK_EQ(OpmlFile::exportFileName(QDate(2026, 10, 27)), QStringLiteral("sailfeed-feeds-2026-10-27.opml"));
+    CHECK_EQ(OpmlFile::exportFileName(QDate(2026, 10, 27), 2), QStringLiteral("sailfeed-feeds-2026-10-27-2.opml"));
+    CHECK(FeedTransfer::isOpmlName(QStringLiteral("Feeds.OPML")));
+    CHECK(FeedTransfer::isOpmlName(QStringLiteral("subscriptions.xml")));
+    CHECK(!FeedTransfer::isOpmlName(QStringLiteral("sailfeed-settings.json")));
+}
+
+// Import and export of the feed list against the mock server (1.4):
+// Downloads folder, WebDAV, import with folders, skipped, failed, cancelled
+static void testFeedTransfer(Configuration *config, Fuoten::AbstractStorage *storage)
+{
+    QTemporaryDir downloads;
+    FeedTransfer t(config);
+    t.files()->setTimeout(5000);
+    t.setDownloadsPath(downloads.path());
+
+    auto feedCount = [&]() {
+        Fuoten::QueryArgs args;
+        const QList<Fuoten::Feed *> list = storage->getFeeds(args);
+        const int n = list.size();
+        qDeleteAll(list);
+        return n;
+    };
+    auto feedByUrl = [&](const QString &url, qint64 *folderId) {
+        Fuoten::QueryArgs args;
+        const QList<Fuoten::Feed *> list = storage->getFeeds(args);
+        bool found = false;
+        for (Fuoten::Feed *f : list) {
+            if (f->url().toString() == url) {
+                found = true;
+                if (folderId) *folderId = f->folderId();
+            }
+        }
+        qDeleteAll(list);
+        return found;
+    };
+    auto folderId = [&](const QString &name) {
+        const QList<Fuoten::Folder *> list = storage->getFolders();
+        qint64 id = -1;
+        for (Fuoten::Folder *f : list)
+            if (f->name() == name) id = f->id();
+        qDeleteAll(list);
+        return id;
+    };
+
+    const int before = feedCount();
+    CHECK(before >= 2);
+    CHECK_EQ(t.summary().value(QStringLiteral("feeds")).toInt(), before);
+
+    // Export: the text holds every feed of the device
+    const OpmlFile::Parsed mine = OpmlFile::parse(t.opmlText().toUtf8());
+    CHECK(mine.ok);
+    CHECK_EQ(mine.feeds.size(), before);
+    bool golemInFolder = false;
+    for (const OpmlFile::Feed &f : mine.feeds)
+        golemInFolder = golemInFolder || (f.url == QStringLiteral("https://www.golem.de/rss") && f.folder == QStringLiteral("high-tech"));
+    CHECK(golemInFolder);
+
+    // Downloads: a counter when the name exists; listing only OPML
+    const QVariantMap e1 = t.exportToDownloads();
+    const QVariantMap e2 = t.exportToDownloads();
+    CHECK(e1.value(QStringLiteral("ok")).toBool() && e2.value(QStringLiteral("ok")).toBool());
+    CHECK_EQ(e1.value(QStringLiteral("name")).toString(), OpmlFile::exportFileName(QDate::currentDate()));
+    CHECK_EQ(e2.value(QStringLiteral("name")).toString(), OpmlFile::exportFileName(QDate::currentDate(), 2));
+    {
+        QFile x(downloads.path() + QStringLiteral("/podcast.xml"));
+        x.open(QIODevice::WriteOnly); x.write("<rss version=\"2.0\"><channel/></rss>"); x.close();
+        QFile y(downloads.path() + QStringLiteral("/subscriptions.xml"));
+        y.open(QIODevice::WriteOnly); y.write("<?xml version=\"1.0\"?>\n<opml version=\"1.0\"><body><outline xmlUrl=\"https://a.example/rss\"/></body></opml>"); y.close();
+    }
+    QStringList listed;
+    for (const QVariant &v : t.downloadFiles())
+        listed << v.toMap().value(QStringLiteral("name")).toString();
+    CHECK_EQ(listed.size(), 3);
+    CHECK(listed.contains(QStringLiteral("subscriptions.xml")));
+    CHECK(!listed.contains(QStringLiteral("podcast.xml")));
+    const QVariantMap own = t.loadFile(downloads.path() + QLatin1Char('/') + e1.value(QStringLiteral("name")).toString());
+    CHECK(own.value(QStringLiteral("ok")).toBool());
+    CHECK_EQ(own.value(QStringLiteral("newCount")).toInt(), 0);               // all subscribed
+    CHECK_EQ(own.value(QStringLiteral("subscribed")).toInt(), before);
+    CHECK(!t.startImport(true));                                              // nothing to do
+    QTemporaryDir elsewhere;
+    QFile::copy(downloads.path() + QStringLiteral("/subscriptions.xml"), elsewhere.path() + QStringLiteral("/s.xml"));
+    CHECK(!t.loadFile(elsewhere.path() + QStringLiteral("/s.xml")).value(QStringLiteral("ok")).toBool());
+
+    // Nextcloud: export, list (backups and other files left out)
+    bool done = false, okResult = false;
+    QString message;
+    QObject::connect(&t, &FeedTransfer::exported, [&](bool ok, const QString &, const QString &m) { done = true; okResult = ok; message = m; });
+    QObject::connect(&t, &FeedTransfer::nextcloudListed, [&](bool ok, const QString &m) { done = true; okResult = ok; message = m; });
+    QVariantMap loadedPlan;
+    QObject::connect(&t, &FeedTransfer::loaded, [&](const QString &, bool ok, const QString &m, const QVariantMap &p) { done = true; okResult = ok; message = m; loadedPlan = p; });
+    CHECK(t.exportToNextcloud());
+    CHECK(t.busy());
+    CHECK(!t.exportToNextcloud());
+    CHECK(waitFor([&] { return done; }));
+    CHECK(okResult);
+    // A file of another reader in the same folder
+    const QByteArray other =
+        "<?xml version=\"1.0\"?>\n<opml version=\"2.0\"><head><title>Other reader</title></head><body>\n"
+        "<outline text=\"android\"><outline text=\"New in Android\" xmlUrl=\"https://new.example/android.xml\"/></outline>\n"
+        "<outline text=\"Podcasts\"><outline text=\"New podcast\" xmlUrl=\"https://new.example/podcast.xml\"/>\n"
+        "  <outline text=\"Golem\" xmlUrl=\"http://golem.de/rss\"/></outline>\n"
+        "<outline text=\"Leer\"/>\n"
+        "<outline text=\"Broken\" xmlUrl=\"https://bad.example/rss\"/>\n"
+        "<outline text=\"Taken meanwhile\" xmlUrl=\"https://meanwhile.example/rss\"/>\n"
+        "</body></opml>\n";
+    done = false;
+    t.files()->upload(QStringLiteral("other.opml"), other, [&](const NextcloudFiles::Result &r) { done = true; okResult = r.ok; });
+    CHECK(waitFor([&] { return done; }));
+    done = false;
+    CHECK(t.listNextcloud());
+    CHECK(waitFor([&] { return done; }));
+    CHECK(okResult);
+    QStringList ncNames;
+    for (const QVariant &v : t.nextcloudFiles())
+        ncNames << v.toMap().value(QStringLiteral("name")).toString();
+    CHECK(ncNames.contains(OpmlFile::nextcloudFileName()));
+    CHECK(ncNames.contains(QStringLiteral("other.opml")));
+    CHECK(!ncNames.contains(QStringLiteral("sailfeed-settings.json")));
+
+    // Plan of the other file: Golem subscribed (other address form), 4 new,
+    // folder "android" exists (case), "Podcasts" and the empty "Leer" are new
+    done = false;
+    CHECK(t.loadNextcloud(QStringLiteral("other.opml")));
+    CHECK(waitFor([&] { return done; }));
+    CHECK(okResult);
+    CHECK_EQ(loadedPlan.value(QStringLiteral("title")).toString(), QStringLiteral("Other reader"));
+    CHECK_EQ(loadedPlan.value(QStringLiteral("total")).toInt(), 5);
+    CHECK_EQ(loadedPlan.value(QStringLiteral("subscribed")).toInt(), 1);
+    CHECK_EQ(loadedPlan.value(QStringLiteral("newCount")).toInt(), 4);
+    CHECK_EQ(loadedPlan.value(QStringLiteral("newFolders")).toStringList().join(QLatin1Char(',')), QStringLiteral("Podcasts,Leer"));
+    done = false;
+    CHECK(!t.loadNextcloud(QStringLiteral("missing.opml")) || waitFor([&] { return done; }));
+    CHECK(!okResult);
+    CHECK(!message.isEmpty());
+    done = false;
+    CHECK(t.loadNextcloud(QStringLiteral("other.opml")));          // the plan again
+    CHECK(waitFor([&] { return done; }));
+
+    // One of the new feeds is subscribed elsewhere meanwhile: the server says 409
+    {
+        FeedManager fm;
+        bool added = false;
+        QObject::connect(&fm, &FeedManager::succeeded, [&](const QString &) { added = true; });
+        CHECK(fm.addFeed(QStringLiteral("https://meanwhile.example/rss"), 0));
+        CHECK(waitFor([&] { return added; }));
+    }
+    const int beforeImport = feedCount();
+    int fAdded = -1, fSkipped = -1, fFailed = -1;
+    bool fCancelled = true;
+    QObject::connect(&t, &FeedTransfer::importFinished, [&](int a, int s, int f, bool c) { fAdded = a; fSkipped = s; fFailed = f; fCancelled = c; });
+    CHECK(t.startImport(true));
+    CHECK(t.importing());
+    CHECK(!t.startImport(true));
+    CHECK_EQ(t.importTotal(), 4);
+    CHECK(waitFor([&] { return fAdded >= 0; }, 20000));
+    CHECK(!t.importing());
+    CHECK_EQ(fAdded, 2);
+    CHECK_EQ(fSkipped, 1);
+    CHECK_EQ(fFailed, 1);
+    CHECK(!fCancelled);
+    CHECK_EQ(t.importDone(), 4);
+    const QVariantList failedList = t.lastImport().value(QStringLiteral("failed")).toList();
+    CHECK_EQ(failedList.size(), 1);
+    if (!failedList.isEmpty()) {
+        CHECK_EQ(failedList.first().toMap().value(QStringLiteral("url")).toString(), QStringLiteral("https://bad.example/rss"));
+        CHECK(!failedList.first().toMap().value(QStringLiteral("reason")).toString().isEmpty());
+    }
+    CHECK(waitFor([&] { return feedCount() == beforeImport + 2; }));
+    qint64 fid = -2;
+    CHECK(feedByUrl(QStringLiteral("https://new.example/android.xml"), &fid));
+    CHECK_EQ(fid, folderId(QStringLiteral("Android")));              // existing folder, other case
+    CHECK(waitFor([&] { return folderId(QStringLiteral("Podcasts")) > 0; }));
+    CHECK(feedByUrl(QStringLiteral("https://new.example/podcast.xml"), &fid));
+    CHECK_EQ(fid, folderId(QStringLiteral("Podcasts")));
+    CHECK(waitFor([&] { return folderId(QStringLiteral("Leer")) > 0; }));   // empty folder created
+    CHECK(!t.startImport(true));                                     // a new import needs a new plan
+
+    // Without folders: no folder created, the feed goes to "Other feeds"
+    const QByteArray noFolders =
+        "<opml version=\"2.0\"><body><outline text=\"Kept out\"><outline text=\"Flat\" xmlUrl=\"https://flat.example/rss\"/></outline>"
+        "<outline text=\"Empty too\"/></body></opml>";
+    QVariantMap p = t.plan(noFolders);
+    CHECK_EQ(p.value(QStringLiteral("newCount")).toInt(), 1);
+    fAdded = -1;
+    CHECK(t.startImport(false));
+    CHECK(waitFor([&] { return fAdded >= 0; }, 20000));
+    CHECK_EQ(fAdded, 1);
+    CHECK(waitFor([&] { return feedByUrl(QStringLiteral("https://flat.example/rss"), &fid); }));
+    CHECK_EQ(fid, 0);
+    CHECK_EQ(folderId(QStringLiteral("Kept out")), -1);
+    CHECK_EQ(folderId(QStringLiteral("Empty too")), -1);
+
+    // Stopping: the feed being subscribed is finished, the rest is left
+    const QByteArray three =
+        "<opml version=\"2.0\"><body><outline text=\"S1\" xmlUrl=\"https://slow.example/1\"/>"
+        "<outline text=\"S2\" xmlUrl=\"https://slow.example/2\"/><outline text=\"S3\" xmlUrl=\"https://slow.example/3\"/></body></opml>";
+    p = t.plan(three);
+    CHECK_EQ(p.value(QStringLiteral("newCount")).toInt(), 3);
+    fAdded = -1;
+    CHECK(t.startImport(true));
+    CHECK(waitFor([&] { return t.importCurrent() == QStringLiteral("S1"); }));   // S1 on its way
+    t.cancelImport();
+    CHECK(waitFor([&] { return fAdded >= 0; }, 20000));
+    CHECK(fCancelled);
+    CHECK_EQ(fAdded, 1);
+    CHECK(t.lastImport().value(QStringLiteral("cancelled")).toBool());
+
+    // A damaged file gives a reason, no plan
+    p = t.plan("<opml><body>");
+    CHECK(!p.value(QStringLiteral("ok")).toBool());
+    CHECK(!p.value(QStringLiteral("error")).toString().isEmpty());
+    CHECK(!t.startImport(true));
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
@@ -1067,6 +1501,7 @@ int main(int argc, char **argv)
     testAges();
     testSettingsBackup();
     testCleaner();
+    testOpml();
     testFeedFinder(port);
 
     // Legacy 0.1.0 settings with a base64 password must be migrated
@@ -1153,6 +1588,18 @@ int main(int argc, char **argv)
     CHECK_EQ(role(0, ArticleModel::FeedTitleRole).toString(), QStringLiteral("Golem.de"));
     CHECK_EQ(role(0, ArticleModel::AgeRole).toString(), QStringLiteral("now"));
     CHECK_EQ(role(0, ArticleModel::DayRole).toString(), QStringLiteral("Today"));
+    // 1.4: excerpt and thumbnail come from the ArticleIndex (worker); the
+    // list has no bodies
+    {
+        auto *idx = ArticleIndex::forStorage(qobject_cast<Fuoten::SQLiteStorage *>(storage));
+        CHECK(idx != nullptr);
+        CHECK(idx == ArticleIndex::forStorage(qobject_cast<Fuoten::SQLiteStorage *>(storage)));   // one per storage
+        role(0, ArticleModel::ExcerptRole);            // asks for the rows around
+        CHECK(waitFor([&] { return !idx->busy() && !role(0, ArticleModel::ExcerptRole).toString().isEmpty()
+                                   && !role(3, ArticleModel::ThumbRole).toString().isEmpty(); }));
+        auto *a0 = model.data(model.index(0, 0), ArticleModel::ArticleRole).value<Fuoten::Article *>();
+        CHECK(a0 && a0->body().isEmpty());                  // not in memory
+    }
     CHECK_EQ(role(0, ArticleModel::ThumbRole).toString(), QStringLiteral("https://example.com/thumb/porsche.jpg"));
     CHECK_EQ(role(0, ArticleModel::ExcerptRole).toString(), QStringLiteral("Porsche will wieder mehr Geld & so."));
     CHECK_EQ(role(1, ArticleModel::ThumbRole).toString(), QStringLiteral("https://cdn.example.com/ring.jpg"));
@@ -1181,7 +1628,17 @@ int main(int argc, char **argv)
     CHECK(model.roleNames().value(ArticleModel::ThumbRole) == "thumb");
     const QVariantMap snap = model.get(0);
     CHECK_EQ(snap.value(QStringLiteral("feedId")).toInt(), 10);          // per-feed text size
-    CHECK_EQ(snap.value(QStringLiteral("body")).toString(), QStringLiteral("<p> Porsche will wieder mehr Geld &amp; so.</p>"));
+    CHECK_EQ(snap.value(QStringLiteral("body")).toString(), QStringLiteral("<p> Porsche will wieder mehr Geld &amp; so.</p>"));   // from the database
+    CHECK_EQ(snap.value(QStringLiteral("thumb")).toString(), QStringLiteral("https://example.com/thumb/porsche.jpg"));
+    {
+        // info(): the same without the body (1.4)
+        const QVariantMap inf = model.info(0);
+        CHECK(!inf.contains(QStringLiteral("body")));
+        CHECK_EQ(inf.value(QStringLiteral("itemId")).toInt(), 101);
+        CHECK_EQ(inf.value(QStringLiteral("url")).toString(), snap.value(QStringLiteral("url")).toString());
+        CHECK(inf.value(QStringLiteral("hasContent")).toBool());
+        CHECK(model.info(99).isEmpty());
+    }
 
     // dataChanged must carry our roles (empty role list = all roles)
     bool sawAllRoles = false;
@@ -1236,6 +1693,14 @@ int main(int argc, char **argv)
     CHECK_EQ(frole(1, FeedModel::FolderNameRole).toString(), QStringLiteral("high-tech"));
     CHECK_EQ(frole(0, FeedModel::FeedIdRole).toInt(), 11);
     CHECK_EQ(feeds.folderIdForName(QStringLiteral("Android")), 1);
+    {   // Feeds for a new folder (1.4): by folder name, then title
+        const QVariantList byFolder = feeds.feedsByFolder();
+        CHECK_EQ(byFolder.size(), 2);
+        CHECK_EQ(byFolder.value(0).toMap().value(QStringLiteral("folderName")).toString(), QStringLiteral("Android"));
+        CHECK_EQ(byFolder.value(0).toMap().value(QStringLiteral("id")).toInt(), 11);
+        CHECK_EQ(byFolder.value(1).toMap().value(QStringLiteral("folderName")).toString(), QStringLiteral("high-tech"));
+        CHECK(byFolder.value(1).toMap().value(QStringLiteral("folderId")).toInt() > 0);
+    }
     CHECK(feeds.roleNames().value(FeedModel::UnreadCountRole) == "unreadCount");
 
     // Feed selection
@@ -1275,6 +1740,36 @@ int main(int argc, char **argv)
     feeds.resort();
     CHECK_EQ(frole(0, FeedModel::FolderNameRole).toString(), QStringLiteral("high-tech"));
     CHECK_EQ(frole(0, FeedModel::TitleRole).toString(), QStringLiteral("Golem.de"));
+    // 1.4 (758): muted feed – out of "All articles", not counted, own list intact
+    {
+        model.setUnreadById(101, true);
+        CHECK(waitFor([&] { return feeds.folderUnread(QStringLiteral("high-tech")) == 1; }));
+        const int gRow = model.rowOfId(101);
+        CHECK(gRow >= 0);
+        const int feedId = model.info(gRow).value(QStringLiteral("feedId")).toInt();
+        const int before = model.count();
+        int inFeed = 0;
+        for (int r = 0; r < model.count(); ++r)
+            if (model.info(r).value(QStringLiteral("feedId")).toInt() == feedId)
+                ++inFeed;
+        CHECK(inFeed > 0);
+        feeds.setMutedFeeds(QVariantList{ feedId });
+        model.setMutedFeeds(QVariantList{ feedId });
+        CHECK(feeds.isMuted(feedId));
+        CHECK_EQ(feeds.folderUnread(QStringLiteral("high-tech")), 0);
+        CHECK_EQ(feeds.mutedUnread(), 1);
+        CHECK_EQ(model.count(), before - inFeed);
+        CHECK(waitFor([&] { return model.unreadCount() == 0; }));
+        model.setSelection(-1, feedId);                       // the feed itself shows them
+        CHECK(waitFor([&] { return !model.inOperation() && model.count() >= inFeed; }));
+        model.setSelection(-1, -1);
+        CHECK(waitFor([&] { return !model.inOperation() && model.count() == before - inFeed; }));
+        feeds.setMutedFeeds(QVariantList());
+        model.setMutedFeeds(QVariantList());
+        CHECK_EQ(model.count(), before);
+        CHECK_EQ(feeds.mutedUnread(), 0);
+        CHECK_EQ(feeds.folderUnread(QStringLiteral("high-tech")), 1);
+    }
     model.setUnreadById(101, false);                                                      // back to all read
     CHECK(waitFor([&] { return feeds.folderUnread(QStringLiteral("high-tech")) == 0; }));
 
@@ -1282,25 +1777,34 @@ int main(int argc, char **argv)
     CHECK_EQ(ArticleModel::searchWords(QStringLiteral("  Foo   BAR ")), (QStringList{ QStringLiteral("foo"), QStringLiteral("bar") }));
     CHECK(ArticleModel::matchesSearch({ QStringLiteral("a"), QStringLiteral("c") }, QStringLiteral("abc")));
     CHECK(!ArticleModel::matchesSearch({ QStringLiteral("x") }, QStringLiteral("abc")));
-    model.setSearchText(QStringLiteral("ring"));
-    CHECK_EQ(model.count(), 1);
-    model.setSearchText(QStringLiteral("sortiment"));                // only in the text
-    CHECK_EQ(model.count(), 1);
+    // 1.4: the text is searched in the index's worker; titles at once
+    auto searchCount = [&](const QString &text, int expected) {
+        model.setSearchText(text);
+        return waitFor([&] { return model.count() == expected; }, 3000) && model.count() == expected;
+    };
+    CHECK(searchCount(QStringLiteral("ring"), 1));
+    CHECK(searchCount(QStringLiteral("sortiment"), 1));             // only in the text
     model.setSearchFullText(false);
-    CHECK_EQ(model.count(), 0);
+    CHECK_EQ(model.count(), 0);                                      // title only: at once
     model.setSearchFullText(true);
-    model.setSearchText(QStringLiteral("android BETA"));
-    CHECK_EQ(model.count(), 1);
-    model.setSearchText(QStringLiteral("FÜNF kameras"));
-    CHECK_EQ(model.count(), 1);
-    model.setSearchText(QStringLiteral("android golem"));            // all words must match
-    CHECK_EQ(model.count(), 0);
-    model.setSearchText(QString());
-    CHECK_EQ(model.count(), 4);
+    CHECK(waitFor([&] { return model.count() == 1; }));
+    model.setSearchText(QStringLiteral("ring"));
+    CHECK_EQ(model.count(), 1);                                      // title match at once, before the worker answers
+    CHECK(searchCount(QStringLiteral("android BETA"), 1));
+    CHECK(searchCount(QString::fromUtf8("FÜNF kameras"), 1));
+    CHECK(searchCount(QStringLiteral("android golem"), 0));         // all words must match
+    {
+        // the last answer counts, not a slower earlier one
+        model.setSearchText(QStringLiteral("ring"));
+        model.setSearchText(QStringLiteral("android golem"));
+        QElapsedTimer t; t.start();
+        while (t.elapsed() < 300) QCoreApplication::processEvents();
+        CHECK_EQ(model.count(), 0);
+    }
+    CHECK(searchCount(QString(), 4));
     model.setSearchOnly(true);                                        // search page: nothing without words
     CHECK_EQ(model.count(), 0);
-    model.setSearchText(QStringLiteral("pixel"));
-    CHECK_EQ(model.count(), 1);
+    CHECK(searchCount(QStringLiteral("pixel"), 1));
     model.setSearchText(QString());
     model.setSearchOnly(false);
     CHECK_EQ(model.count(), 4);
@@ -1408,6 +1912,30 @@ int main(int argc, char **argv)
                 CHECK_EQ(lrole(r + 1, FeedRowsModel::FeedIdRole).toInt(), 10);
                 CHECK_EQ(lrole(r + 1, FeedRowsModel::FolderIdRole).toInt(), 2);
             }
+        }
+        // Review 16 Nov: the folder row does not count a muted feed, and the
+        // muted sum follows read/unread changes without a re-sort
+        {
+            auto folderRowUnread = [&]() {
+                for (int r = 0; r < list.rowCount(); ++r)
+                    if (lrole(r, FeedRowsModel::KeyRole).toString() == QStringLiteral("folder:2"))
+                        return lrole(r, FeedRowsModel::UnreadCountRole).toInt();
+                return -1;
+            };
+            model.setUnreadById(101, true);
+            CHECK(waitFor([&] { return folderRowUnread() == 1; }));
+            feeds.setMutedFeeds(QVariantList{ 10 });
+            CHECK_EQ(folderRowUnread(), 0);
+            CHECK_EQ(feeds.mutedUnread(), 1);
+            model.setUnreadById(101, false);
+            CHECK(waitFor([&] { return feeds.mutedUnread() == 0; }));   // no resort()
+            model.setUnreadById(101, true);
+            CHECK(waitFor([&] { return feeds.mutedUnread() == 1; }));
+            feeds.setMutedFeeds(QVariantList());
+            CHECK_EQ(feeds.mutedUnread(), 0);
+            CHECK_EQ(folderRowUnread(), 1);
+            model.setUnreadById(101, false);
+            CHECK(waitFor([&] { return folderRowUnread() == 0; }));
         }
         // Count changes are dataChanged, not a reset
         int resets = 0, changes = 0;
@@ -1586,6 +2114,95 @@ int main(int argc, char **argv)
     model.setSelection(-1, -1);
     CHECK(waitFor([&] { return !model.inOperation() && model.count() == 9; }));
 
+    // 1.4: new articles go to their place in the order (they were appended:
+    // after a sync the newest ones were at the end of a newest-first list)
+    {
+        auto sortedBy = [&](bool newestFirst) {
+            for (int r = 1; r < model.count(); ++r) {
+                const QDateTime a = role(r - 1, ArticleModel::PubDateRole).toDateTime();
+                const QDateTime b = role(r, ArticleModel::PubDateRole).toDateTime();
+                if (newestFirst ? a < b : a > b)
+                    return false;
+            }
+            return true;
+        };
+        CHECK(sortedBy(true));
+        auto newItem = [](qint64 id, qint64 feed, qint64 age) {
+            const qint64 now = QDateTime::currentMSecsSinceEpoch() / 1000;
+            QJsonObject o;
+            o.insert(QStringLiteral("id"), static_cast<double>(id));
+            o.insert(QStringLiteral("guid"), QStringLiteral("guid-%1").arg(id));
+            o.insert(QStringLiteral("guidHash"), QStringLiteral("hash-%1").arg(id));
+            o.insert(QStringLiteral("url"), QStringLiteral("https://example.com/a/%1").arg(id));
+            o.insert(QStringLiteral("title"), QStringLiteral("Inserted %1").arg(id));
+            o.insert(QStringLiteral("author"), QStringLiteral("A"));
+            o.insert(QStringLiteral("pubDate"), static_cast<double>(now - age));
+            o.insert(QStringLiteral("body"), QStringLiteral("<p>Inserted.</p>"));
+            o.insert(QStringLiteral("feedId"), static_cast<double>(feed));
+            o.insert(QStringLiteral("unread"), false);
+            o.insert(QStringLiteral("starred"), false);
+            o.insert(QStringLiteral("lastModified"), static_cast<double>(now));
+            o.insert(QStringLiteral("rtl"), false);
+            o.insert(QStringLiteral("fingerprint"), QStringLiteral("fp%1").arg(id));
+            QJsonObject root;
+            root.insert(QStringLiteral("items"), QJsonArray{ o });
+            return QJsonDocument(root);
+        };
+        int resetsBefore = resets, layoutBefore = layoutChanges;
+        storage->itemsRequested(newItem(201, 11, 86400 * 8 + 43200));     // 8.5 days: between 52 and 51
+        CHECK(waitFor([&] { return model.count() == 10; }));
+        CHECK_EQ(model.rowOfId(201), 7);
+        CHECK(sortedBy(true));
+        CHECK_EQ(resets, resetsBefore);                  // inserted, not reset
+        CHECK_EQ(layoutChanges, layoutBefore);
+        model.setOldestFirst(true);
+        CHECK(sortedBy(false));
+        storage->itemsRequested(newItem(202, 10, 86400 * 9 + 43200));     // 9.5 days: between 50 and 51
+        CHECK(waitFor([&] { return model.count() == 11; }));
+        CHECK_EQ(model.rowOfId(202), 1);
+        CHECK(sortedBy(false));
+        model.setOldestFirst(false);
+        CHECK(sortedBy(true));
+        CHECK_EQ(model.rowOfId(202), 9);
+        // their excerpts are indexed after the sync
+        CHECK(waitFor([&] { return role(model.rowOfId(201), ArticleModel::ExcerptRole).toString() == QStringLiteral("Inserted."); }));
+    }
+
+    // 1.4: a selection changed while the list is loading ends with that
+    // selection (libfuoten ignored the second load)
+    model.setSelection(-1, 10);
+    model.setSelection(-1, 11);
+    CHECK(waitFor([&] { return !model.inOperation() && model.count() == 3
+                               && role(0, ArticleModel::FeedTitleRole).toString() == QStringLiteral("Android Police"); }));
+    {
+        QElapsedTimer t; t.start();
+        while (t.elapsed() < 300) QCoreApplication::processEvents();
+        CHECK_EQ(model.count(), 3);                          // stays
+        CHECK_EQ(model.feedId(), 11);
+    }
+    model.setSelection(-1, -1);
+    CHECK(waitFor([&] { return !model.inOperation() && model.count() == 11; }));
+
+    // 1.4: database in WAL mode, indexes for the counts, the index table
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("test-wal"));
+        db.setDatabaseName(dataDir + QStringLiteral("/database.sqlite"));
+        db.setConnectOptions(QStringLiteral("QSQLITE_OPEN_READONLY"));
+        CHECK(db.open());
+        {
+            QSqlQuery q(db);
+            CHECK(q.exec(QStringLiteral("PRAGMA journal_mode")) && q.next());
+            CHECK_EQ(q.value(0).toString(), QStringLiteral("wal"));
+            CHECK(q.exec(QStringLiteral("EXPLAIN QUERY PLAN SELECT COUNT(id) FROM items WHERE unread = 1")) && q.next());
+            CHECK(q.value(3).toString().contains(QStringLiteral("COVERING INDEX")));
+            CHECK(q.exec(QStringLiteral("SELECT COUNT(*) FROM sailfeed_extra")) && q.next());
+            CHECK_EQ(q.value(0).toInt(), 11);
+        }
+        db.close();
+        db = QSqlDatabase();
+        QSqlDatabase::removeDatabase(QStringLiteral("test-wal"));
+    }
+
     // Feed list sort modes (103 of Android Police is starred, Golem.de has 7 recent articles)
     auto firstFeed = [&]() { return frole(0, FeedModel::TitleRole).toString(); };
     feeds.setSortMode(FeedModel::Alphabetical);
@@ -1669,6 +2286,12 @@ int main(int argc, char **argv)
         CHECK(!pf.isPending(page));
         CHECK(pf.html(page).contains(QString::fromUtf8("Grüße aus Kärnten")));
         CHECK(pf.html(QUrl(page.toString() + QStringLiteral("#frag"))).contains(QStringLiteral("Testartikel")));
+        // 1.4: lean copy made with the download, reader results kept
+        CHECK(pf.leanHtml(page).contains(QStringLiteral("sailfeed-lean")));
+        CHECK(pf.leanHtml(page).contains(QString::fromUtf8("Grüße aus Kärnten")));
+        CHECK(pf.article(page).isEmpty());
+        pf.setArticle(page, QStringLiteral("{\"content\":\"x\"}"));
+        CHECK_EQ(pf.article(QUrl(page.toString() + QStringLiteral("#frag"))), QStringLiteral("{\"content\":\"x\"}"));
         done = false;
         const QUrl img(QStringLiteral("http://127.0.0.1:%1/public/image.jpg").arg(port));
         pf.prefetch(img);
@@ -1679,6 +2302,24 @@ int main(int argc, char **argv)
         CHECK(!pf.isPending(QUrl(QStringLiteral("ftp://example.com/x"))));
         pf.clear();
         CHECK(pf.html(page).isEmpty());
+        CHECK(pf.leanHtml(page).isEmpty() && pf.article(page).isEmpty());
+        // 1.4: cancel a running download (the preview was left)
+        {
+            const QUrl slow2(QStringLiteral("http://127.0.0.1:%1/public/slow.html?c").arg(port));
+            bool got = false, gotOk = true;
+            auto c = QObject::connect(&pf, &Prefetcher::finished, [&](const QUrl &u, bool ok) {
+                if (u == slow2) { got = true; gotOk = ok; }
+            });
+            pf.prefetch(slow2);
+            CHECK(pf.isPending(slow2));
+            pf.cancel(slow2);
+            CHECK(waitFor([&] { return got; }));
+            CHECK(!gotOk);
+            CHECK(!pf.isPending(slow2));
+            CHECK(pf.html(slow2).isEmpty());
+            pf.cancel(QUrl(QStringLiteral("http://nothing.example/")));     // nothing running: no-op
+            QObject::disconnect(c);
+        }
 
         // Slow page (1.2): idleMs stays small while data comes in, -1 when done
         done = false;
@@ -1789,6 +2430,8 @@ int main(int argc, char **argv)
         CHECK(!none.cookieInfo().isEmpty());
         QFile::remove(dbPath);
     }
+
+    testFeedTransfer(config, storage);
 
     // Sign-in in the browser (Login Flow v2): server hands over user and app password
     {

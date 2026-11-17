@@ -52,6 +52,7 @@ const Spec kGeneral[] = {
     { "feedListView",        Type::PerFeed, 0, 1 },     // 0 detailed, 1 compact
     { "feedSkipPreview",     Type::PerFeed, 0, 1 },     // 0 show, 1 skip
     { "feedOpenMode",        Type::PerFeed, 0, 2 },     // like openMode
+    { "feedMuted",           Type::PerFeed, 0, 1 },     // 1 = muted (not in All articles, no count)
 };
 
 const Spec kTextSizes[] = {

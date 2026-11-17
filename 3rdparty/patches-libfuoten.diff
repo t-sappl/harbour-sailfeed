@@ -1,6 +1,6 @@
 diff -ruN -x .github -x .git a/Fuoten/API/getitems.cpp b/Fuoten/API/getitems.cpp
---- a/Fuoten/API/getitems.cpp	2026-10-10 13:38:20.343327978 +0200
-+++ b/Fuoten/API/getitems.cpp	2026-10-10 13:38:20.355375857 +0200
+--- a/Fuoten/API/getitems.cpp	2026-11-11 15:07:29.538049949 +0100
++++ b/Fuoten/API/getitems.cpp	2026-11-11 15:31:50.590875165 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -22,8 +22,8 @@ diff -ruN -x .github -x .git a/Fuoten/API/getitems.cpp b/Fuoten/API/getitems.cpp
      QString gr = getRead() ? QStringLiteral("true") : QStringLiteral("false");
      uq.addQueryItem(QStringLiteral("getRead"), gr);
 diff -ruN -x .github -x .git a/Fuoten/API/loginflowv2.cpp b/Fuoten/API/loginflowv2.cpp
---- a/Fuoten/API/loginflowv2.cpp	2026-10-10 13:38:20.343564035 +0200
-+++ b/Fuoten/API/loginflowv2.cpp	2026-10-10 13:38:20.355642154 +0200
+--- a/Fuoten/API/loginflowv2.cpp	2026-11-11 15:07:29.537253414 +0100
++++ b/Fuoten/API/loginflowv2.cpp	2026-11-11 15:31:50.592131252 +0100
 @@ -1,9 +1,13 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -50,9 +50,9 @@ diff -ruN -x .github -x .git a/Fuoten/API/loginflowv2.cpp b/Fuoten/API/loginflow
  }
  
 diff -ruN -x .github -x .git a/Fuoten/Models/abstractarticlemodel.cpp b/Fuoten/Models/abstractarticlemodel.cpp
---- a/Fuoten/Models/abstractarticlemodel.cpp	2026-10-10 13:38:20.344611878 +0200
-+++ b/Fuoten/Models/abstractarticlemodel.cpp	2026-10-10 13:38:20.354683989 +0200
-@@ -1,6 +1,9 @@
+--- a/Fuoten/Models/abstractarticlemodel.cpp	2026-11-11 15:07:29.538486409 +0100
++++ b/Fuoten/Models/abstractarticlemodel.cpp	2026-11-11 15:31:50.588382266 +0100
+@@ -1,15 +1,31 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
   * SPDX-License-Identifier: LGPL-3.0-or-later
@@ -62,7 +62,29 @@ diff -ruN -x .github -x .git a/Fuoten/Models/abstractarticlemodel.cpp b/Fuoten/M
   */
  
  #include "abstractarticlemodel_p.h"
-@@ -131,7 +134,12 @@
+ #include "../Storage/abstractstorage.h"
+ #include "../API/component.h"
+ #include <QMetaEnum>
++#include <algorithm>
+ 
+ using namespace Fuoten;
+ 
++namespace {
++// sailfeed patch (1.4): the model keeps its articles in display order (by
++// date, then id, as ArticleListFilterModel::lessThan did), so the proxy
++// does not sort and new articles go to their place (see itemsRequested)
++bool before(const Article *l, const Article *r, Qt::SortOrder order)
++{
++    if (l->pubDate() != r->pubDate())
++        return order == Qt::AscendingOrder ? l->pubDate() < r->pubDate() : l->pubDate() > r->pubDate();
++    return order == Qt::AscendingOrder ? l->id() < r->id() : l->id() > r->id();
++}
++}
++
+ AbstractArticleModelPrivate::AbstractArticleModelPrivate() : BaseModelPrivate()
+ {
+     sortingRole = FuotenEnums::Time;
+@@ -131,7 +147,12 @@
      AbstractStorage *s = storage();
  
      if (s) {
@@ -76,7 +98,7 @@ diff -ruN -x .github -x .git a/Fuoten/Models/abstractarticlemodel.cpp b/Fuoten/M
          connect(s, &AbstractStorage::requestedItems, this, &AbstractArticleModel::itemsRequested);
          connect(s, &AbstractStorage::markedReadFolder, this, &AbstractArticleModel::folderMarkedRead);
          connect(s, &AbstractStorage::markedReadFolderInQueue, this, &AbstractArticleModel::folderMarkedReadInQueue);
-@@ -166,6 +174,7 @@
+@@ -166,6 +187,7 @@
      qa.parentId = parentId();
      qa.parentIdType = parentIdType();
      qa.bodyLimit = bodyLimit();
@@ -84,9 +106,363 @@ diff -ruN -x .github -x .git a/Fuoten/Models/abstractarticlemodel.cpp b/Fuoten/M
  
      if ((parentId() < 0) && (parentIdType() == FuotenEnums::Starred)) {
          qa.starredOnly = true;
+@@ -183,16 +205,21 @@
+ 
+         Q_D(AbstractArticleModel);
+ 
+-        beginInsertRows(QModelIndex(), rowCount(), rowCount() + articles.count() -1);
+-
++        // sailfeed patch (1.4): copies (the storage deletes the results after
++        // delivering them), in display order
++        QList<Article*> sorted;
++        sorted.reserve(articles.size());
+         for (Article *a : articles) {
+-            if (a->thread() != this->thread()) {
+-                d->articles.append(new Article(a));
+-                delete a;
+-            } else {
+-                d->articles.append(a);
+-            }
++            sorted.append(new Article(a));
+         }
++        const Qt::SortOrder order = sortOrder();
++        std::stable_sort(sorted.begin(), sorted.end(), [order](const Article *l, const Article *r) {
++            return before(l, r, order);
++        });
++
++        beginInsertRows(QModelIndex(), rowCount(), rowCount() + sorted.count() -1);
++
++        d->articles.append(sorted);
+ 
+         endInsertRows();
+ 
+@@ -261,6 +288,19 @@
+ }
+ 
+ 
++void AbstractArticleModel::resort()
++{
++    // sailfeed patch (1.4): new order (setSortOrder before), list reset
++    Q_D(AbstractArticleModel);
++    beginResetModel();
++    const Qt::SortOrder order = sortOrder();
++    std::stable_sort(d->articles.begin(), d->articles.end(), [order](const Article *l, const Article *r) {
++        return before(l, r, order);
++    });
++    endResetModel();
++}
++
++
+ void AbstractArticleModel::clear()
+ {
+     Q_D(AbstractArticleModel);
+@@ -306,11 +346,35 @@
+             const QList<Article*> upits = storage()->getArticles(qa);
+ 
+             if (!upits.isEmpty()) {
++                const Qt::SortOrder order = sortOrder();
+                 for (Article *a : upits) {
+ 
+-                    QModelIndex idx = idxs.value(a->id());
+-                    d->articles.at(idx.row())->copy(a);
++                    // sailfeed patch (1.4): rows looked up by id now (an
++                    // earlier move may have shifted them)
++                    const int row = d->rowByID(a->id());
++                    if (row < 0) {
++                        continue;
++                    }
++                    Article *own = d->articles.at(row);
++                    own->copy(a);
++                    const QModelIndex idx = index(row, 0);
+                     Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
++                    // sailfeed patch (1.4): a changed date moves the article
++                    // to its place, so the order (and the sorted insertion
++                    // below) stays right
++                    const bool early = row > 0 && before(own, d->articles.at(row - 1), order);
++                    const bool late = row + 1 < d->articles.size() && before(d->articles.at(row + 1), own, order);
++                    if (early || late) {
++                        beginRemoveRows(QModelIndex(), row, row);
++                        d->articles.removeAt(row);
++                        endRemoveRows();
++                        const auto pos = std::lower_bound(d->articles.begin(), d->articles.end(), own,
++                                                          [order](const Article *l, const Article *r) { return before(l, r, order); });
++                        const int to = static_cast<int>(pos - d->articles.begin());
++                        beginInsertRows(QModelIndex(), to, to);
++                        d->articles.insert(to, own);
++                        endInsertRows();
++                    }
+                 }
+                 qDeleteAll(upits);
+             }
+@@ -330,12 +394,21 @@
+         }
+         const QList<Article*> newits = storage()->getArticles(qa);
+ 
+-        if (!newits.isEmpty()) {
+-
+-            beginInsertRows(QModelIndex(), rowCount(), rowCount() + newits.count() -1);
+-
+-            d->articles.append(newits);
+-
++        // sailfeed patch (1.4): each new article at its place in the order
++        // (they were appended, so after a sync the newest articles were at
++        // the end of a newest-first list); one row at a time, as the proxy
++        // models expect
++        const Qt::SortOrder order = sortOrder();
++        for (Article *a : newits) {
++            if (d->rowByID(a->id()) > -1) {     // already listed
++                delete a;
++                continue;
++            }
++            const auto pos = std::lower_bound(d->articles.begin(), d->articles.end(), a,
++                                              [order](const Article *l, const Article *r) { return before(l, r, order); });
++            const int row = static_cast<int>(pos - d->articles.begin());
++            beginInsertRows(QModelIndex(), row, row);
++            d->articles.insert(row, a);
+             endInsertRows();
+         }
+     }
+@@ -373,16 +446,21 @@
+         return;
+     }
+ 
+-    for (Article *a : as) {
+-
++    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
++    // and one signal for the changed range instead of one per row
++    int first = -1, last = -1;
++    for (int row = 0; row < d->articles.count(); ++row) {
++        Article *a = d->articles.at(row);
+         if (a->unread() && (a->folderId() == folderId) && (a->id() <= newestItemId)) {
+-            QModelIndex idx = findByID(a->id());
+-            if (idx.isValid()) {
+                 a->setUnread(false);
+-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
+-            }
++                if (first < 0)
++                    first = row;
++                last = row;
+         }
+     }
++    if (first > -1) {
++        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
++    }
+ }
+ 
+ 
+@@ -400,11 +478,12 @@
+         return;
+     }
+ 
+-    for (Article *a : as) {
+-
++    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
++    // and one signal for the changed range instead of one per row
++    int first = -1, last = -1;
++    for (int row = 0; row < d->articles.count(); ++row) {
++        Article *a = d->articles.at(row);
+         if (a->unread() && (a->folderId() == folderId) && (a->id() <= newestItemId)) {
+-            QModelIndex idx = findByID(a->id());
+-            if (idx.isValid()) {
+                 FuotenEnums::QueueActions qa = a->queue();
+                 if (qa.testFlag(FuotenEnums::MarkAsUnread)) {
+                     qa ^= FuotenEnums::MarkAsUnread;
+@@ -413,10 +492,14 @@
+                 }
+                 a->setQueue(qa);
+                 a->setUnread(false);
+-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
+-            }
++                if (first < 0)
++                    first = row;
++                last = row;
+         }
+     }
++    if (first > -1) {
++        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
++    }
+ }
+ 
+ 
+@@ -438,16 +521,20 @@
+         return;
+     }
+ 
+-    for (Article *a : as) {
+-
++    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
++    // and one signal for the changed range instead of one per row
++    int first = -1, last = -1;
++    for (int row = 0; row < d->articles.count(); ++row) {
++        Article *a = d->articles.at(row);
+         if (a->unread() && (a->feedId() == feedId) && (a->id() <= newestItemId)) {
+-            QModelIndex idx = findByID(a->id());
+-            if (idx.isValid()) {
+                 a->setUnread(false);
+-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
+-            }
++                if (first < 0)
++                    first = row;
++                last = row;
+         }
+-
++    }
++    if (first > -1) {
++        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
+     }
+ }
+ 
+@@ -470,13 +557,12 @@
+         return;
+     }
+ 
+-    for (Article *a : as) {
+-
++    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
++    // and one signal for the changed range instead of one per row
++    int first = -1, last = -1;
++    for (int row = 0; row < d->articles.count(); ++row) {
++        Article *a = d->articles.at(row);
+         if (a->unread() && (a->feedId() == feedId) && (a->id() <= newestItemId)) {
+-
+-            QModelIndex idx = findByID(a->id());
+-            if (idx.isValid()) {
+-
+                 FuotenEnums::QueueActions qa = a->queue();
+                 if (qa.testFlag(FuotenEnums::MarkAsUnread)) {
+                     qa ^= FuotenEnums::MarkAsUnread;
+@@ -485,10 +571,14 @@
+                 }
+                 a->setQueue(qa);
+                 a->setUnread(false);
+-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
+-            }
++                if (first < 0)
++                    first = row;
++                last = row;
+         }
+     }
++    if (first > -1) {
++        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
++    }
+ }
+ 
+ 
+@@ -599,7 +689,8 @@
+         QHash<qint64, QModelIndex>::const_iterator i = idxs.constBegin();
+         while (i != idxs.constEnd()) {
+             d->articles.at(i.value().row())->setUnread(unread);
+-            Q_EMIT dataChanged(i.value(), i.value(), QVector<int>(Qt::DisplayRole));
++            Q_EMIT dataChanged(i.value(), i.value(), QVector<int>(1, Qt::DisplayRole));
++            ++i;        // sailfeed patch (1.4): was missing, endless loop
+         }
+     }
+ }
+diff -ruN -x .github -x .git a/Fuoten/Models/abstractarticlemodel.h b/Fuoten/Models/abstractarticlemodel.h
+--- a/Fuoten/Models/abstractarticlemodel.h	2026-11-11 15:07:29.538633541 +0100
++++ b/Fuoten/Models/abstractarticlemodel.h	2026-11-11 15:31:50.586984597 +0100
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef FUOTENABSTRACTARTICLEMODEL_H
+@@ -126,6 +129,14 @@
+      */
+     QHash<qint64, QModelIndex> findByIDs(const IdList &ids) const override;
+ 
++    /*!
++     * \brief Sorts the articles anew after setSortOrder() (sailfeed patch, 1.4).
++     *
++     * The model keeps its articles in display order by date; the filter
++     * model does not sort.
++     */
++    void resort();
++
+ public Q_SLOTS:
+     /*!
+      * \brief Populates the model with data from the local storage.
+diff -ruN -x .github -x .git a/Fuoten/Models/articlelistfiltermodel.cpp b/Fuoten/Models/articlelistfiltermodel.cpp
+--- a/Fuoten/Models/articlelistfiltermodel.cpp	2026-11-11 15:07:29.538748843 +0100
++++ b/Fuoten/Models/articlelistfiltermodel.cpp	2026-11-11 15:31:50.587837794 +0100
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #include "articlelistfiltermodel_p.h"
+@@ -145,8 +148,10 @@
+ 
+     Q_D(ArticleListFilterModel);
+     if (d->alm) {
++        // sailfeed patch (1.4): the source model keeps the order (by date),
++        // no sorting here – see AbstractArticleModel::itemsRequested
++        d->alm->setSortOrder(sortOrder());
+         d->alm->load();
+-        sort(0);
+     }
+ }
+ 
+@@ -159,8 +164,19 @@
+ 
+     Q_D(ArticleListFilterModel);
+     if (d->alm) {
++        d->alm->setSortOrder(sortOrder());     // sailfeed patch (1.4), see load()
+         d->alm->reload();
+-        sort(0);
++    }
++}
++
++
++void ArticleListFilterModel::applySortOrder()
++{
++    // sailfeed patch (1.4): the order lives in the source model
++    Q_D(ArticleListFilterModel);
++    if (d->alm && d->alm->sortOrder() != sortOrder()) {
++        d->alm->setSortOrder(sortOrder());
++        d->alm->resort();
+     }
+ }
+ 
+diff -ruN -x .github -x .git a/Fuoten/Models/articlelistfiltermodel.h b/Fuoten/Models/articlelistfiltermodel.h
+--- a/Fuoten/Models/articlelistfiltermodel.h	2026-11-11 15:07:29.538763318 +0100
++++ b/Fuoten/Models/articlelistfiltermodel.h	2026-11-11 15:31:50.587666803 +0100
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef FUOTENARTICLELISTFILTERMODEL_H
+@@ -111,6 +114,14 @@
+     Q_INVOKABLE void reload(const QString &locale = QString()) override;
+ 
+     /*!
++     * \brief Applies sortOrder() to the loaded articles (sailfeed patch, 1.4).
++     *
++     * This model does not sort; the source model keeps its articles in
++     * order by date, so new articles can be inserted at their place.
++     */
++    void applySortOrder();
++
++    /*!
+      * \brief Getter function for the \link ArticleListFilterModel::parentIdType parentIdType \endlink property.
+      * \sa ArticleListFilterModel::setParentIdType(), ArticleListFilterModel::parentIdTypeChanged()
+      */
 diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.cpp b/Fuoten/Storage/abstractstorage.cpp
---- a/Fuoten/Storage/abstractstorage.cpp	2026-10-10 13:38:20.345069571 +0200
-+++ b/Fuoten/Storage/abstractstorage.cpp	2026-10-10 13:38:20.353995956 +0200
+--- a/Fuoten/Storage/abstractstorage.cpp	2026-11-11 15:07:29.539235221 +0100
++++ b/Fuoten/Storage/abstractstorage.cpp	2026-11-11 15:31:50.585605669 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -97,7 +473,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.cpp b/Fuoten/Stora
   */
  
  #include "abstractstorage_p.h"
-@@ -129,7 +132,10 @@
+@@ -129,7 +132,11 @@
  {
      const auto articles = getArticles(args);
  
@@ -106,12 +482,13 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.cpp b/Fuoten/Stora
 +    if (args.requestId == 0) {
 +        Q_EMIT gotArticlesAsync(articles);
 +    }
++    qDeleteAll(articles);       // sailfeed patch (1.4): receivers copy, see SQLiteStorage
  }
  
  
 diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.h b/Fuoten/Storage/abstractstorage.h
---- a/Fuoten/Storage/abstractstorage.h	2026-10-10 13:38:20.345080998 +0200
-+++ b/Fuoten/Storage/abstractstorage.h	2026-10-10 13:38:20.354132242 +0200
+--- a/Fuoten/Storage/abstractstorage.h	2026-11-11 15:07:29.539386906 +0100
++++ b/Fuoten/Storage/abstractstorage.h	2026-11-11 15:31:50.585871205 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -148,8 +525,8 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/abstractstorage.h b/Fuoten/Storage
       * \sa AbstractStorage::inOperation(), AbstractStorage::setInOperation()
       */
 diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage/sqlitestorage.cpp
---- a/Fuoten/Storage/sqlitestorage.cpp	2026-10-10 13:38:20.345140702 +0200
-+++ b/Fuoten/Storage/sqlitestorage.cpp	2026-10-10 13:38:20.354066716 +0200
+--- a/Fuoten/Storage/sqlitestorage.cpp	2026-11-11 15:07:29.539419021 +0100
++++ b/Fuoten/Storage/sqlitestorage.cpp	2026-11-11 15:31:50.585781606 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -185,7 +562,101 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
      bool result = m_db.open();
      Q_ASSERT_X(result, "init database", "failed to open database");
  
-@@ -1823,12 +1825,9 @@
+@@ -62,6 +64,13 @@
+     result = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+     Q_ASSERT_X(result, "init database", "failed to activate foreign keys");
+ 
++    // sailfeed patch (1.4): write-ahead log. Readers (the article list's
++    // worker, the app's own read-only connections) and the writer (sync,
++    // marking) no longer wait for each other, and a commit needs no journal
++    // file of its own. Stays set in the database file.
++    if (!q.exec(QStringLiteral("PRAGMA journal_mode = WAL")))
++        qWarning("Could not switch the database to WAL: %s", qUtf8Printable(q.lastError().text()));
++
+     result = q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS system "
+                                    "(id INTEGER PRIMARY KEY NOT NULL, "
+                                    "key TEXT NOT NULL, "
+@@ -128,6 +137,20 @@
+     result = q.exec(QStringLiteral("CREATE INDEX IF NOT EXISTS items_feed_id_index ON items (feedId)"));
+     Q_ASSERT_X(result, "init database", "failed to create items_feed_id_index");
+ 
++    // sailfeed patch (1.4): unread, starred and lastModified come after the
++    // body in the rows, so counting them read every article's text from
++    // disk. Covering indexes answer those queries without the rows:
++    // unread counts (total_unread, per feed), the sync's id/lastModified
++    // scan, the per-feed activity and starred counts, the order by date.
++    for (const QString &index : {
++            QStringLiteral("CREATE INDEX IF NOT EXISTS items_unread_feed ON items (unread, feedId)"),
++            QStringLiteral("CREATE INDEX IF NOT EXISTS items_lastmod ON items (lastModified)"),
++            QStringLiteral("CREATE INDEX IF NOT EXISTS items_feed_pub_star ON items (feedId, pubDate, starred)"),
++            QStringLiteral("CREATE INDEX IF NOT EXISTS items_pubdate ON items (pubDate)") }) {
++        result = q.exec(index);
++        Q_ASSERT_X(result, "init database", "failed to create an items index");
++    }
++
+     for (const QString &trigger : {QStringLiteral("feeds_unreadCount_update_item"), QStringLiteral("feeds_unreadCount_delete_item"), QStringLiteral("feeds_unreadCount_insert_item"), QStringLiteral("folders_unreadCount_update_feed"), QStringLiteral("folders_counts_delete_feed"), QStringLiteral("folders_counts_insert_feed"), QStringLiteral("folders_counts_move_feed")}) {
+         result = q.exec(QStringLiteral("DROP TRIGGER IF EXISTS %1").arg(trigger));
+         Q_ASSERT_X(result, "init database", "failed to drop obsolete trigger");
+@@ -254,6 +277,11 @@
+         result = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+         Q_ASSERT_X(result, "init databse", "failed to enable foreign keys support");
+ 
++        // sailfeed patch (1.4): with WAL, NORMAL syncs at checkpoints only;
++        // the -wal file is cut back to 8 MB after a checkpoint
++        q.exec(QStringLiteral("PRAGMA synchronous = NORMAL"));
++        q.exec(QStringLiteral("PRAGMA journal_size_limit = 8388608"));
++
+         result = (q.exec(QStringLiteral(SEL_TOTAL_UNREAD)) && q.next());
+         Q_ASSERT_X(result, "init database", "failed to query unread items from database");
+ 
+@@ -1626,14 +1654,15 @@
+ 
+     QString body;
+ 
+-    if (bodyLimit == 0) {
+-        body = q.value(9).toString();
+-    } else if (bodyLimit > 0) {
+-        body = limitBody(q.value(9).toString(), bodyLimit);
+-    }
+-
+-
+     if (Q_LIKELY(q.next())) {
++        // sailfeed patch (1.4): the body was read before q.next(), so it
++        // was always empty
++        if (bodyLimit == 0) {
++            body = q.value(9).toString();
++        } else if (bodyLimit > 0) {
++            body = limitBody(q.value(9).toString(), bodyLimit);
++        }
++
+         Article *a = new Article(q.value(0).toLongLong(),
+                                  q.value(1).toLongLong(),
+                                  q.value(2).toString(),
+@@ -1688,13 +1717,16 @@
+ 
+     Q_D(SQLiteStorage);
+ 
+-    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, it.body, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId");
+-
+-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch())));
+-#else
+-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toTime_t())));
+-#endif
++    // sailfeed patch (1.4): without a body (bodyLimit < 0) the column is not
++    // read at all – the list loads every article, the text is fetched when
++    // one is opened (getArticleBody)
++    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, %1, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId")
++            .arg(args.bodyLimit < 0 ? QStringLiteral("''") : QStringLiteral("it.body"));
++
++    // sailfeed patch (1.4): articles dated in the future (wrong time zone
++    // in the feed) were hidden but counted as unread: a feed with a count
++    // and an empty list. Listed now, at the top.
++    qs.append(QStringLiteral(" WHERE 1 = 1"));
+ 
+     if (args.parentId > -1) {
+         if (args.parentIdType == FuotenEnums::Feed) {
+@@ -1823,12 +1855,9 @@
  GetArticlesAsyncWorker::GetArticlesAsyncWorker(const QString &dbpath, const QueryArgs &args, QObject *parent) :
      QThread(parent), m_args(args)
  {
@@ -201,7 +672,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
  }
  
  
-@@ -1840,6 +1839,8 @@
+@@ -1840,6 +1869,8 @@
  
  void GetArticlesAsyncWorker::run()
  {
@@ -210,7 +681,31 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
      QList<Article*> articles;
  
      QSqlQuery q(m_db);
-@@ -1995,14 +1996,23 @@
+@@ -1847,13 +1878,16 @@
+     bool qresult = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+     Q_ASSERT_X(qresult, "get articles async", "failed to enable foreign keys support");
+ 
+-    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, it.body, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId");
+-
+-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch())));
+-#else
+-    qs.append(QStringLiteral(" WHERE it.pubDate < %1").arg(QString::number(QDateTime::currentDateTimeUtc().toTime_t())));
+-#endif
++    // sailfeed patch (1.4): without a body (bodyLimit < 0) the column is not
++    // read at all – the list loads every article, the text is fetched when
++    // one is opened (getArticleBody)
++    QString qs = QStringLiteral("SELECT it.id, it.feedId, fe.title, it.guid, it.guidHash, it.url, it.title, it.author, it.pubDate, %1, it.enclosureMime, it.enclosureLink, it.unread, it.starred, it.lastModified, it.fingerprint, fo.id, fo.name, it.queue, it.rtl, it.mediaThumbnail, it.mediaDescription FROM items it LEFT JOIN feeds fe ON fe.id = it.feedId LEFT JOIN folders fo on fo.id = fe.folderId")
++            .arg(m_args.bodyLimit < 0 ? QStringLiteral("''") : QStringLiteral("it.body"));
++
++    // sailfeed patch (1.4): articles dated in the future (wrong time zone
++    // in the feed) were hidden but counted as unread: a feed with a count
++    // and an empty list. Listed now, at the top.
++    qs.append(QStringLiteral(" WHERE 1 = 1"));
+ 
+     if (m_args.parentId > -1) {
+         if (m_args.parentIdType == FuotenEnums::Feed) {
+@@ -1995,14 +2029,27 @@
  {
      if (!ready()) {
          qWarning("SQLite database not ready. Can not query articles from database.");
@@ -232,11 +727,15 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
 +        if (requestId == 0) {
 +            Q_EMIT gotArticlesAsync(articles);
 +        }
++        // sailfeed patch (1.4): receivers copy what they take; the results
++        // of a model that is gone (search page closed while loading) stayed
++        // in memory with all bodies
++        qDeleteAll(articles);
 +    });
      connect(worker, &GetArticlesAsyncWorker::failed, this, [=] (Error *e) {setError(e);});
      connect(worker, &QThread::finished, worker, &QObject::deleteLater);
      worker->start();
-@@ -2014,12 +2024,9 @@
+@@ -2014,12 +2061,9 @@
  ItemsRequestedWorker::ItemsRequestedWorker(const QString &dbpath, const QJsonDocument &json, AbstractConfiguration *config, AbstractNotificator *notificator, QObject *parent) :
      QThread(parent), m_json(json), m_config(config), m_notificator(notificator)
  {
@@ -252,7 +751,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
  }
  
  
-@@ -2031,6 +2038,8 @@
+@@ -2031,6 +2075,8 @@
  
  void ItemsRequestedWorker::run()
  {
@@ -261,7 +760,43 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
      QSqlQuery q(m_db);
  
      bool qresult = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
-@@ -2797,12 +2806,9 @@
+@@ -2627,6 +2673,35 @@
+ 
+ 
+ 
++QString SQLiteStorage::databasePath() const
++{
++    Q_D(const SQLiteStorage);
++    return d->db.databaseName();
++}
++
++
++void SQLiteStorage::beginBatch()
++{
++    Q_D(SQLiteStorage);
++    if (d->batchDepth++ == 0 && ready()) {
++        d->batchOpen = d->db.transaction();
++    }
++}
++
++
++void SQLiteStorage::endBatch()
++{
++    Q_D(SQLiteStorage);
++    if (d->batchDepth > 0 && --d->batchDepth == 0 && d->batchOpen) {
++        d->batchOpen = false;
++        if (!d->db.commit()) {
++            qWarning("Could not commit the batch: %s", qUtf8Printable(d->db.lastError().text()));
++            d->db.rollback();
++        }
++    }
++}
++
++
+ QString SQLiteStorage::getArticleBody(qint64 id)
+ {
+     QString body;
+@@ -2797,12 +2872,9 @@
  EnqueueMarkReadWorker::EnqueueMarkReadWorker(const QString &dbpath, qint64 id, FuotenEnums::Type idType, qint64 newestItemId, QObject *parent) :
      QThread(parent), m_id(id), m_newestItemId(newestItemId), m_idType(idType)
  {
@@ -277,7 +812,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
  }
  
  
-@@ -2814,6 +2820,8 @@
+@@ -2814,6 +2886,8 @@
  
  void EnqueueMarkReadWorker::run()
  {
@@ -286,7 +821,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
      QSqlQuery q(m_db);
      q.setForwardOnly(true);
  
-@@ -3077,12 +3085,9 @@
+@@ -3077,12 +3151,9 @@
  ClearQueueWorker::ClearQueueWorker(const QString &dbpath, QObject *parent) :
      QThread(parent)
  {
@@ -302,7 +837,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
  }
  
  
-@@ -3094,6 +3099,8 @@
+@@ -3094,6 +3165,8 @@
  
  void ClearQueueWorker::run()
  {
@@ -311,7 +846,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
      QSqlQuery q(m_db);
  
      bool qresult = q.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
-@@ -3149,6 +3156,9 @@
+@@ -3149,6 +3222,9 @@
  
      qDebug("%s", "Start clearing local storage.");
  
@@ -321,7 +856,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
      setInOperation(true);
  
      Q_D(SQLiteStorage);
-@@ -3217,6 +3227,12 @@
+@@ -3217,6 +3293,12 @@
      setInOperation(false);
  
      Q_EMIT storageCleared();
@@ -334,9 +869,43 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.cpp b/Fuoten/Storage
  }
  
  #include "moc_sqlitestorage.cpp"
+diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage.h b/Fuoten/Storage/sqlitestorage.h
+--- a/Fuoten/Storage/sqlitestorage.h	2026-11-11 15:07:29.539488751 +0100
++++ b/Fuoten/Storage/sqlitestorage.h	2026-11-11 15:31:50.585762394 +0100
+@@ -1,6 +1,9 @@
+ /*
+  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
+  * SPDX-License-Identifier: LGPL-3.0-or-later
++ *
++ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
++ * of harbour-sailfeed and patches-libfuoten.diff.
+  */
+ 
+ #ifndef SQLITESTORAGE_H
+@@ -106,6 +109,20 @@
+     Q_INVOKABLE QString getArticleBody(qint64 id) override;
+ 
+     /*!
++     * \brief Path of the database file (sailfeed patch, 1.4), for the app's
++     * own connections.
++     */
++    QString databasePath() const;
++
++    /*!
++     * \brief Starts / commits a transaction on the main connection (sailfeed
++     * patch, 1.4): marking several articles at once is one commit instead of
++     * three per article. Calls nest; only the outermost one commits.
++     */
++    void beginBatch();
++    void endBatch();
++
++    /*!
+      * \brief Enqueues the \a action for the given \a article in the local SQLite database.
+      *
+      * Will update the queue column in the items table and also will perform the action locally.
 diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage/sqlitestorage_p.h
---- a/Fuoten/Storage/sqlitestorage_p.h	2026-10-10 13:38:20.345312052 +0200
-+++ b/Fuoten/Storage/sqlitestorage_p.h	2026-10-10 13:38:20.354119615 +0200
+--- a/Fuoten/Storage/sqlitestorage_p.h	2026-11-11 15:07:29.539477678 +0100
++++ b/Fuoten/Storage/sqlitestorage_p.h	2026-11-11 15:31:50.585853366 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -347,7 +916,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
   */
  
  #ifndef SQLITESTORAGE_P
-@@ -20,6 +23,32 @@
+@@ -20,6 +23,36 @@
  
  namespace Fuoten {
  
@@ -365,6 +934,10 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
 +        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_name);
 +        m_db.setDatabaseName(path);
 +        m_db.open();
++        // sailfeed patch (1.4): with WAL (set by SQLiteStorageManager) NORMAL
++        // syncs at checkpoints only; per connection
++        QSqlQuery(m_db).exec(QStringLiteral("PRAGMA synchronous = NORMAL"));
++        QSqlQuery(m_db).exec(QStringLiteral("PRAGMA journal_size_limit = 8388608"));
 +    }
 +    ~WorkerDbConnection()
 +    {
@@ -380,7 +953,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
  class SQLiteStorageManager : public QThread {
      Q_OBJECT
  public:
-@@ -28,6 +57,7 @@
+@@ -28,6 +61,7 @@
  
  private:
      QSqlDatabase m_db;
@@ -388,7 +961,16 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
      quint16 m_currentDbVersion;
      void setFailed(const QSqlError &sqlError, const QString &text);
  
-@@ -72,6 +102,7 @@
+@@ -51,6 +85,8 @@
+ 
+     QSqlDatabase db;
+     QThread worker;
++    int batchDepth = 0;         // sailfeed patch (1.4): beginBatch/endBatch
++    bool batchOpen = false;
+ };
+ 
+ 
+@@ -72,6 +108,7 @@
  
  private:
      QSqlDatabase m_db;
@@ -396,7 +978,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
      QJsonDocument m_json;
      AbstractConfiguration *m_config;
      AbstractNotificator *m_notificator;
-@@ -94,6 +125,7 @@
+@@ -94,6 +131,7 @@
  
  private:
      QSqlDatabase m_db;
@@ -404,7 +986,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
      QueryArgs m_args;
  };
  
-@@ -119,6 +151,7 @@
+@@ -119,6 +157,7 @@
      qint64 m_id;
      qint64 m_newestItemId;
      QSqlDatabase m_db;
@@ -412,7 +994,7 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
      FuotenEnums::Type m_idType;
  };
  
-@@ -140,6 +173,7 @@
+@@ -140,6 +179,7 @@
  
  private:
      QSqlDatabase m_db;
@@ -421,8 +1003,8 @@ diff -ruN -x .github -x .git a/Fuoten/Storage/sqlitestorage_p.h b/Fuoten/Storage
  
  
 diff -ruN -x .github -x .git a/Fuoten/error.cpp b/Fuoten/error.cpp
---- a/Fuoten/error.cpp	2026-10-10 13:38:20.345453674 +0200
-+++ b/Fuoten/error.cpp	2026-10-10 13:38:20.356468268 +0200
+--- a/Fuoten/error.cpp	2026-11-11 15:07:29.539502990 +0100
++++ b/Fuoten/error.cpp	2026-11-11 15:31:50.595131912 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -454,8 +1036,8 @@ diff -ruN -x .github -x .git a/Fuoten/error.cpp b/Fuoten/error.cpp
  {
      Q_D(Error);
 diff -ruN -x .github -x .git a/Fuoten/error.h b/Fuoten/error.h
---- a/Fuoten/error.h	2026-10-10 13:38:20.345468895 +0200
-+++ b/Fuoten/error.h	2026-10-10 13:38:20.354836424 +0200
+--- a/Fuoten/error.h	2026-11-11 15:07:29.539608924 +0100
++++ b/Fuoten/error.h	2026-11-11 15:31:50.588903491 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
@@ -482,8 +1064,8 @@ diff -ruN -x .github -x .git a/Fuoten/error.h b/Fuoten/error.h
       * \brief Returns the error severity.
       * \sa severity
 diff -ruN -x .github -x .git a/Fuoten/error_p.h b/Fuoten/error_p.h
---- a/Fuoten/error_p.h	2026-10-10 13:38:20.345479307 +0200
-+++ b/Fuoten/error_p.h	2026-10-10 13:38:20.356545844 +0200
+--- a/Fuoten/error_p.h	2026-11-11 15:07:29.539621235 +0100
++++ b/Fuoten/error_p.h	2026-11-11 15:31:50.595545101 +0100
 @@ -1,6 +1,9 @@
  /*
   * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>

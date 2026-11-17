@@ -21,6 +21,18 @@ All changes against `2cbb164` are also in `patches-libfuoten.diff`, so they can 
 - **Login Flow v2 polling honours "ignore SSL errors".** The polling requests did not, so sign-in in the browser failed with self-signed certificates.
 - **`Error` keeps the HTTP status and the network error code** (`httpStatus()`, `networkError()`), so the app can explain errors independent of the translated text.
 
+Speed and fixes for 1.4 (11 Nov, after a code review):
+
+- **WAL and indexes** (`SQLiteStorageManager::run`): `PRAGMA journal_mode = WAL` (stays in the file), `synchronous = NORMAL` and `journal_size_limit = 8 MB` on every connection (`WorkerDbConnection`, main connection). Indexes `items_unread_feed (unread, feedId)`, `items_lastmod (lastModified)`, `items_feed_pub_star (feedId, pubDate, starred)`, `items_pubdate (pubDate)`: `unread`, `starred` and `lastModified` are stored after the body, so counting them read every article's text (5,000 articles: unread count 213 ms cold → 0.1 ms).
+- **No body column when `bodyLimit < 0`** (`getArticles`, `GetArticlesAsyncWorker`): `''` is selected instead of `it.body`. The app's list loads without bodies.
+- **`getArticle()` read the body before `q.next()`**, so it was always empty.
+- **Articles dated in the future are listed** (`WHERE it.pubDate < now` removed in both queries): they were hidden but counted as unread.
+- **Results of an asynchronous query are deleted after delivery** (`SQLiteStorage::getArticlesAsync`, `AbstractStorage::getArticlesAsync`); models copy what they take (`AbstractArticleModel::gotArticlesAsync`). Results for a model that was gone stayed in memory.
+- **The article model keeps its order, the filter model does not sort.** `AbstractArticleModel` sorts by date (then id) after loading and inserts new articles of a sync at their place, one row at a time (`itemsRequested`; they were appended – the newest at the end of a newest-first list), and moves an updated article whose date changed; `resort()` and `ArticleListFilterModel::applySortOrder()` for a changed order; `ArticleListFilterModel::load/reload` pass the order instead of calling `sort(0)`.
+- **Marking a feed/folder read by row and with one signal** (`folderMarkedRead(InQueue)`, `feedMarkedRead(InQueue)`): `findByID()` per article was O(n²), with one `dataChanged` per row.
+- **`itemsMarked()` loop without `++i`** (endless; not reached by the app).
+- **`SQLiteStorage::databasePath()`, `beginBatch()/endBatch()`**: the app's own connections; marking several articles in one transaction.
+
 ### Updating libfuoten
 
 ```

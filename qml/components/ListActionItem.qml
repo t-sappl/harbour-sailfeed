@@ -15,10 +15,24 @@ BackgroundItem {
     property alias description: descriptionLabel.text
     property string iconSource
     property bool busy: false
+    // A tinted card instead of a plain row (1.4, preview: "Show full
+    // article" was mixed up with the feed's own "Read more" links)
+    property bool framed: false
+    // Opens a page of its own: subtle arrow on the right (as Sailcast)
+    property bool opensPage: false
 
     width: parent ? parent.width : Screen.width
     height: Math.max(Theme.itemSizeMedium, textColumn.height + 2 * Theme.paddingMedium)
     enabled: !busy
+
+    Rectangle {
+        visible: root.framed
+        anchors { fill: parent; leftMargin: Theme.horizontalPageMargin - Theme.paddingMedium
+                  rightMargin: Theme.horizontalPageMargin - Theme.paddingMedium
+                  topMargin: Theme.paddingSmall; bottomMargin: Theme.paddingSmall }
+        radius: Theme.paddingMedium
+        color: Theme.rgba(Theme.highlightBackgroundColor, root.highlighted ? 0.3 : 0.15)
+    }
 
     Item {
         id: iconBox
@@ -31,7 +45,7 @@ BackgroundItem {
             anchors.centerIn: parent
             visible: !root.busy
             source: root.iconSource
-            color: root.highlighted ? Theme.highlightColor : Theme.secondaryHighlightColor
+            color: root.highlighted ? Theme.highlightColor : Theme.secondaryColor
         }
         BusyIndicator {
             anchors.centerIn: parent
@@ -45,15 +59,19 @@ BackgroundItem {
         anchors {
             left: iconBox.visible ? iconBox.right : parent.left
             leftMargin: iconBox.visible ? Theme.paddingMedium : Theme.horizontalPageMargin
-            right: parent.right; rightMargin: Theme.horizontalPageMargin
+            right: parent.right
+            rightMargin: root.opensPage ? 2 * Theme.horizontalPageMargin + Theme.paddingMedium : Theme.horizontalPageMargin
             verticalCenter: parent.verticalCenter
         }
         Label {
             id: actionLabel
             width: parent.width
             wrapMode: Text.Wrap
-            color: Theme.highlightColor
-            opacity: root.busy ? Theme.opacityHigh : 1
+            // Primary color, blue only while pressed (1.4: with the blue
+            // values of the combo boxes everything on a settings page was blue)
+            color: root.highlighted ? Theme.highlightColor : Theme.primaryColor
+            // Dimmed while busy, more when not available (e.g. nothing to export)
+            opacity: root.busy ? Theme.opacityHigh : (root.enabled ? 1 : Theme.opacityLow)
         }
         Label {
             id: descriptionLabel
@@ -61,7 +79,10 @@ BackgroundItem {
             visible: text !== ""
             wrapMode: Text.Wrap
             font.pixelSize: Theme.fontSizeExtraSmall
-            color: Theme.secondaryHighlightColor
+            color: Theme.secondaryColor
+            opacity: root.enabled || root.busy ? 1 : Theme.opacityLow
         }
     }
+
+    PageArrow { visible: root.opensPage }
 }

@@ -464,6 +464,21 @@ QStringList FeedFinder::fileNamesOf(const QStringList &feedUrls, int max)
     return names.mid(0, max);
 }
 
+QString FeedFinder::fromFeedScheme(const QString &url)
+{
+    const QString s = url.trimmed();
+    if (!s.startsWith(QLatin1String("feed:"), Qt::CaseInsensitive))
+        return s;
+    QString rest = s.mid(5);
+    if (rest.startsWith(QLatin1String("//")))
+        rest = rest.mid(2);
+    // feed:https://… / feed://https://… carry the real scheme (another
+    // one, e.g. ftp, stays and is refused by the caller)
+    if (rest.contains(QLatin1String("://")))
+        return rest;
+    return QStringLiteral("https://") + rest;
+}
+
 QString FeedFinder::compareKey(const QString &url)
 {
     QString s = url.trimmed().toLower();

@@ -174,7 +174,7 @@ Page {
                 width: parent.width - 2 * x
                 visible: urlField.text === "" && !finder.busy
                 wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.secondaryHighlightColor
                 text: qsTr("Enter the address of a website or of one of its articles. Sailfeed looks for its feeds and shows them with their newest articles.")
                       + "\n\n" + qsTr("Copied an address before? It is filled in when this page opens, or with the clipboard button next to the field.")
@@ -200,7 +200,8 @@ Page {
                     color: Theme.secondaryHighlightColor
                     text: qsTr("Nextcloud News can still try the address itself.")
                 }
-                Button {
+                ActionPill {
+                    kind: "secondary"
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: qsTr("Add anyway")
                     enabled: !FeedManager.busy && FeedManager.normalizeUrl(urlField.text) !== ""
@@ -247,7 +248,7 @@ Page {
                         width: parent.width - 2 * x
                         wrapMode: Text.Wrap
                         font.pixelSize: Theme.fontSizeExtraSmall
-                        color: Theme.secondaryHighlightColor
+                        color: Theme.secondaryColor
                         text: {
                             var parts = [result.feed.format, (result.feed.itemCount === 1 ? qsTr("1 article") : qsTr("%1 articles").arg(result.feed.itemCount))]
                             var d = result.latestDate
@@ -292,12 +293,12 @@ Page {
                     Item {
                         width: parent.width
                         height: Math.max(subscribeButton.height, doneLabel.height) + Theme.paddingSmall
-                        Button {
+                        ActionPill {
+                            kind: "primary"
                             id: subscribeButton
                             anchors { right: parent.right; rightMargin: Theme.horizontalPageMargin; verticalCenter: parent.verticalCenter }
                             visible: !result.done
-                            preferredWidth: Theme.buttonWidthSmall
-                            text: qsTr("Subscribe")
+                            text: (result.feed.likelySubscribedAs || "") !== "" ? qsTr("Subscribe anyway") : qsTr("Subscribe")
                             enabled: !FeedManager.busy
                             onClicked: page.subscribe(result.feed.url)
                         }

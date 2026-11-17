@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Bar at the bottom of the article preview and the web view:
-// ‹ | A- | bookmark | "3 / 120" | light/dark | A+ | [reader/original] | ›
-// For a page opened from a link in an article: back | A- | site | light/dark | A+ | [reader/original]
+// ‹ | bookmark | "3 / 120" | light/dark | A- | A+ | [reader/original] | ›
+// For a page opened from a link in an article: back | site | light/dark | A- | A+ | [reader/original]
 // A bar instead of a swipe gesture: horizontal swipes belong to the page
 // stack (back / reader mode) and vertical ones to scrolling the content.
 // What is used while reading, one-handed: text size, colors, bookmark and,
@@ -51,11 +51,6 @@ Rectangle {
         IconButton {
             icon.source: bar.showBack ? "image://theme/icon-m-back" : "image://theme/icon-m-left"
             onClicked: bar.showBack ? bar.back() : bar.previous()
-        }
-        TextSizeButton {
-            visible: bar.showTextSize
-            large: false
-            onClicked: bar.smaller()
         }
         IconButton {
             visible: bar.showBookmark
@@ -116,6 +111,13 @@ Rectangle {
                     }
                 }
             }
+        }
+        // A− and A+ together (blind test 11 Nov: four slots apart they were
+        // not seen as a pair)
+        TextSizeButton {
+            visible: bar.showTextSize
+            large: false
+            onClicked: bar.smaller()
         }
         TextSizeButton {
             visible: bar.showTextSize

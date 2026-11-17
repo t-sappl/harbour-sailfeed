@@ -136,6 +136,7 @@ void AbstractStorage::getArticlesAsync(const QueryArgs &args)
     if (args.requestId == 0) {
         Q_EMIT gotArticlesAsync(articles);
     }
+    qDeleteAll(articles);       // sailfeed patch (1.4): receivers copy, see SQLiteStorage
 }
 
 

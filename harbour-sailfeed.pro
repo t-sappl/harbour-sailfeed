@@ -5,7 +5,7 @@
 # Open this file in the Sailfish IDE (Qt Creator of the Sailfish SDK).
 
 TARGET = harbour-sailfeed
-VERSION = 1.3.0
+VERSION = 1.4.0
 
 CONFIG += sailfishapp c++14
 QT += network sql qml quick dbus
@@ -29,11 +29,13 @@ SOURCES += \
     src/main.cpp \
     src/accountmanager.cpp \
     src/articlecleaner.cpp \
+    src/articleindex.cpp \
     src/articlemodel.cpp \
     src/cloudbackup.cpp \
     src/configuration.cpp \
     src/feedmanager.cpp \
     src/feedfinder.cpp \
+    src/feedtransfer.cpp \
     src/feedmodel.cpp \
     src/feedrowsmodel.cpp \
     src/geckocookiejar.cpp \
@@ -41,6 +43,7 @@ SOURCES += \
     src/htmlutils.cpp \
     src/namfactory.cpp \
     src/nextcloudfiles.cpp \
+    src/opmlfile.cpp \
     src/prefetcher.cpp \
     src/secretstore.cpp \
     src/settingsbackup.cpp
@@ -48,11 +51,13 @@ SOURCES += \
 HEADERS += \
     src/accountmanager.h \
     src/articlecleaner.h \
+    src/articleindex.h \
     src/articlemodel.h \
     src/cloudbackup.h \
     src/configuration.h \
     src/feedmanager.h \
     src/feedfinder.h \
+    src/feedtransfer.h \
     src/feedmodel.h \
     src/feedrowsmodel.h \
     src/geckocookiejar.h \
@@ -60,6 +65,7 @@ HEADERS += \
     src/htmlutils.h \
     src/namfactory.h \
     src/nextcloudfiles.h \
+    src/opmlfile.h \
     src/prefetcher.h \
     src/secretstore.h \
     src/settingsbackup.h

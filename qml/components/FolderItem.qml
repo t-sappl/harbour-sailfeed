@@ -15,6 +15,8 @@ ListItem {
     // Favorite feed: small star at the bottom right of the icon (or in its
     // place when the feed has no favicon)
     property bool favorite
+    // Muted feed (feed settings): small icon before the count
+    property bool muted
     readonly property bool hasIcon: iconSource !== "" || favorite
 
     width: parent ? parent.width : Screen.width
@@ -73,12 +75,29 @@ ListItem {
             left: parent.left
             leftMargin: Theme.horizontalPageMargin + root.indent
                         + (root.hasIcon ? Theme.iconSizeSmall + Theme.paddingMedium : 0)
-            right: countLabel.left; rightMargin: Theme.paddingMedium
+            right: muteIcon.visible ? muteIcon.left : countLabel.left; rightMargin: Theme.paddingMedium
         }
         text: root.name
         font.bold: root.bold
         truncationMode: TruncationMode.Fade
-        color: root.current || root.highlighted ? Theme.highlightColor : Theme.primaryColor
+        // A feed with nothing unread is dimmed, so the feeds that need
+        // attention stand out (no "0" is shown, 1.4)
+        color: root.current || root.highlighted ? Theme.highlightColor
+             : (!root.bold && root.unreadCount === 0 ? Theme.secondaryColor : Theme.primaryColor)
+    }
+    Icon {
+        id: muteIcon
+        visible: root.muted
+        anchors {
+            verticalCenter: parent.verticalCenter
+            right: countLabel.left; rightMargin: Theme.paddingSmall
+        }
+        source: "image://theme/icon-m-speaker-mute"
+        width: Theme.iconSizeExtraSmall
+        height: width
+        sourceSize.width: width
+        sourceSize.height: height
+        color: root.current || root.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
     }
     Label {
         id: countLabel

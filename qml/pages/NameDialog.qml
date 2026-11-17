@@ -12,6 +12,8 @@ Dialog {
     property string label: qsTr("Name")
     property string value
     property string initialValue
+    // What is typed now (FolderFeedsDialog reads it after "Next")
+    readonly property string currentText: nameField.text.trim()
 
     canAccept: nameField.text.trim() !== "" && nameField.text.trim() !== initialValue
     onAccepted: value = nameField.text.trim()

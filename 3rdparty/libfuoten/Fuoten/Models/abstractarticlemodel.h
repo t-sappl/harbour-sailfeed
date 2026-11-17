@@ -1,6 +1,9 @@
 /*
  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
  * SPDX-License-Identifier: LGPL-3.0-or-later
+ *
+ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
+ * of harbour-sailfeed and patches-libfuoten.diff.
  */
 
 #ifndef FUOTENABSTRACTARTICLEMODEL_H
@@ -125,6 +128,14 @@ public:
      * \param ids list of article IDs to find in the model
      */
     QHash<qint64, QModelIndex> findByIDs(const IdList &ids) const override;
+
+    /*!
+     * \brief Sorts the articles anew after setSortOrder() (sailfeed patch, 1.4).
+     *
+     * The model keeps its articles in display order by date; the filter
+     * model does not sort.
+     */
+    void resort();
 
 public Q_SLOTS:
     /*!

@@ -20,7 +20,7 @@ BackgroundItem {
         id: textColumn
         anchors {
             left: parent.left; leftMargin: Theme.horizontalPageMargin
-            right: arrow.left; rightMargin: Theme.paddingMedium
+            right: parent.right; rightMargin: 2 * Theme.horizontalPageMargin + Theme.paddingMedium
             verticalCenter: parent.verticalCenter
         }
         Label {
@@ -33,15 +33,14 @@ BackgroundItem {
             id: summaryLabel
             width: parent.width
             visible: text !== ""
-            truncationMode: TruncationMode.Fade
+            // Up to two lines (as Sailcast: a long user name cut off the rest)
+            wrapMode: Text.Wrap
+            maximumLineCount: 2
+            elide: Text.ElideRight
             font.pixelSize: Theme.fontSizeExtraSmall
             color: root.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
         }
     }
-    Icon {
-        id: arrow
-        anchors { right: parent.right; rightMargin: Theme.horizontalPageMargin; verticalCenter: parent.verticalCenter }
-        source: "image://theme/icon-m-right"
-        color: root.highlighted ? Theme.highlightColor : Theme.primaryColor
-    }
+    // Subtle arrow as in Sailcast (758; the big icon-m-right looked heavy)
+    PageArrow {}
 }

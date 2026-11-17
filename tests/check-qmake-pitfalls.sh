@@ -30,6 +30,15 @@ for h in src/*.h; do
         status=1
     fi
 done
+# A QML file that uses a C++ singleton (Prefetch, Html, ...) needs "import harbour.sailfeed 1.0"
+# (missing in ArticleListPage in 757: the tap only marked the article as read)
+for f in qml/pages/*.qml qml/components/*.qml; do
+    [ -f "$f" ] || continue
+    if grep -qE '\b(Prefetch|Html)\.[a-zA-Z]' "$f" && ! grep -q 'import harbour.sailfeed' "$f"; then
+        echo "$f uses a C++ singleton without 'import harbour.sailfeed 1.0'"
+        status=1
+    fi
+done
 rm -rf "$TMP"
 [ $status -eq 0 ] && echo "ok"
 exit $status

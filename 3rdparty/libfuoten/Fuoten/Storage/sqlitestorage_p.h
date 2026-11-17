@@ -37,6 +37,10 @@ public:
         m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_name);
         m_db.setDatabaseName(path);
         m_db.open();
+        // sailfeed patch (1.4): with WAL (set by SQLiteStorageManager) NORMAL
+        // syncs at checkpoints only; per connection
+        QSqlQuery(m_db).exec(QStringLiteral("PRAGMA synchronous = NORMAL"));
+        QSqlQuery(m_db).exec(QStringLiteral("PRAGMA journal_size_limit = 8388608"));
     }
     ~WorkerDbConnection()
     {
@@ -81,6 +85,8 @@ public:
 
     QSqlDatabase db;
     QThread worker;
+    int batchDepth = 0;         // sailfeed patch (1.4): beginBatch/endBatch
+    bool batchOpen = false;
 };
 
 

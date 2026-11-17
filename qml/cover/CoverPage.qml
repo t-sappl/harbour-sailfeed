@@ -10,7 +10,7 @@ CoverBackground {
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: localstorage.totalUnread
+            text: Math.max(0, localstorage.totalUnread - app.feeds.mutedUnread)
             font.pixelSize: Theme.fontSizeHuge
             color: Theme.highlightColor
         }

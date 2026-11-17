@@ -40,6 +40,11 @@ Page {
                 target: Qt.resolvedUrl("SettingsListPage.qml")
             }
             SettingsEntry {
+                title: qsTr("Storage")
+                summary: qsTr("Image cache, old read articles")
+                target: Qt.resolvedUrl("SettingsStoragePage.qml")
+            }
+            SettingsEntry {
                 title: qsTr("Article preview")
                 summary: settingsPage.join([app.skipPreview ? qsTr("Skipped") : qsTr("Shown"),
                                             qsTr("text %1 %").arg(Math.round(100 * (1 + 0.12 * app.previewFontStep)))])
@@ -63,6 +68,12 @@ Page {
                                                  : qsTr("backed up %1").arg(Format.formatDate(cloudBackup.lastBackup, Formatter.DurationElapsed)))])
                 target: Qt.resolvedUrl("SettingsNextcloudPage.qml")
             }
+            // OPML (1.4): the feed list to and from other feed readers
+            SettingsEntry {
+                title: qsTr("Import and export feeds")
+                summary: qsTr("OPML file: your Nextcloud, Downloads, share")
+                target: Qt.resolvedUrl("OpmlPage.qml")
+            }
             SettingsEntry {
                 title: qsTr("Privacy")
                 summary: settingsPage.join([Prefetch.shareBrowserCookies ? qsTr("Browser cookies for the reader mode")
@@ -71,11 +82,20 @@ Page {
                 target: Qt.resolvedUrl("SettingsPrivacyPage.qml")
             }
 
-            Item { width: 1; height: Theme.paddingLarge }
-
-            SettingsEntry {
-                title: qsTr("About Sailfeed")
-                target: Qt.resolvedUrl("AboutPage.qml")
+            // As Sailcast: version and "About" as a side action at the end
+            Item { width: 1; height: Theme.paddingLarge * 2 }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryColor
+                text: "Sailfeed " + Qt.application.version
+            }
+            ActionPill {
+                kind: "secondary"
+                x: Theme.horizontalPageMargin
+                text: qsTr("About Sailfeed")
+                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
         }
         VerticalScrollDecorator { }

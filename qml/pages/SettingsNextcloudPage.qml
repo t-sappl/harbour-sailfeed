@@ -48,13 +48,18 @@ Page {
 
             Item { width: 1; height: Theme.paddingLarge }
 
-            ButtonLayout {
-                Button {
+            Flow {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * x
+                spacing: Theme.paddingMedium
+                ActionPill {
                     text: config.isAccountValid ? qsTr("Change account") : qsTr("Sign in")
+                    kind: config.isAccountValid ? "secondary" : "primary"
                     onClicked: pageStack.push(Qt.resolvedUrl("LoginPage.qml"))
                 }
-                Button {
+                ActionPill {
                     visible: config.isAccountValid
+                    kind: "destructive"
                     text: qsTr("Sign out")
                     onClicked: signOutRemorse.execute(qsTr("Signing out"), function() { account.logout(); app.articles.reload(); app.feeds.reload() })
                 }
@@ -95,13 +100,10 @@ Page {
                     onClicked: app.backupTextSizes = !app.backupTextSizes
                 }
 
-                SectionHeader { text: qsTr("Last backup") }
-                Label {
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * x
-                    wrapMode: Text.Wrap
-                    color: Theme.highlightColor
-                    text: cloudBackup.busy && backupConnection.waiting ? qsTr("Saving …")
+                Item { width: 1; height: Theme.paddingMedium }
+                DetailItem {
+                    label: qsTr("Last backup")
+                    value: cloudBackup.busy && backupConnection.waiting ? qsTr("Saving …")
                         : (isNaN(cloudBackup.lastBackup) ? qsTr("Not backed up yet")
                            : Format.formatDate(cloudBackup.lastBackup, Formatter.DurationElapsed))
                 }
@@ -117,8 +119,12 @@ Page {
 
                 Item { width: 1; height: Theme.paddingLarge }
 
-                ButtonLayout {
-                    Button {
+                Flow {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * x
+                    spacing: Theme.paddingMedium
+                    ActionPill {
+                        kind: "primary"
                         text: qsTr("Back up now")
                         enabled: !cloudBackup.busy
                         onClicked: {
@@ -126,7 +132,8 @@ Page {
                             app.backupSettingsNow()
                         }
                     }
-                    Button {
+                    ActionPill {
+                        kind: "secondary"
                         text: qsTr("Restore …")
                         enabled: !cloudBackup.busy
                         onClicked: pageStack.push(Qt.resolvedUrl("RestoreSettingsPage.qml"))

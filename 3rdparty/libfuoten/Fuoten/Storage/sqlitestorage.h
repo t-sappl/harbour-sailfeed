@@ -1,6 +1,9 @@
 /*
  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
  * SPDX-License-Identifier: LGPL-3.0-or-later
+ *
+ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
+ * of harbour-sailfeed and patches-libfuoten.diff.
  */
 
 #ifndef SQLITESTORAGE_H
@@ -104,6 +107,20 @@ public:
      * \brief Returns the full body of an Article identified by \a id.
      */
     Q_INVOKABLE QString getArticleBody(qint64 id) override;
+
+    /*!
+     * \brief Path of the database file (sailfeed patch, 1.4), for the app's
+     * own connections.
+     */
+    QString databasePath() const;
+
+    /*!
+     * \brief Starts / commits a transaction on the main connection (sailfeed
+     * patch, 1.4): marking several articles at once is one commit instead of
+     * three per article. Calls nest; only the outermost one commits.
+     */
+    void beginBatch();
+    void endBatch();
 
     /*!
      * \brief Enqueues the \a action for the given \a article in the local SQLite database.

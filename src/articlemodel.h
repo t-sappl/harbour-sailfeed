@@ -14,7 +14,9 @@ namespace Fuoten {
 class AbstractStorage;
 class Article;
 class ArticleListFilterModel;
+class SQLiteStorage;
 }
+class ArticleIndex;
 
 // Article list for the UI.
 //
@@ -22,6 +24,11 @@ class ArticleListFilterModel;
 // local SQLite storage and keeps itself up to date during syncs) and adds
 // flat roles for the delegate: title, feed, relative age, day section,
 // plain-text excerpt and thumbnail URL.
+//
+// Since 1.4 the articles are loaded without their bodies; excerpt,
+// thumbnail and hasContent come from the ArticleIndex (computed once per
+// article in a worker), the body is read when an article is opened (get()),
+// and the full-text search runs in the index's worker.
 //
 // "Unread only" is implemented here instead of with libfuoten's hideRead,
 // because hideRead filters dynamically: an article marked as read while the
@@ -124,6 +131,9 @@ public:
     // for the server; sent with the next sync via items/read/multiple).
     Q_INVOKABLE void markRead(int row);
     Q_INVOKABLE void markRowsRead(const QVariantList &rows);
+    // Muted feeds (feed settings): their articles stay out of "All articles"
+    // and the folders (search, the feed itself and bookmarks show them).
+    Q_INVOKABLE void setMutedFeeds(const QVariantList &ids);
     // Marks every article of the current selection (all / folder) as read.
     Q_INVOKABLE void markAllRead();
 
@@ -138,7 +148,11 @@ public:
 
     // Snapshot of one article for the article page (title, feedTitle,
     // pubDate, body (cleaned HTML), url, thumb, unread, starred, itemId).
+    // Reads the body from the database.
     Q_INVOKABLE QVariantMap get(int row) const;
+    // The same without the body (and with the list's small thumbnail):
+    // for next/previous, prefetching, opening the web page (1.4)
+    Q_INVOKABLE QVariantMap info(int row) const;
 
     // The first sync only fetches unread and starred articles, so feeds whose
     // articles were all read elsewhere look empty. This fetches the next
@@ -189,25 +203,42 @@ private:
         QString excerpt;
         QString thumb;
         bool hasContent = true;     // HtmlUtils::hasContent
+        bool known = false;         // from the index (else defaults until indexed)
     };
 
     Fuoten::Article *articleAt(int row) const;
     Fuoten::Article *articleById(qint64 id) const;
-    const Extra &extraFor(Fuoten::Article *article) const;
+    const Extra &extraForRow(int row, Fuoten::Article *article) const;
     void applySelection();
     void onSourceDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    void onIndexed(const QList<qint64> &ids);
+    void onIndexDone();
+    void announceExtra(const QList<qint64> &ids);
+    void onSearchFinished(int token, const QList<qint64> &ids);
+    void startSearch();
+    QString foldedTitle(Fuoten::Article *a) const;
+    QVariantMap snapshot(Fuoten::Article *a) const;
+    Fuoten::SQLiteStorage *sqlite() const;
+
+    ArticleIndex *m_index = nullptr;
+    bool m_reloadPending = false;
+    mutable bool m_indexAsked = false;
+    QSet<qint64> m_searchHits;              // full-text matches from the index
+    int m_searchToken = 0;
+    QTimer *m_searchAgain = nullptr;        // search again after indexing
 
     Fuoten::ArticleListFilterModel *m_source;
     QString m_searchText;
     QStringList m_searchWords;
     bool m_searchFullText = true;
     bool m_searchOnly = false;
-    mutable QHash<qint64, QString> m_searchCache;     // id -> folded "title \n plain text"
+    mutable QHash<qint64, QString> m_titleCache;      // id -> folded title
     int m_folderId = -1;
     int m_feedId = -1;
     bool m_starredOnly = false;
     bool m_showRead = false;
     bool m_unreadOnly = false;
+    QSet<qint64> m_muted;
     QSet<qint64> m_keep;                    // read in this session, keep visible
     void scheduleUnreadCount();
     void updateUnreadCount();

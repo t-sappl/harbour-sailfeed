@@ -10,8 +10,21 @@
 #include "../Storage/abstractstorage.h"
 #include "../API/component.h"
 #include <QMetaEnum>
+#include <algorithm>
 
 using namespace Fuoten;
+
+namespace {
+// sailfeed patch (1.4): the model keeps its articles in display order (by
+// date, then id, as ArticleListFilterModel::lessThan did), so the proxy
+// does not sort and new articles go to their place (see itemsRequested)
+bool before(const Article *l, const Article *r, Qt::SortOrder order)
+{
+    if (l->pubDate() != r->pubDate())
+        return order == Qt::AscendingOrder ? l->pubDate() < r->pubDate() : l->pubDate() > r->pubDate();
+    return order == Qt::AscendingOrder ? l->id() < r->id() : l->id() > r->id();
+}
+}
 
 AbstractArticleModelPrivate::AbstractArticleModelPrivate() : BaseModelPrivate()
 {
@@ -192,16 +205,21 @@ void AbstractArticleModel::gotArticlesAsync(const ArticleList &articles)
 
         Q_D(AbstractArticleModel);
 
-        beginInsertRows(QModelIndex(), rowCount(), rowCount() + articles.count() -1);
-
+        // sailfeed patch (1.4): copies (the storage deletes the results after
+        // delivering them), in display order
+        QList<Article*> sorted;
+        sorted.reserve(articles.size());
         for (Article *a : articles) {
-            if (a->thread() != this->thread()) {
-                d->articles.append(new Article(a));
-                delete a;
-            } else {
-                d->articles.append(a);
-            }
+            sorted.append(new Article(a));
         }
+        const Qt::SortOrder order = sortOrder();
+        std::stable_sort(sorted.begin(), sorted.end(), [order](const Article *l, const Article *r) {
+            return before(l, r, order);
+        });
+
+        beginInsertRows(QModelIndex(), rowCount(), rowCount() + sorted.count() -1);
+
+        d->articles.append(sorted);
 
         endInsertRows();
 
@@ -270,6 +288,19 @@ QList<Article*> AbstractArticleModel::articles() const
 }
 
 
+void AbstractArticleModel::resort()
+{
+    // sailfeed patch (1.4): new order (setSortOrder before), list reset
+    Q_D(AbstractArticleModel);
+    beginResetModel();
+    const Qt::SortOrder order = sortOrder();
+    std::stable_sort(d->articles.begin(), d->articles.end(), [order](const Article *l, const Article *r) {
+        return before(l, r, order);
+    });
+    endResetModel();
+}
+
+
 void AbstractArticleModel::clear()
 {
     Q_D(AbstractArticleModel);
@@ -315,11 +346,35 @@ void AbstractArticleModel::itemsRequested(const IdList &updatedItems, const IdLi
             const QList<Article*> upits = storage()->getArticles(qa);
 
             if (!upits.isEmpty()) {
+                const Qt::SortOrder order = sortOrder();
                 for (Article *a : upits) {
 
-                    QModelIndex idx = idxs.value(a->id());
-                    d->articles.at(idx.row())->copy(a);
+                    // sailfeed patch (1.4): rows looked up by id now (an
+                    // earlier move may have shifted them)
+                    const int row = d->rowByID(a->id());
+                    if (row < 0) {
+                        continue;
+                    }
+                    Article *own = d->articles.at(row);
+                    own->copy(a);
+                    const QModelIndex idx = index(row, 0);
                     Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
+                    // sailfeed patch (1.4): a changed date moves the article
+                    // to its place, so the order (and the sorted insertion
+                    // below) stays right
+                    const bool early = row > 0 && before(own, d->articles.at(row - 1), order);
+                    const bool late = row + 1 < d->articles.size() && before(d->articles.at(row + 1), own, order);
+                    if (early || late) {
+                        beginRemoveRows(QModelIndex(), row, row);
+                        d->articles.removeAt(row);
+                        endRemoveRows();
+                        const auto pos = std::lower_bound(d->articles.begin(), d->articles.end(), own,
+                                                          [order](const Article *l, const Article *r) { return before(l, r, order); });
+                        const int to = static_cast<int>(pos - d->articles.begin());
+                        beginInsertRows(QModelIndex(), to, to);
+                        d->articles.insert(to, own);
+                        endInsertRows();
+                    }
                 }
                 qDeleteAll(upits);
             }
@@ -339,12 +394,21 @@ void AbstractArticleModel::itemsRequested(const IdList &updatedItems, const IdLi
         }
         const QList<Article*> newits = storage()->getArticles(qa);
 
-        if (!newits.isEmpty()) {
-
-            beginInsertRows(QModelIndex(), rowCount(), rowCount() + newits.count() -1);
-
-            d->articles.append(newits);
-
+        // sailfeed patch (1.4): each new article at its place in the order
+        // (they were appended, so after a sync the newest articles were at
+        // the end of a newest-first list); one row at a time, as the proxy
+        // models expect
+        const Qt::SortOrder order = sortOrder();
+        for (Article *a : newits) {
+            if (d->rowByID(a->id()) > -1) {     // already listed
+                delete a;
+                continue;
+            }
+            const auto pos = std::lower_bound(d->articles.begin(), d->articles.end(), a,
+                                              [order](const Article *l, const Article *r) { return before(l, r, order); });
+            const int row = static_cast<int>(pos - d->articles.begin());
+            beginInsertRows(QModelIndex(), row, row);
+            d->articles.insert(row, a);
             endInsertRows();
         }
     }
@@ -382,15 +446,20 @@ void AbstractArticleModel::folderMarkedRead(qint64 folderId, qint64 newestItemId
         return;
     }
 
-    for (Article *a : as) {
-
+    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
+    // and one signal for the changed range instead of one per row
+    int first = -1, last = -1;
+    for (int row = 0; row < d->articles.count(); ++row) {
+        Article *a = d->articles.at(row);
         if (a->unread() && (a->folderId() == folderId) && (a->id() <= newestItemId)) {
-            QModelIndex idx = findByID(a->id());
-            if (idx.isValid()) {
                 a->setUnread(false);
-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
-            }
+                if (first < 0)
+                    first = row;
+                last = row;
         }
+    }
+    if (first > -1) {
+        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
     }
 }
 
@@ -409,11 +478,12 @@ void AbstractArticleModel::folderMarkedReadInQueue(qint64 folderId, qint64 newes
         return;
     }
 
-    for (Article *a : as) {
-
+    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
+    // and one signal for the changed range instead of one per row
+    int first = -1, last = -1;
+    for (int row = 0; row < d->articles.count(); ++row) {
+        Article *a = d->articles.at(row);
         if (a->unread() && (a->folderId() == folderId) && (a->id() <= newestItemId)) {
-            QModelIndex idx = findByID(a->id());
-            if (idx.isValid()) {
                 FuotenEnums::QueueActions qa = a->queue();
                 if (qa.testFlag(FuotenEnums::MarkAsUnread)) {
                     qa ^= FuotenEnums::MarkAsUnread;
@@ -422,9 +492,13 @@ void AbstractArticleModel::folderMarkedReadInQueue(qint64 folderId, qint64 newes
                 }
                 a->setQueue(qa);
                 a->setUnread(false);
-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
-            }
+                if (first < 0)
+                    first = row;
+                last = row;
         }
+    }
+    if (first > -1) {
+        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
     }
 }
 
@@ -447,16 +521,20 @@ void AbstractArticleModel::feedMarkedRead(qint64 feedId, qint64 newestItemId)
         return;
     }
 
-    for (Article *a : as) {
-
+    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
+    // and one signal for the changed range instead of one per row
+    int first = -1, last = -1;
+    for (int row = 0; row < d->articles.count(); ++row) {
+        Article *a = d->articles.at(row);
         if (a->unread() && (a->feedId() == feedId) && (a->id() <= newestItemId)) {
-            QModelIndex idx = findByID(a->id());
-            if (idx.isValid()) {
                 a->setUnread(false);
-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
-            }
+                if (first < 0)
+                    first = row;
+                last = row;
         }
-
+    }
+    if (first > -1) {
+        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
     }
 }
 
@@ -479,13 +557,12 @@ void AbstractArticleModel::feedMarkedReadInQueue(qint64 feedId, qint64 newestIte
         return;
     }
 
-    for (Article *a : as) {
-
+    // sailfeed patch (1.4): by row instead of findByID() per article (n²)
+    // and one signal for the changed range instead of one per row
+    int first = -1, last = -1;
+    for (int row = 0; row < d->articles.count(); ++row) {
+        Article *a = d->articles.at(row);
         if (a->unread() && (a->feedId() == feedId) && (a->id() <= newestItemId)) {
-
-            QModelIndex idx = findByID(a->id());
-            if (idx.isValid()) {
-
                 FuotenEnums::QueueActions qa = a->queue();
                 if (qa.testFlag(FuotenEnums::MarkAsUnread)) {
                     qa ^= FuotenEnums::MarkAsUnread;
@@ -494,9 +571,13 @@ void AbstractArticleModel::feedMarkedReadInQueue(qint64 feedId, qint64 newestIte
                 }
                 a->setQueue(qa);
                 a->setUnread(false);
-                Q_EMIT dataChanged(idx, idx, QVector<int>(1, Qt::DisplayRole));
-            }
+                if (first < 0)
+                    first = row;
+                last = row;
         }
+    }
+    if (first > -1) {
+        Q_EMIT dataChanged(index(first, 0), index(last, 0), QVector<int>(1, Qt::DisplayRole));
     }
 }
 
@@ -608,7 +689,8 @@ void AbstractArticleModel::itemsMarked(const IdList &itemIds, bool unread)
         QHash<qint64, QModelIndex>::const_iterator i = idxs.constBegin();
         while (i != idxs.constEnd()) {
             d->articles.at(i.value().row())->setUnread(unread);
-            Q_EMIT dataChanged(i.value(), i.value(), QVector<int>(Qt::DisplayRole));
+            Q_EMIT dataChanged(i.value(), i.value(), QVector<int>(1, Qt::DisplayRole));
+            ++i;        // sailfeed patch (1.4): was missing, endless loop
         }
     }
 }

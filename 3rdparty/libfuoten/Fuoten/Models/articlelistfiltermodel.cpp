@@ -1,6 +1,9 @@
 /*
  * SPDX-FileCopyrightText: (C) 2016-2022 Matthias Fehring <https://www.huessenbergnetz.de>
  * SPDX-License-Identifier: LGPL-3.0-or-later
+ *
+ * Modified 2026 by Thomas Sappl for harbour-sailfeed, see 3rdparty/README.md
+ * of harbour-sailfeed and patches-libfuoten.diff.
  */
 
 #include "articlelistfiltermodel_p.h"
@@ -145,8 +148,10 @@ void ArticleListFilterModel::load(const QString &locale)
 
     Q_D(ArticleListFilterModel);
     if (d->alm) {
+        // sailfeed patch (1.4): the source model keeps the order (by date),
+        // no sorting here – see AbstractArticleModel::itemsRequested
+        d->alm->setSortOrder(sortOrder());
         d->alm->load();
-        sort(0);
     }
 }
 
@@ -159,8 +164,19 @@ void ArticleListFilterModel::reload(const QString &locale)
 
     Q_D(ArticleListFilterModel);
     if (d->alm) {
+        d->alm->setSortOrder(sortOrder());     // sailfeed patch (1.4), see load()
         d->alm->reload();
-        sort(0);
+    }
+}
+
+
+void ArticleListFilterModel::applySortOrder()
+{
+    // sailfeed patch (1.4): the order lives in the source model
+    Q_D(ArticleListFilterModel);
+    if (d->alm && d->alm->sortOrder() != sortOrder()) {
+        d->alm->setSortOrder(sortOrder());
+        d->alm->resort();
     }
 }
 

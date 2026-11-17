@@ -263,6 +263,10 @@ class H(BaseHTTPRequestHandler):
         if method == "POST" and p == "/feeds":
             if "bad.example" in data.get("url", ""):
                 return self._send(422, {"message": "Feed could not be parsed"})
+            if any(x["url"] == data.get("url") for x in FEEDS):     # OPML import: subscribed already
+                return self._send(409, {"message": "feed exists"})
+            if "slow.example" in data.get("url", ""):              # OPML import: time to cancel
+                time.sleep(0.5)
             f = dict(FEEDS[0]); f.update({"id": max(x["id"] for x in FEEDS) + 1, "url": data["url"],
                      "title": "Example feed", "folderId": data.get("folderId") or 0, "link": data["url"]})
             FEEDS.append(f)

@@ -44,6 +44,16 @@ WebViewPage {
 
     property bool started: false
     property bool waitingPrefetch: false
+    // The web view shows the lean copy of the downloaded page (1.4,
+    // HtmlUtils::leanPage: no scripts, style sheets, frames, images); if it
+    // has no article, the full download is tried next
+    property bool leanLoaded: false
+    // No extraction before this time (ms): the page before is still on screen
+    property double holdUntil: 0
+    // Addresses of the previous article's document after next/previous: a
+    // plain page ("page" marker) of it must not count as the new article's
+    // (second review 16 Nov: the old page could still be read for the new one)
+    property var staleHrefs: []
     property int extractTries: 0
     // Slow connection (1.2): the reader mode takes long – the cover offers
     // the feed's own text and the browser instead of only waiting
@@ -53,7 +63,7 @@ WebViewPage {
     property double startedAt: 0
     function log(what) {
         console.log("Sailfeed reader:", what, "after", Date.now() - startedAt, "ms",
-                    "phase", phase, "loading", webView.loading, page.url)
+                    "phase", phase, "loading", webView ? webView.loading : false, page.url)
     }
     // The text from the feed is shown instead of the website's (showFeedText)
     property bool feedText: false
@@ -65,7 +75,7 @@ WebViewPage {
         var row = articleModel.rowOfId(itemId)
         if (row < 0)
             return null
-        var d = articleModel.get(row)
+        var d = articleModel.info(row)      // without the body (1.4), see showFeedText()
         return d.hasContent === false ? null : d
     }
 
@@ -127,13 +137,25 @@ WebViewPage {
             readerMode = false
             hint.show(qsTr("This site always opens in the original"))
         }
+        leanLoaded = false
         if (readerMode) {
-            var cached = Prefetch.html(page.url)
-            if (cached !== "") {
-                log("prefetched page ready")
-                webView.loadHtml(cached, page.url)
+            // Read before in this session (back and forth): no loading, no extraction
+            var known = Prefetch.article(page.url)
+            var knownHtml = known !== "" ? Html.readerHtml(known, readerStyle()) : ""
+            if (knownHtml !== "") {
+                log("reader page from memory")
+                phase = phaseReader
+                loadReader(knownHtml)
                 return
             }
+            if (loadPrefetched())
+                return
+            // Nothing downloaded yet (opened without the preview, e.g. "skip
+            // the preview" or an article without text): download it now and
+            // wait for the lean copy – the real page with all its scripts
+            // took 1–4 s to be ready on some sites (device log 11 Nov)
+            if (!Prefetch.isPending(page.url))
+                Prefetch.prefetch(page.url)
             if (Prefetch.isPending(page.url)) {
                 log("waiting for the prefetch")
                 waitingPrefetch = true
@@ -144,7 +166,41 @@ WebViewPage {
         loadOriginal()
     }
 
+    // Loads a reader page. Its marker gets a new value each time, so
+    // confirmReader() can tell it from the reader page of the article before
+    // (next/previous from memory, 1.4).
+    property string readerToken: ""
+    function loadReader(html) {
+        readerToken = "r" + Date.now()
+        webView.loadHtml(html.replace('<meta name="sailfeed-reader" content="1">',
+                                      '<meta name="sailfeed-reader" content="' + readerToken + '">'), page.url)
+    }
+
+    property string leanToken: ""
+    // Loads the downloaded page, the lean copy first. False if there is none.
+    function loadPrefetched() {
+        var lean = Prefetch.leanHtml(page.url)
+        if (lean !== "") {
+            log("prefetched page ready (lean)")
+            leanLoaded = true
+            // own marker value, as loadReader(): not the lean page of the article before
+            leanToken = "l" + Date.now()
+            webView.loadHtml(lean.replace('<meta name="sailfeed-lean" content="1">',
+                                          '<meta name="sailfeed-lean" content="' + leanToken + '">'), page.url)
+            return true
+        }
+        var full = Prefetch.html(page.url)
+        if (full !== "") {
+            log("prefetched page ready")
+            leanLoaded = false
+            webView.loadHtml(full, page.url)
+            return true
+        }
+        return false
+    }
+
     function loadOriginal() {
+        leanLoaded = false
         // After loadHtml(html, url) the web view's url already is the
         // article's: setting it again would be ignored, reload() loads the
         // real page. (webView.load() did nothing on the device, 09.10.)
@@ -160,6 +216,7 @@ WebViewPage {
         if (consentStage === 0) {
             consentStage = 1
             extractTries = 0
+            holdUntil = Date.now() + 800       // the wall is on screen until the site loads
             loadOriginal()
         } else if (consentStage === 1) {
             consentStage = 2
@@ -175,26 +232,84 @@ WebViewPage {
         phase = phaseExtracting
         extractTries++
         log(isFinal ? "extracting (page loaded)" : "extracting (DOM ready)")
+        var forUrl = String(page.url)
         webView.runJavaScript(Html.readerExtractScript(), function(result) {
+            // Another article opened meanwhile (next/previous): drop the
+            // result – it showed and cached the old text under the new
+            // article (review 16 Nov)
+            if (String(page.url) !== forUrl || page.phase !== page.phaseExtracting)
+                return
             if (result && String(result).indexOf('"consentWall":true') >= 0) {
                 page.consentWall()
                 return
             }
             var html = result ? Html.readerHtml(result, page.readerStyle()) : ""
             if (html !== "") {
+                Prefetch.setArticle(page.url, String(result))
+                page.leanLoaded = false
                 page.phase = page.phaseReader
-                webView.loadHtml(html, page.url)
+                page.loadReader(html)
             } else if (!isFinal && webView.loading) {
                 page.phase = page.phaseOriginal        // try again after loading
             } else {
-                page.fail()
+                page.noArticle()
             }
         }, function(error) {
+            if (String(page.url) !== forUrl || page.phase !== page.phaseExtracting)
+                return
             console.warn("Reader mode failed:", error)
             if (!isFinal && webView.loading)
                 page.phase = page.phaseOriginal
             else
-                page.fail()
+                page.noArticle()
+        })
+    }
+
+    // No article found. In the lean page (pages that build their text with
+    // scripts) the full download comes next, with its scripts.
+    function noArticle() {
+        if (!leanLoaded) {
+            fail()
+            return
+        }
+        log("no article in the lean page, loading the full page")
+        leanLoaded = false
+        phase = phaseOriginal
+        extractTries = 0
+        var full = Prefetch.html(page.url)
+        if (full !== "")
+            webView.loadHtml(full, page.url)
+        else
+            loadOriginal()
+    }
+
+    // Script for the checks below: "<readyState>|<reader|lean value|page>|<address>"
+    readonly property string docStateScript: "var l = document.querySelector('meta[name=\"sailfeed-lean\"]');"
+        + "return document.readyState + '|' + "
+        + "(document.querySelector('meta[name=\"sailfeed-reader\"]') ? 'reader' : "
+        + "l ? l.getAttribute('content') : 'page') + '|' + location.href"
+    // Whether a docStateScript result is the document being waited for, and
+    // not the one before it (previous article's reader page, the lean page
+    // before the full one): with the short waits since 1.4 the check
+    // could otherwise run on the old document
+    function isCurrentDoc(state, needReady) {
+        var parts = String(state).split("|")
+        if (parts.length < 3 || Date.now() < holdUntil)
+            return false
+        if (needReady && parts[0] !== "interactive" && parts[0] !== "complete")
+            return false
+        var href = parts.slice(2).join("|")
+        if (href === "about:blank")
+            return false
+        if (staleHrefs.indexOf(href) >= 0 && href !== String(page.url))
+            return false
+        return parts[1] === (leanLoaded ? leanToken : "page")
+    }
+    // The page finished loading: extract, if it is the page waited for
+    function extractWhenCurrent() {
+        webView.runJavaScript(docStateScript, function(state) {
+            if (page.isCurrentDoc(state, false))
+                page.extract(true)
         })
     }
 
@@ -202,7 +317,10 @@ WebViewPage {
     // waiting for the website (slow connection). The website is not loaded
     // any further; "Reader mode" / the mode toggle tries it again.
     function showFeedText() {
-        var d = feedArticle
+        if (!feedArticle)
+            return
+        var row = articleModel.rowOfId(itemId)
+        var d = row >= 0 ? articleModel.get(row) : null      // with the body
         if (!d)
             return
         var html = Html.readerHtml(JSON.stringify({ title: d.title || "", byline: d.author || "",
@@ -212,10 +330,11 @@ WebViewPage {
             return
         waitingPrefetch = false
         prefetchTimeout.stop()
+        leanLoaded = false
         feedText = true
         slow = false
         phase = phaseReader
-        webView.loadHtml(html, page.url)
+        loadReader(html)
         hint.show(qsTr("Text from the feed – the website loads too slowly"))
     }
 
@@ -270,7 +389,7 @@ WebViewPage {
             return
         }
         articleModel.markRead(row)
-        var d = articleModel.get(row)
+        var d = articleModel.info(row)
         itemId = d.itemId
         feedId = d.feedId || -1
         feedTitle = d.feedTitle || ""
@@ -283,17 +402,28 @@ WebViewPage {
         coverSlide.from = delta * (page.width > 0 ? page.width : Screen.width)
         cover.x = coverSlide.from
         coverSlide.restart()
+        staleHrefs = [String(page.url), String(webView.url)]
         page.url = d.url
         start()
     }
 
-    // Download the following article while this one is being read.
+    // Download the following and the previous article while this one is
+    // being read (previous: 1.4, so going back is as fast). The
+    // Prefetcher skips pages it has or is downloading.
     function prefetchNext() {
-        if (!articleModel || itemId < 0 || app.openModeFor(feedId) !== 0)
+        if (!articleModel || itemId < 0)
             return
-        var row = articleModel.rowOfId(itemId) + 1
-        if (row > 0 && row < articleModel.count)
-            Prefetch.prefetch(articleModel.get(row).url)
+        var row = articleModel.rowOfId(itemId)
+        if (row < 0)
+            return
+        var rows = [row + 1, row - 1]
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i] < 0 || rows[i] >= articleModel.count)
+                continue
+            var d = articleModel.info(rows[i])
+            if (app.openModeFor(d.feedId || -1) === 0 && !Prefetch.article(d.url))
+                Prefetch.prefetch(d.url)
+        }
     }
 
     onPhaseChanged: {
@@ -308,7 +438,13 @@ WebViewPage {
     }
 
     // Start once the page is on screen (the WebView is only active then).
+    // The web view itself is made when the page starts to come in (1.4): the
+    // preview attaches this page at once, and a Gecko view was created for
+    // every preview, also when the full article was never opened.
+    property bool webWanted: false
     onStatusChanged: {
+        if (status === PageStatus.Activating || status === PageStatus.Active)
+            webWanted = true
         if (status !== PageStatus.Active)
             return
         // Reached from the article preview: going back skips the preview.
@@ -322,8 +458,16 @@ WebViewPage {
         }
     }
 
+    Loader {
+        id: flickLoader
+        anchors.fill: parent
+        active: page.webWanted
+        sourceComponent: flickComponent
+    }
+
+    Component {
+        id: flickComponent
     WebViewFlickable {
-        id: flick
         anchors.fill: parent
         webView.footerMargin: navBar.height
 
@@ -371,24 +515,26 @@ WebViewPage {
             }
         }
     }
+    }
 
-    property alias webView: flick.webView
+    // null until the page comes in (flickLoader)
+    readonly property var webView: flickLoader.item ? flickLoader.item.webView : null
 
     Connections {
-        target: flick.webView
+        target: page.webView
         onLoadingChanged: {
-            page.log(flick.webView.loading ? "web view loading" : "web view loaded")
-            if (flick.webView.loading)
+            page.log(page.webView.loading ? "web view loading" : "web view loaded")
+            if (page.webView.loading)
                 return
             if (page.readerMode && page.phase === page.phaseOriginal)
-                page.extract(true)
+                page.extractWhenCurrent()
             else if (page.phase === page.phaseReader)
                 page.confirmReader()
         }
         // Link in the reader page tapped or long pressed (script in
         // HtmlUtils::readerHtml): "sailfeed:tap|long:<id>:<url>"
         onTitleChanged: {
-            var t = String(flick.webView.title)
+            var t = String(page.webView.title)
             if (t.indexOf("sailfeed:") === 0)
                 page.handleLinkMessage(t, "title")
         }
@@ -429,7 +575,7 @@ WebViewPage {
     // <html>; fetched and cleared here while the reader page is on screen.
     Timer {
         id: linkPoll
-        interval: 250
+        interval: 500       // 1.4: was 250 (a round trip into the web view 4× a second while reading)
         repeat: true
         running: page.readerMode && page.phase === page.phaseShown
                  && page.status === PageStatus.Active && Qt.application.active
@@ -450,14 +596,15 @@ WebViewPage {
     // painted. Before, the end of the interrupted original page's load already
     // uncovered it and the original flashed up (device test 13 Oct).
     function confirmReader() {
-        webView.runJavaScript("return document.querySelector('meta[name=\"sailfeed-reader\"]') ? 1 : 0", function(result) {
-            if (page.phase === page.phaseReader && Number(result) === 1)
+        webView.runJavaScript("var m = document.querySelector('meta[name=\"sailfeed-reader\"]');"
+                              + "return m ? m.getAttribute('content') : ''", function(result) {
+            if (page.phase === page.phaseReader && String(result) === page.readerToken && !revealTimer.running)
                 revealTimer.restart()
         })
     }
     Timer {
         id: revealTimer
-        interval: 200
+        interval: 60        // 1.4: was 200
         onTriggered: if (page.phase === page.phaseReader) page.phase = page.phaseShown
     }
     // The reader page may finish loading late (its images on a slow
@@ -467,7 +614,7 @@ WebViewPage {
     // page with busy indicators instead of the title and "Preparing reader
     // mode" (device test 17 Oct). Last resort after 30 s: uncover anyway.
     Timer {
-        interval: 600
+        interval: 100       // 1.4: was 600; the reader page has no waiting images any more (loading="lazy")
         repeat: true
         running: page.phase === page.phaseReader
         onTriggered: page.confirmReader()
@@ -485,9 +632,7 @@ WebViewPage {
                 return
             page.waitingPrefetch = false
             prefetchTimeout.stop()
-            if (ok)
-                webView.loadHtml(Prefetch.html(page.url), page.url)
-            else
+            if (!ok || !page.loadPrefetched())
                 page.loadOriginal()
         }
     }
@@ -510,9 +655,7 @@ WebViewPage {
                 page.log("prefetch gave up, idle " + idle)
                 stop()
                 page.waitingPrefetch = false
-                if (Prefetch.html(page.url) !== "")
-                    webView.loadHtml(Prefetch.html(page.url), page.url)
-                else
+                if (!page.loadPrefetched())
                     page.loadOriginal()
             }
         }
@@ -531,27 +674,30 @@ WebViewPage {
     }
 
     // Extract as soon as the DOM is ready instead of waiting for ads and images.
+    // 1.4: every 150 ms (was 400); isCurrentDoc() makes sure it is the new page.
     Timer {
-        interval: 400
+        interval: 150
         repeat: true
         running: page.started && page.readerMode && page.phase === page.phaseOriginal
                  && !page.waitingPrefetch && page.extractTries === 0 && page.consentStage < 2
         onTriggered: {
-            webView.runJavaScript("return document.readyState + '|' + location.href", function(state) {
-                var s = String(state)
-                if ((s.indexOf("interactive|") === 0 || s.indexOf("complete|") === 0)
-                        && s !== "complete|about:blank" && s !== "interactive|about:blank")
+            webView.runJavaScript(page.docStateScript, function(state) {
+                if (page.isCurrentDoc(state, true))
                     page.extract(false)
             })
         }
     }
 
     // Pages that never finish loading (endless ad requests): extract anyway.
+    // Counted from start() of this article (a plain 8 s timer kept running
+    // across next/previous and fired at once on the new article), and only
+    // on this article's document (review 16 Nov)
     Timer {
-        interval: 8000
+        interval: 1000
+        repeat: true
         running: page.started && page.readerMode && page.phase === page.phaseOriginal
                  && !page.waitingPrefetch && page.consentStage < 2
-        onTriggered: page.extract(true)
+        onTriggered: if (Date.now() - page.startedAt >= 8000) page.extractWhenCurrent()
     }
 
     // Covers the original page until the reader page is ready, and slides in
@@ -612,13 +758,15 @@ WebViewPage {
                 color: Theme.secondaryColor
                 text: qsTr("This takes long – the connection or the website is slow.")
             }
-            Button {
+            ActionPill {
+                kind: "primary"
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: page.slow && page.feedArticle !== null
                 text: qsTr("Read the text from the feed")
                 onClicked: page.showFeedText()
             }
-            Button {
+            ActionPill {
+                kind: "secondary"
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: page.slow
                 text: qsTr("Open in browser")
@@ -632,7 +780,7 @@ WebViewPage {
         target: cover
         property: "opacity"
         to: 0
-        duration: 200
+        duration: 120       // 1.4: was 200
     }
     NumberAnimation {
         id: coverSlide
@@ -657,7 +805,7 @@ WebViewPage {
 
     // Only for the original website: in reader mode the cover shows the
     // waiting, and the shown reader page may still load its images
-    PageBusyIndicator { running: !page.readerMode && !page.coverShown && flick.webView.loading }
+    PageBusyIndicator { running: !page.readerMode && !page.coverShown && page.webView !== null && page.webView.loading }
 
     // Next / previous article without leaving the web view.
     ShareAction {

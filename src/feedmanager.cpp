@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "feedmanager.h"
 
+#include "feedfinder.h"
+
 #include <Fuoten/API/CreateFeed>
 #include <Fuoten/API/CreateFolder>
 #include <Fuoten/API/DeleteFeed>
@@ -41,6 +43,11 @@ QString FeedManager::normalizeUrl(const QString &input)
             || (scheme != QLatin1String("http") && scheme != QLatin1String("https")))
         return QString();
     return url.toString();
+}
+
+QString FeedManager::linkToFeedUrl(const QString &link)
+{
+    return normalizeUrl(FeedFinder::fromFeedScheme(link));
 }
 
 // Starts c and reports the result. libfuoten emits failed(Error*) on errors

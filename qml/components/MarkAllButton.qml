@@ -50,7 +50,7 @@ Item {
     }
     Label {
         anchors { right: parent.left; rightMargin: Theme.paddingMedium; verticalCenter: parent.top; verticalCenterOffset: knobSize / 2 }
-        text: root.armed ? qsTr("Release: mark all as read") : qsTr("Mark all as read")
+        text: root.armed ? qsTr("Release: mark all in this list as read") : qsTr("Mark all in this list as read")
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.highlightColor
         opacity: dragArea.drag.active ? 1 : 0

@@ -76,7 +76,8 @@ Dialog {
                 width: parent.width - 2 * x
                 visible: dialog.offer
                 wrapMode: Text.Wrap
-                color: Theme.highlightColor
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
                 text: qsTr("Your Nextcloud has saved Sailfeed settings, from another device or an earlier installation. Use them on this device? If not, the settings of this device are backed up from now on.")
             }
 
@@ -130,7 +131,7 @@ Dialog {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.secondaryHighlightColor
                 text: dialog.mode === SettingsBackup.Replace
                       ? qsTr("All settings are set as in the backup; favorite feeds and sites in the original exactly as there. The current settings are kept on this device first, so you can undo it.")
